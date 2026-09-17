@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+backend/staticfiles/
+backend/.env
+
+# Node
+node_modules/
+frontend/dist/
+
+# Env
+.env
+!infra/.env.example
+
+# Editors / OS
+.DS_Store
+
+# Claude Code local settings (may hold local overrides)
+.claude/settings.local.json

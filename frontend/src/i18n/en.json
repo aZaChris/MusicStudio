@@ -1,0 +1,59 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "students": "Students",
+    "payments": "Payments"
+  },
+  "dashboard": {
+    "greeting": "Hi, {{name}} 👋",
+    "activeStudents": "active students",
+    "pendingPayments": "pending payments",
+    "thisWeek": "This week",
+    "upcoming": "Upcoming lessons"
+  },
+  "roster": {
+    "title": "Students",
+    "student": "Student",
+    "package": "Package",
+    "remaining": "Remaining",
+    "paymentStatus": "Payment status",
+    "lowPackage": "Running low"
+  },
+  "lesson": {
+    "markComplete": "Mark complete",
+    "note": "Progress note",
+    "cancel": "Cancel",
+    "noShow": "No-show",
+    "statusScheduled": "Scheduled",
+    "statusCompleted": "Completed",
+    "statusCancelled": "Cancelled",
+    "statusNoShow": "No-show"
+  },
+  "payments": {
+    "title": "Payments",
+    "registerPayment": "Register payment",
+    "amount": "Amount",
+    "date": "Date",
+    "method": "Method",
+    "status": "Status",
+    "statusPaid": "Paid",
+    "statusPending": "Pending",
+    "statusOverdue": "Overdue"
+  },
+  "parent": {
+    "portalTitle": "Your lessons",
+    "upcomingLessons": "Upcoming lessons",
+    "attendance": "Attendance history",
+    "paymentStatus": "Payment status",
+    "noStudents": "No students are linked to your account yet."
+  },
+  "auth": {
+    "login": "Log in",
+    "email": "Email",
+    "password": "Password",
+    "logout": "Log out"
+  },
+  "theme": {
+    "toggle": "Toggle light/dark theme"
+  }
+}
