@@ -1,0 +1,5 @@
+Hi,
+
+This is a reminder that {{ student_name }}'s lesson is scheduled for {{ start_time }}.
+
+— MusicStudio

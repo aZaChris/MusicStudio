@@ -205,17 +205,17 @@ and roster (see T024/T036) — this phase wires the automation, not the UI flag.
 
 ### Tests for User Story 4
 
-- [ ] T045 [P] [US4] Test the reminder sweep task: sends exactly once for a lesson in the
+- [x] T045 [P] [US4] Test the reminder sweep task: sends exactly once for a lesson in the
       24h window, is idempotent on re-run (`reminder_sent_at` guard), and skips
       cancelled/no_show lessons, in `backend/apps/notifications/tests/test_reminders.py`
 
 ### Implementation for User Story 4
 
-- [ ] T046 [US4] `send_lesson_reminders` Celery task (query window, render email, stamp
+- [x] T046 [US4] `send_lesson_reminders` Celery task (query window, render email, stamp
       `reminder_sent_at`) in `backend/apps/notifications/tasks.py` (depends on T021)
-- [ ] T047 [US4] Register the task on Celery Beat's schedule (every 15 min) in
+- [x] T047 [US4] Register the task on Celery Beat's schedule (every 15 min) in
       `backend/config/celery.py`
-- [ ] T048 [US4] Bilingual reminder email template (uses recipient's `preferred_language`) in
+- [x] T048 [US4] Bilingual reminder email template (uses recipient's `preferred_language`) in
       `backend/apps/notifications/templates/reminder_email.txt`
 
 **Checkpoint**: all four user stories independently functional — MVP complete.
