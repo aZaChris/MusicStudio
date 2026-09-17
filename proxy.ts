@@ -22,6 +22,9 @@ export async function proxy(request: NextRequest) {
   return NextResponse.next();
 }
 
-export const proxyConfig = {
+// NOTE: this export MUST be named `config` (not `proxyConfig`) — the function
+// is renamed proxy() in Next.js 16, but the config export keeps its old name.
+// See node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md.
+export const config = {
   matcher: ["/dashboard/:path*", "/students/:path*", "/payments/:path*", "/parent/:path*"],
 };
