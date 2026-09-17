@@ -12,6 +12,7 @@
     "seed": "dotenv -e .env.local -- tsx scripts/seed.ts"
   },
   "dependencies": {
+    "@vercel/functions": "^3.9.8",
     "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.45.2",
     "next": "16.3.5",
