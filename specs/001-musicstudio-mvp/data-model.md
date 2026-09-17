@@ -1,8 +1,15 @@
 # Phase 1 Data Model: MusicStudio MVP
 
-All models live under `backend/apps/<app>/models.py` per the app breakdown in `plan.md`.
-Money fields use `DecimalField(max_digits=8, decimal_places=2)`. All models get
-`created_at`/`updated_at` timestamps unless noted.
+> **Amended 2026-09-17**: rebuilt on Next.js/Drizzle/Neon (see research.md). The entities,
+> relationships, and business rules below are unchanged from the original Django design — only
+> the implementation vocabulary differs. Source of truth is now `lib/db/schema.ts`
+> (Drizzle, `snake_case` columns, camelCase TS fields); this document keeps the original
+> Django-style field names as the conceptual reference, since they map 1:1
+> (`lessons_remaining` → `lessonsRemaining`/`lessons_remaining`, etc.) — read `lib/db/schema.ts`
+> for exact current column names/types.
+
+Money fields are `numeric(8,2)`. All tables get a `created_at` timestamp; several also get
+`updated_at` in spirit (Drizzle tracks this via `onUpdate` where it matters — see schema.ts).
 
 ## User (`apps/accounts`)
 

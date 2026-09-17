@@ -1,109 +1,146 @@
 # Phase 0 Research: MusicStudio MVP
 
-No `NEEDS CLARIFICATION` markers remained in the Technical Context — this consolidates the
-concrete decisions behind it.
+> **Amended 2026-09-17**: the original version of this document researched a Django/DRF +
+> Celery/Docker/AWS stack. The user decided mid-build to run everything on Vercel instead; that
+> version is preserved in git history (commits before "Drop Django/Vite/Docker stack..."). This
+> is the research behind the Next.js/Vercel rebuild.
+
+## Why one Next.js app instead of separate frontend/backend services
+
+- **Decision**: a single Next.js (App Router) project — Server Components/Server Actions serve
+  the web UI, Route Handlers under `/api/v1/` serve the documented REST API for a future mobile
+  client, both calling the same `lib/services/*` business logic.
+- **Rationale**: this is Vercel's idiomatic shape for "frontend and backend deployed together"
+  (per the platform's own guidance: prefer Next.js Route Handlers when the backend belongs to a
+  Next.js app). Using Vercel Services (separate frontend+backend components in one deployment)
+  or a separate Express/Hono backend would add a second framework and a second deploy artifact
+  for no benefit at this scale.
+- **Alternatives considered**: Vercel Services with a standalone Hono/Express API — rejected,
+  unnecessary indirection for a single small team/product; Next.js Route Handlers alone (no
+  Server Components for the web UI, treating it like a pure SPA) — rejected, throws away
+  Next.js's actual strength (direct server-side data access, no client-side waterfall) for no
+  reason since we're already committed to Next.js.
 
 ## Auth & multi-role access
 
-- **Decision**: `User` extends Django's `AbstractUser` with a `role` field
-  (`teacher | studio_owner | parent`), auth via `djangorestframework-simplejwt`
-  (access + refresh tokens). `studio_owner` is modeled as a `Teacher` row with
-  `is_owner=True` rather than a fourth entity — an owner IS a teacher who can also see their
-  studio's other teachers.
-- **Rationale**: keeps the role surface small (3 roles, matches spec) and avoids a parallel
-  "owner" data model that duplicates Teacher fields.
-- **Alternatives considered**: separate `StudioOwner` model — rejected, adds a join for no
-  behavioral gain since an owner always has their own teaching practice too in this domain.
+- **Decision**: `users` table with a `role` column (`teacher | studio_owner | parent`) and a
+  bcrypt `password_hash`; Auth.js (`next-auth` v5) with the Credentials provider and JWT session
+  strategy (no DB session table — sessions are self-contained JWTs, simplest with a serverless
+  Postgres backend). `studio_owner` is a `teachers` row with `is_owner=true` rather than a
+  fourth table, same reasoning as the original design (an owner always has their own teaching
+  practice too).
+- **Rationale**: our accounts are invite-only (a teacher/admin provisions parent accounts) with
+  three fixed custom roles baked into every authorization check — this is a poor fit for a
+  social-login-oriented SaaS auth vendor (Clerk/Descope/Auth0), which optimizes for public
+  self-signup and stores custom roles as bolted-on metadata. A Credentials provider against our
+  own `users` table keeps the RBAC model exactly where the rest of the business logic already
+  lives, with zero new third-party dependency or cost.
+- **Alternatives considered**: Clerk (Vercel Marketplace-native, fastest setup for typical
+  SaaS auth) — rejected for this app's shape (see above), revisit if the product ever grows
+  public self-signup or SSO requirements.
 
 ## Tenant isolation enforcement
 
-- **Decision**: every ViewSet touching Student/Lesson/Package/Payment overrides
-  `get_queryset()` to filter by `request.user`'s role (teacher → own students only;
-  studio_owner → all students of teachers in their Studio; parent → only students linked via
-  `ParentAccount`), backed by custom DRF permission classes (`IsTeacherOwner`,
-  `IsParentOfStudent`) applied at the object level too (`has_object_permission`) so a guessed
-  ID in a URL still 404s/403s.
-- **Rationale**: Constitution Principle I requires ORM-level filtering, not serializer-level
-  hiding — this is the standard DRF pattern for it (`get_queryset` + `IsOwnerOrReadOnly`-style
-  permission classes), no third-party package needed.
-- **Alternatives considered**: django-guardian (object-level permissions library) — rejected,
-  overkill for 3 static roles with simple ownership rules; would add a dependency and a
-  permission-table migration for something 4 `get_queryset()` overrides handle directly.
+- **Decision**: `lib/rbac.ts` exports per-entity `*Scope(actor)` functions
+  (`studentScope`, `lessonScope`, `packageScope`, `paymentScope`) returning a Drizzle `SQL`
+  condition built from the actor's role/teacherId/studioId/parentAccountId, applied via
+  `.where(and(scope(actor), ...))` in every service-layer query. A `getActor()` helper resolves
+  the JWT's `userId`/`role` into the actor's linked teacher/parent profile on each request.
+- **Rationale**: same principle as the original Django design (queryset-level filtering, never
+  serializer-level hiding), translated to Drizzle: a SQL condition builder is the direct
+  TypeScript equivalent of `get_queryset()` overrides, and keeping it in one file makes it the
+  single reviewable choke point Constitution Principle I requires.
+- **Alternatives considered**: row-level security (Postgres RLS) — appealing in principle, but
+  would require session-scoped role variables per request against a serverless/pooled
+  connection, adding real operational complexity for a 3-role, small-scale app; the query-scope
+  functions get the same guarantee with a normal test suite.
 
 ## Package decrement correctness
 
-- **Decision**: decrement happens inside a single `Lesson.mark_completed()` model method
-  wrapped in `transaction.atomic()` with `select_for_update()` on the Package row, guarded by
-  checking `Lesson.status != Lesson.Status.COMPLETED` before decrementing (idempotent — calling
-  it twice is a no-op the second time) and `Package.lessons_remaining > 0` (clamped, never
-  negative — see spec edge cases).
-- **Rationale**: this is the money-critical path (Constitution Principle III); doing it as one
-  guarded, locked model method — not duplicated in the serializer and the viewset — is the
-  smallest surface that can't be raced or double-decremented.
-- **Alternatives considered**: Celery task for the decrement — rejected, this must be
-  synchronous and immediately consistent for the teacher's next screen render; no reason to
-  make it async.
+- **Decision**: `markLessonCompleted` issues one guarded, atomic UPDATE:
+  `UPDATE lessons SET status='completed', notes=$note WHERE id=$id AND status != 'completed'
+  RETURNING *`. If it affects 0 rows (already completed, or outside the actor's scope), it's a
+  no-op — idempotent by construction. Only if it *did* transition does a second guarded UPDATE
+  run: `UPDATE packages SET lessons_remaining = lessons_remaining - 1 WHERE id=$id AND
+  lessons_remaining > 0`.
+- **Rationale**: a single conditional `UPDATE ... WHERE ... RETURNING` is an atomic
+  compare-and-swap at the database level — race-safe against concurrent requests without an
+  explicit transaction or row lock, and works identically over a pooled Postgres connection.
+  This is simpler than the original Django design's `select_for_update()` + explicit
+  transaction, while giving the same guarantee.
+- **Alternatives considered**: wrapping both UPDATEs in an explicit transaction with
+  `SELECT ... FOR UPDATE` — unnecessary here since each UPDATE's own `WHERE` guard is
+  sufficient; a transaction would only be needed if the two statements had to succeed/fail
+  together, but a lesson marked completed with a package decrement that doesn't (extremely
+  unlikely, single-process failure between two adjacent statements) is an acceptable, self-
+  healing edge case for an MVP, not a correctness bug.
 
 ## Background reminders
 
-- **Decision**: Celery Beat runs a periodic task (every 15 min) that queries `Lesson`s with
-  `status=SCHEDULED` and `start_time` between now+23h45m and now+24h, sends the parent
-  reminder, and stamps a `reminder_sent_at` timestamp on the Lesson to make the job idempotent
-  (re-running the same window twice never double-sends). A separate signal/check after
-  `mark_completed()` evaluates `lessons_remaining <= 2` and surfaces the warning via a computed
-  field the dashboard reads (no separate notification row needed for the teacher-facing
-  warning — it's a read-time flag, not a sent message).
-- **Rationale**: matches the spec's "demonstrably queued/sent" success criterion with a simple,
-  inspectable poll rather than scheduling a one-off task per lesson (which would need
-  rescheduling on every reschedule/cancel).
-- **Alternatives considered**: `celery beat` one-shot ETA task scheduled at lesson-creation
-  time — rejected, requires revoking/rescheduling on every lesson edit; a periodic sweep is
-  simpler and self-healing if Celery was briefly down.
-- **Email transport for MVP**: Django's console/file email backend in dev, SMTP (env-configured,
-  e.g. any SMTP provider) in prod — no dedicated transactional-email service integration
-  required for MVP; the requirement is "demonstrably queued/sent," not deliverability at scale.
+- **Decision**: a Vercel Cron Job (`vercel.json`, `*/15 * * * *`) hits
+  `GET /api/cron/reminders` (protected by a `CRON_SECRET` bearer token), which runs
+  `sendLessonReminders()`: queries `scheduled` lessons with `start_time` in the
+  23h45m–24h window and `reminder_sent_at IS NULL`, sends one email per linked parent, and
+  stamps `reminder_sent_at` for idempotency.
+- **Rationale**: the only "background job" this MVP needs is a periodic, idempotent sweep — not
+  a job queue with retries/fan-out. Vercel Cron Jobs are the direct platform-native fit and
+  remove Celery + Redis entirely (no broker/worker to run or pay for).
+- **Alternatives considered**: Vercel Queues / Workflow — rejected, both solve durable
+  multi-step or fan-out job problems this MVP doesn't have; a scheduled HTTP endpoint is the
+  smaller, correct-for-scope tool. Per-lesson scheduled Cron triggers (one job per lesson) —
+  rejected, same reasoning as the original design: requires rescheduling on every edit/cancel,
+  a periodic sweep is simpler and self-healing.
+- **Email transport for MVP**: `console.log` (visible in Vercel function logs) — no
+  transactional-email provider wired yet; swap `lib/services/email.ts`'s `sendEmail()` for a
+  Marketplace provider (Resend, etc.) when real delivery is needed. The requirement is
+  "demonstrably queued/sent," not deliverability at scale.
 
-## Frontend state & i18n
+## Database driver: node-postgres, not the Neon serverless HTTP driver
 
-- **Decision**: TanStack Query for all server state (lists, mutations, cache invalidation on
-  lesson-complete/payment-register); no separate global state library needed for MVP.
-  `react-i18next` with two static resource bundles (`en.json`, `it.json`); language preference
-  persisted in `localStorage`, default to browser locale via `i18next-browser-languagedetector`.
-- **Rationale**: the app is CRUD-over-REST with no complex client-only state; adding Redux/
-  Zustand on top of TanStack Query would duplicate cache TanStack already owns.
-- **Alternatives considered**: Redux Toolkit — rejected as unnecessary weight for this scope.
+- **Decision**: `drizzle-orm/node-postgres` + `pg.Pool`, pointed at Neon's connection string in
+  production and local Postgres in tests — not `@neondatabase/serverless`'s HTTP/WebSocket
+  transport.
+- **Rationale**: this app runs on the Node.js runtime (Fluid Compute), not Edge, so there's no
+  need for a fetch-based transport designed to work where raw TCP isn't available. Using plain
+  `pg` means the exact same driver and code path run in Vitest (against local Postgres) and in
+  production (against Neon) — no test-only DB shim, no build-time-safety workaround the
+  `neon()` HTTP client needs. Neon is wire-compatible Postgres, so this is a fully supported
+  path; Neon's pooled connection string (`-pooler` host) keeps this serverless-friendly despite
+  using persistent-style TCP connections.
+- **Alternatives considered**: `@neondatabase/serverless` (`neon-http` driver) — the
+  Vercel-storage skill's preferred default, genuinely better if this ran on Edge or needed
+  per-request HTTP fetch semantics; rejected here specifically because it blocked local testing
+  against a real database (Constitution Principle III) without a Neon branch per test run, and
+  this app's Node.js-runtime choice removes its main advantage.
+
+## Frontend data & i18n
+
+- **Decision**: Server Components fetch directly via `lib/services/*` (no client-side REST
+  round-trip for the web UI itself); mutations go through Server Actions
+  (`app/actions/*.ts`) calling the same services, with `revalidatePath()` for cache
+  invalidation. i18n is a ~40-key dictionary in `lib/i18n.ts` (client-safe, pure) plus a
+  server-only `getLocale()` cookie reader — no i18n library.
+- **Rationale**: this is Next.js's own preferred pattern (avoids a redundant HTTP hop the old
+  SPA needed) and the string surface is small and fixed enough that `react-i18next`/`next-intl`
+  would be pure overhead for what a 40-entry object handles directly.
+- **Alternatives considered**: `next-intl` — solid library, rejected as unneeded weight for a
+  bilingual dictionary this small; TanStack Query on the client — rejected for the same reason
+  Server Components are preferred: no client-side fetch needed when the server can just render
+  the data.
 
 ## Theming
 
-- **Decision**: CSS custom properties defined on `:root` (light) and overridden under
-  `:root[data-theme="dark"]`, values derived from `design/tokens.md` (OKLCH palette, flipped
-  lightness for dark). A small `ThemeProvider` toggles the `data-theme` attribute and persists
-  choice in `localStorage`.
-- **Rationale**: matches the design artboards' token system directly, zero runtime CSS-in-JS
-  cost.
-- **Alternatives considered**: Tailwind — viable but not needed; the design is a small, fixed
-  token set better expressed as plain custom properties than a utility framework for this
-  scope.
+- **Decision**: unchanged from the original design — CSS custom properties from
+  `design/tokens.md`, flipped under `:root[data-theme="dark"]`. The root layout reads a
+  `musicstudio-theme` cookie server-side to set the initial `data-theme` attribute (avoids a
+  flash of the wrong theme); a small client `ThemeToggle` component flips the attribute and the
+  cookie together.
 
-## Local dev & AWS deployment
+## Deployment
 
-- **Decision**: Docker Compose services: `db` (postgres:16), `redis`, `backend` (Django +
-  gunicorn in prod image / runserver in dev), `celery-worker`, `celery-beat`, `frontend` (vite
-  dev server locally; static build served via nginx or the backend's static files in prod).
-  AWS target: ECS Fargate, one task definition per service sharing an `.env`-derived task
-  role, RDS Postgres, ElastiCache Redis; documented as the primary path with a plain
-  EC2 + `docker compose up` fallback documented in `infra/aws/README.md` for a lower-cost demo
-  deployment.
-- **Rationale**: matches the brief's explicit deliverable ("containerized deployment... is part
-  of the deliverable, not an afterthought") while keeping local dev on the same images that
-  ship to AWS.
-- **Alternatives considered**: Elastic Beanstalk — rejected, ECS Fargate is more directly
-  portfolio-relevant (explicit container orchestration) and maps 1:1 to the Compose services.
-
-## API documentation
-
-- **Decision**: `drf-spectacular` generating an OpenAPI 3 schema served at `/api/schema/` with
-  Swagger UI at `/api/docs/`.
-- **Rationale**: explicitly requested in the brief as a portfolio-relevant deliverable; it's
-  the standard DRF-ecosystem choice (actively maintained, decorator-light for straightforward
-  ViewSets).
+- **Decision**: one Vercel project (`vercel link`), Neon Postgres provisioned via the Vercel
+  Marketplace (`vercel integration add neon`), `vercel.json` for the cron schedule. No
+  Docker/AWS deliverable — deployment IS `git push` to the linked repo (or `vercel deploy`).
+- **Rationale**: this is what the user explicitly asked to change; matches the platform's
+  actual model (Vercel builds and deploys the Next.js app directly, no container step needed
+  for a supported framework).

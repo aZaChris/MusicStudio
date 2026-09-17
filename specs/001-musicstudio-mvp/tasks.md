@@ -1,5 +1,23 @@
 # Tasks: MusicStudio MVP — Teacher & Parent Platform
 
+> **⚠ Superseded by the Vercel/Next.js rebuild (2026-09-17).** Everything below (T001-T056)
+> describes the original Django/DRF/Celery/Docker/AWS build, which is fully implemented and
+> tested but was replaced when the user decided to run backend and frontend together on Vercel
+> — see `research.md`'s amendment note and git history (commits before "Drop Django/Vite/Docker
+> stack..."). Task IDs and checkmarks below are kept as a historical record, not a to-do list
+> for the current codebase. **Status of the rebuild:**
+>
+> - Done: full Next.js app (all 4 user stories: dashboard/lesson-completion, roster/student
+>   detail/payments, isolated parent portal, reminder sweep), `lib/services/*` business logic,
+>   `lib/rbac.ts` tenant-isolation scoping, `/api/v1/*` REST surface, Auth.js credentials auth,
+>   Drizzle schema, Vercel Cron config, `npm run build`/`tsc --noEmit`/lint all clean.
+> - Blocked on the user: Neon Postgres Marketplace terms acceptance (browser step) — once done,
+>   `npm run db:push && npm run seed && npm run test` closes the loop (schema push, demo data,
+>   the Vitest suite in `tests/*.test.ts` covering package decrement/permission
+>   scoping/payment validation/reminder sweep against a real Postgres DB).
+> - Not yet done: an actual `vercel deploy`; a couple of documented follow-up endpoints noted
+>   in `contracts/api.md` (studio summary, PATCH reschedule) that no UI flow needed yet.
+
 **Input**: Design documents from `/specs/001-musicstudio-mvp/`
 
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/api.md, quickstart.md

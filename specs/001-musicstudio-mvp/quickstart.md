@@ -1,86 +1,81 @@
 # Quickstart: validate MusicStudio MVP end-to-end
 
-> **Status**: everything below Docker itself has already been verified from this
-> environment (WSL without Docker integration enabled) against a local sqlite DB:
-> migrations apply cleanly, `seed_demo` runs, all 26 backend tests pass, `ruff check`
-> is clean, the OpenAPI schema generates with zero warnings, and a full login →
-> dashboard → students → docs smoke test via `APIClient` succeeded. What has **not**
-> been run from here is `docker compose up` itself and the actual browser walkthrough
-> below — do that from a machine with Docker (e.g. enable WSL integration in Docker
-> Desktop, or run from Windows/macOS/Linux directly) to close the loop.
+> **Amended 2026-09-17**: rebuilt on Next.js/Vercel (see research.md). Local dev no longer
+> needs Docker Compose — just Node.js and a Postgres connection string (local or a Neon branch).
+
+## Status of this environment
+
+Verified from this session so far: `npm run build` (clean), `npx tsc --noEmit` (clean),
+`npx oxlint`-equivalent lint clean. **Not yet run**: `vitest` (needs a real
+`DATABASE_URL` — waiting on the Neon Marketplace terms-acceptance step, or point at a local
+Postgres instance), the actual browser walkthrough below.
 
 ## Prerequisites
 
-- Docker + Docker Compose installed.
-- `infra/.env` populated from `infra/.env.example` (DB creds, Django `SECRET_KEY`, JWT
-  signing key, SMTP settings for reminder emails — console backend is fine locally).
+- Node.js 22, this repo's `npm install` already run.
+- `vercel link` done, Neon Postgres provisioned via `vercel integration add neon` (accept the
+  marketplace terms in the browser when prompted — the CLI can't do this step for you).
+- `vercel env pull .env.local --yes` to get `DATABASE_URL` locally.
+- `AUTH_SECRET` in `.env.local` (generate with `npx auth secret`).
+- `CRON_SECRET` in `.env.local` (any random string) — only needed to hit
+  `/api/cron/reminders` manually; Vercel injects it automatically on the deployed cron trigger.
 
 ## Bring the stack up
 
 ```bash
-cd infra
-docker compose up --build
+npm run db:push   # applies lib/db/schema.ts to the Neon database
+npm run seed      # demo teachers/studio/students/packages/lessons/payments/parent
+npm run dev       # http://localhost:3000
 ```
 
-This starts: `db` (Postgres), `redis`, `backend` (Django on :8000), `celery-worker`,
-`celery-beat`, `frontend` (Vite dev server on :5173).
-
-## Seed a demo scenario
-
-```bash
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py seed_demo
-```
-
-`seed_demo` (a management command, see tasks.md) creates: one solo teacher, one
-studio_owner with 2 teachers, a handful of students with active packages (including one at
-1 lesson remaining to exercise the low-package warning), one parent account linked to one
-student, and one lesson starting ~24h from now on an active student (to exercise the
-reminder sweep).
+`scripts/seed.ts` creates: a solo teacher, a studio_owner with 2 teachers, students with
+packages (one at 1 lesson remaining, to exercise the low-package warning), one parent linked to
+that low-package student, one lesson today (for the completion demo), and one lesson ~24h out
+(for the reminder demo). All demo logins use password `password123`.
 
 ## Validate User Story 1 — teacher week + lesson completion (spec.md US1)
 
-1. Log in at `http://localhost:5173` as the seeded teacher.
-2. Confirm the dashboard shows this week's calendar, next 3 upcoming lessons, pending
-   payments count, active students count — matches `GET /api/v1/dashboard/`.
-3. Mark today's seeded lesson complete with a note.
-4. Confirm the student's `lessons_remaining` decreased by 1 (roster view and
-   `GET /api/v1/students/{id}/` agree).
-5. Re-submit the same completion (retry) — confirm the count does NOT decrement again
-   (`POST /api/v1/lessons/{id}/complete/` is idempotent).
+1. Log in at `http://localhost:3000` as `solo.teacher@example.com`.
+2. Confirm the dashboard shows this week's calendar, upcoming lessons, pending payments count,
+   active students count.
+3. Click today's lesson, add a note, mark it complete.
+4. Confirm the student's package "lessons remaining" decreased by 1 (visible on `/students`).
+5. Click the same (now completed) lesson again — it's disabled/non-clickable, confirming the
+   UI can't double-submit; `markLessonCompleted`'s guarded UPDATE makes a direct API retry
+   idempotent too.
 
 ## Validate User Story 2 — roster, student detail, payments (spec.md US2)
 
-1. Open the roster — confirm each row shows package/remaining/payment status.
-2. Open the low-package student — confirm the low-package flag is visible.
-3. Register a manual payment (`POST /api/v1/payments/`) — confirm it appears in the
-   payments list with the correct status.
+1. Open `/students` — confirm each row shows package/remaining/payment status, and the
+   low-package student is flagged.
+2. Open that student's detail page — confirm lesson history and package are visible.
+3. Go to `/payments`, register a payment — confirm it appears in the list.
 
 ## Validate User Story 3 — parent portal isolation (spec.md US3)
 
-1. Log in (separate browser/session) as the seeded parent.
-2. Confirm only their linked student's data is visible anywhere in the portal.
-3. Attempt `GET /api/v1/students/{other_student_id}/` (a student NOT linked to this parent)
-   directly against the API — confirm `404`, not the other student's data.
+1. Log in (separate browser/session) as `parent@example.com`.
+2. Confirm `/parent` shows only the linked student's data, no edit controls anywhere.
+3. Attempt to fetch another student's data directly: `curl -b <session-cookie>
+   http://localhost:3000/api/v1/students/{other_student_id}` — confirm `404`, not the other
+   student's data.
 4. Confirm the lesson completed in US1, with its note, is visible read-only here.
 
 ## Validate User Story 4 — reminders (spec.md US4)
 
-1. Confirm the seeded ~24h-out lesson has `reminder_sent_at` set after the Celery Beat sweep
-   runs (check `celery-beat`/`celery-worker` logs, or query the Lesson via Django admin/API).
-2. Confirm exactly one reminder is logged/sent for it (idempotency — running the sweep twice
-   doesn't double-send).
-3. Cancel a different seeded lesson before its reminder window and confirm no reminder fires
-   for it.
+1. Manually trigger the sweep: `curl -H "Authorization: Bearer $CRON_SECRET"
+   http://localhost:3000/api/cron/reminders`.
+2. Confirm the response is `{"sent":1}` (or more) and check the terminal running `npm run dev`
+   for the logged reminder email (console-logged for MVP — see research.md).
+3. Re-run the same curl — confirm `{"sent":0}` (idempotent, `reminderSentAt` already stamped).
 
-## API documentation check
+## API surface check
 
-- `GET /api/docs/` renders Swagger UI from the drf-spectacular schema with all endpoints in
-  `contracts/api.md` present.
+- Every route in `contracts/api.md` should return `401` unauthenticated, and the expected
+  shape/status once logged in (session cookie via `/api/auth/callback/credentials`).
 
-## Automated test suites (what CI/local `test` commands should run)
+## Automated test suite
 
 ```bash
-docker compose exec backend pytest        # models, permission boundaries, package decrement, payment transitions
-docker compose exec frontend npm test     # component/flow tests
+npm run test   # tests/*.test.ts — package decrement, permission scoping, payment
+               # validation, reminder sweep, all against a real Postgres DB
 ```

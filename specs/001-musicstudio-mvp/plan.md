@@ -8,50 +8,56 @@
 
 ## Summary
 
-A Django REST Framework API (PostgreSQL, JWT auth, Celery/Redis for background reminders)
-backing a React + Vite + TypeScript SPA with role-scoped UI (teacher/studio_owner vs. parent),
-bilingual (EN/IT) with a light/dark theme toggle. Core loop: teacher runs their week, marks
-lessons complete (which atomically decrements a package's remaining-lesson count), tracks
-manual payments; parents get a strictly-scoped read-only portal; Celery Beat drives 24h-before
-lesson reminders and low-package warnings. Ships with Docker Compose for local dev and a
-documented AWS container deployment, matching the design reference in `design/reference/`.
+**Amended 2026-09-17**: originally planned as Django/DRF + React/Vite + Docker/AWS (see git
+history for that version, superseded); the user decided mid-build to run backend and frontend
+together on Vercel. Rebuilt as a single Next.js (App Router, TypeScript) app: a `lib/services/*`
+business-logic layer (Drizzle + Neon Postgres) called from both Server Components/Server
+Actions (the web UI) and `/api/v1/*` Route Handlers (the documented REST surface for a future
+mobile client). Role-scoped UI (teacher/studio_owner vs. parent), bilingual (EN/IT) with a
+light/dark theme toggle. Core loop: teacher runs their week, marks lessons complete (which
+atomically decrements a package's remaining-lesson count via a guarded conditional UPDATE),
+tracks manual payments; parents get a strictly-scoped read-only portal; a Vercel Cron Job hits
+a sweep endpoint every 15 min for 24h-before lesson reminders. Matches the design reference in
+`design/reference/`.
 
 ## Technical Context
 
-**Language/Version**: Python 3.12 (backend), TypeScript 5.x / Node 22 (frontend build tooling)
+**Language/Version**: TypeScript 5.x, Node.js 22, Next.js 16 (App Router, Turbopack)
 
-**Primary Dependencies**: Django 5.x, djangorestframework, djangorestframework-simplejwt,
-drf-spectacular, django-cors-headers, django-filter, celery, redis (broker/result backend),
-psycopg (PostgreSQL driver); React 18, Vite, react-router, react-i18next, TanStack Query
-(server-state/cache for the SPA), a lightweight component/styling layer matching the design
-tokens in `design/tokens.md` (plain CSS custom properties + CSS modules — no heavyweight UI kit
-needed for this surface area).
+**Primary Dependencies**: `next`, `react` 19; `drizzle-orm` + `pg` (node-postgres — same driver
+against local Postgres for tests and Neon's pooled connection string in prod, since this app
+runs on the Node.js runtime rather than Edge); `next-auth` (Auth.js v5, Credentials provider,
+JWT sessions); `bcryptjs` (password hashing); `drizzle-kit` (migrations); `vitest` (tests). No
+i18n/theming library — a small `lib/i18n.ts` dictionary + CSS custom properties from
+`design/tokens.md` cover the whole surface area (see research.md for why).
 
-**Storage**: PostgreSQL 16 (all persistent data — users, students, lessons, packages,
-payments). Redis 7 as Celery broker/result backend only (no app data cached there for MVP).
+**Storage**: Neon Postgres (serverless, provisioned via the Vercel Marketplace) — all
+persistent data. No separate cache/broker: the only "background job" (reminder sweep) is a
+stateless periodic HTTP call, not a job queue.
 
-**Testing**: pytest + pytest-django + factory_boy (backend: model/business-logic/permission
-tests); Vitest + React Testing Library (frontend: component/flow tests, kept light for MVP).
+**Testing**: Vitest against a real Postgres database (local Postgres or a Neon branch) for the
+service layer — package decrement, permission scoping, payment validation, reminder sweep
+(Constitution Principle III). No mocked DB layer.
 
-**Target Platform**: Linux containers (Docker Compose locally; AWS ECS Fargate, or a
-documented EC2 + Docker Compose fallback, in production). Browser-only frontend (no SSR).
+**Target Platform**: Vercel (Node.js runtime / Fluid Compute). No containers, no separate
+infra to operate — this replaces the previous Docker Compose/AWS deliverable.
 
-**Project Type**: Web application (separate `backend/` API and `frontend/` SPA, per Option 2
-below) — chosen because the constitution requires an API-first backend that a future React
-Native app can consume unchanged (Principle II).
+**Project Type**: Single Next.js project at the repo root (frontend UI + `/api/v1/*` backend
+in one codebase/deployment) — chosen because Vercel's idiomatic pattern for "frontend and
+backend together" is one Next.js app, not separate services (see research.md).
 
 **Performance Goals**: Not a high-throughput system (single studio, ≤10 teachers, low hundreds
-of students) — no special performance engineering beyond sane DB indexes on
-teacher/student/date lookups and pagination on list endpoints.
+of students) — no special performance engineering beyond sane DB indexes and pagination-free
+list endpoints at this scale.
 
-**Constraints**: Parent-scoped queries MUST be enforced at the ORM/queryset level, never only
-in the serializer (Constitution Principle I). No secrets committed; all config via environment
-variables with a checked-in `.env.example`.
+**Constraints**: Parent-scoped queries MUST be enforced at the SQL level via `lib/rbac.ts`,
+never only in a component (Constitution Principle I). No secrets committed; all config via
+environment variables (Vercel-managed in prod, `.env.local` locally) with a checked-in
+`.env.example`.
 
 **Scale/Scope**: MVP: 1 studio-scale deployment per install (not multi-studio SaaS in this
-phase), ≤10 teachers, ≤~300 students, ~6 REST resource groups (auth, studios/teachers,
-students/parents, packages, lessons, payments), ~15-20 screens/views across teacher and parent
-UI combined.
+phase), ≤10 teachers, ≤~300 students, ~6 API resource groups (auth, studios/teachers,
+students/parents, packages, lessons, payments), ~10 pages across teacher and parent UI combined.
 
 ## Constitution Check
 
@@ -59,12 +65,12 @@ UI combined.
 
 | Principle | Check | Status |
 |---|---|---|
-| I. Tenant Isolation & RBAC | DRF permission classes + queryset-level filtering per role; permission-boundary tests required for every Student/Lesson/Package/Payment endpoint | PASS (enforced in data-model/contracts design below) |
-| II. API-First Architecture | Django is API-only (DRF), SPA is a pure REST client; no view logic depends on the React SPA's shape | PASS |
-| III. Test-First on Core Business Logic | Package decrement, payment status transitions, and permission boundaries are explicitly scoped as required test areas in tasks.md | PASS (enforced at task-planning stage, §Phase 2) |
+| I. Tenant Isolation & RBAC | `lib/rbac.ts` scoping helpers used by every service-layer query; permission tests required for Student/Lesson/Package/Payment | PASS |
+| II. API-First Architecture | `lib/services/*` is framework-agnostic; both the web UI and `/api/v1/*` Route Handlers call it — no logic lives only in a page component | PASS |
+| III. Test-First on Core Business Logic | Package decrement, payment validation, and permission boundaries are explicitly scoped as required test areas in tasks.md | PASS |
 | IV. MVP Scope Discipline | No payment gateway, mobile app, video, file library, recital planning, or extra languages in this plan | PASS |
-| V. Production-Quality Codebase | Real serializers/viewsets per app, migrations per model, env-based settings, drf-spectacular schema | PASS |
-| VI. Bilingual & Themeable UI | react-i18next with en/it resource bundles from day one; CSS custom properties driving a `data-theme` attribute for light/dark | PASS |
+| V. Production-Quality Codebase | Service layer separated from route/page code, Drizzle migrations per schema change, env-based config | PASS |
+| VI. Bilingual & Themeable UI | `lib/i18n.ts` dictionaries from day one; CSS custom properties driving a `data-theme` attribute for light/dark | PASS |
 
 No violations — Complexity Tracking table below stays empty.
 
@@ -85,47 +91,43 @@ specs/001-musicstudio-mvp/
 ### Source Code (repository root)
 
 ```text
-backend/
-├── config/                    # Django project: settings/{base,dev,prod}.py, urls.py, celery.py
-├── apps/
-│   ├── accounts/               # User model (role: teacher/studio_owner/parent), JWT views
-│   ├── studios/                # Studio, Teacher
-│   ├── students/                # Student, ParentAccount, parent<->student link
-│   ├── packages/                # Package + decrement business logic
-│   ├── lessons/                 # Lesson, completion flow (decrements Package)
-│   ├── payments/                # Payment
-│   └── notifications/           # Celery tasks: 24h reminder, low-package warning
-├── manage.py
-├── pyproject.toml               # deps + pytest config
-└── tests/                       # cross-app integration/permission tests (per-app unit tests live in apps/*/tests/)
+app/
+├── layout.tsx, page.tsx, globals.css   # root layout (theme/i18n cookies), "/" role redirect
+├── login/                               # LoginForm (client) + signInAction
+├── dashboard/                           # teacher/studio_owner dashboard (Server Component)
+├── students/, students/[id]/            # roster, student detail
+├── payments/                            # payments list + register form
+├── parent/                              # parent portal (searchParams-driven student switch)
+├── actions/                             # Server Actions: lessons.ts, payments.ts, auth.ts
+└── api/
+    ├── auth/[...nextauth]/               # Auth.js handler
+    ├── v1/                               # REST surface: students, lessons, packages, payments, dashboard
+    └── cron/reminders/                   # Vercel Cron target (Bearer CRON_SECRET)
 
-frontend/
-├── src/
-│   ├── api/                     # typed REST client (per resource)
-│   ├── auth/                    # JWT storage/refresh, role-based route guards
-│   ├── features/
-│   │   ├── teacher/              # dashboard, roster, student detail, payments
-│   │   └── parent/                # parent portal views
-│   ├── components/               # shared UI primitives (cards, calendar grid, nav)
-│   ├── theme/                     # CSS custom properties, light/dark tokens (design/tokens.md)
-│   ├── i18n/                      # en.json, it.json, react-i18next setup
-│   └── routes/
-├── index.html
-├── vite.config.ts
-└── package.json
+lib/
+├── db/schema.ts, db/index.ts            # Drizzle schema + lazy db client
+├── auth.ts                              # Auth.js config (Credentials, JWT sessions)
+├── rbac.ts                              # Constitution Principle I choke point (scoping helpers)
+├── i18n.ts, get-locale.ts               # dictionaries (client-safe) / cookie read (server-only)
+└── services/                            # lessons, students, packages, payments, dashboard,
+                                          # reminders, email — framework-agnostic business logic
 
-infra/
-├── docker-compose.yml            # django, postgres, redis, celery worker, celery beat, frontend dev server
-├── backend.Dockerfile
-├── frontend.Dockerfile
-└── aws/                          # ECS task defs (or EC2 + Docker Compose doc) — deployment deliverable
+components/                              # Sidebar, ThemeToggle, LanguageToggle, WeekGrid,
+                                          # LessonCompleteModal
+types/next-auth.d.ts                     # Session/User/JWT module augmentation
+proxy.ts                                 # route protection (Next.js 16 middleware rename)
+vercel.json                              # cron schedule
+drizzle.config.ts
+tests/                                   # Vitest: lessons, permissions, payments, reminders
+scripts/seed.ts                          # demo data (see quickstart.md)
 
-design/                           # already present: reference .dc.html artboards + tokens.md
+design/                                  # already present: reference .dc.html artboards + tokens.md
 ```
 
-**Structure Decision**: Option 2 (separate `backend/` API + `frontend/` SPA), per Constitution
-Principle II — the API must stand on its own for a future React Native client. `infra/` holds
-the Docker Compose/AWS deployment deliverable called out explicitly in the brief.
+**Structure Decision**: single Next.js project at the repo root — Vercel's idiomatic "frontend
++ backend together" shape (see research.md "Local dev & deployment"). `lib/services/*` is the
+framework-agnostic core Constitution Principle II requires; both the UI and `/api/v1/*` call
+into it, so a future React Native app only needs the latter.
 
 ## Complexity Tracking
 

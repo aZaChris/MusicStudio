@@ -1,12 +1,18 @@
 <!--
 Sync Impact Report
-Version change: (template) → 1.0.0
-Modified principles: n/a (initial ratification)
-Added sections: I. Tenant Isolation & RBAC, II. API-First Architecture, III. Test-First on Business Logic,
-  IV. MVP Scope Discipline, V. Production-Quality Codebase, VI. Bilingual & Themeable UI;
-  Additional Constraints; Development Workflow; Governance
+Version change: 1.0.0 → 2.0.0
+Modified principles: II. API-First Architecture (DRF viewsets → Next.js Route Handlers under
+  /api/v1/, same "future mobile client" guarantee); V. Production-Quality Codebase (drf-spectacular/
+  Django migrations → typed service layer/Drizzle migrations)
+Added sections: none (redefinition, not addition)
 Removed sections: none
-Templates requiring updates: ✅ plan-template.md (Constitution Check section — generic, compatible as-is)
+Modified: Additional Constraints (full stack swap: Django/DRF/Celery/Docker/AWS → Next.js/
+  Drizzle/Neon/Auth.js/Vercel Cron/Vercel, all on one platform); Development Workflow (branch
+  description updated to Next.js)
+Reason for MAJOR bump: the user decided mid-build to deploy backend and frontend together on
+  Vercel instead of Django/DRF + Docker/AWS — the concrete stack Principles II and V point at is
+  redefined, not just clarified. Principle intent (API-first, production-quality) is unchanged.
+Templates requiring updates: ✅ plan-template.md (generic, compatible as-is)
   ✅ spec-template.md (generic, compatible as-is)  ✅ tasks-template.md (generic, compatible as-is)
 Follow-up TODOs: none
 -->
@@ -17,24 +23,27 @@ Follow-up TODOs: none
 
 ### I. Tenant Isolation & RBAC (NON-NEGOTIABLE)
 A parent account MUST NEVER be able to read, list, or mutate another family's data through
-any API endpoint, regardless of what the UI hides. Every DRF viewset/queryset MUST filter by
-the requesting user's role and ownership at the ORM query level (not just serializer field
-hiding). Role checks (teacher, studio_owner, parent) MUST be enforced via DRF permission
-classes, not ad-hoc view logic. Every new endpoint that touches Student, Lesson, Package, or
-Payment data MUST ship with a permission-boundary test proving cross-tenant access is denied
-(403/404), before it is considered done.
+any code path, regardless of what the UI hides. Every query touching Student, Lesson, Package,
+or Payment data MUST be scoped by the requesting user's role and ownership at the SQL level
+(via the `lib/rbac.ts` scoping helpers), never by hiding fields in a component after an
+unscoped fetch. Role checks (teacher, studio_owner, parent) MUST be enforced in the service
+layer, not left to UI conditionals. Every new Route Handler / Server Action that touches this
+data MUST ship with a test proving cross-tenant access is denied, before it is considered done.
 Rationale: this is a multi-tenant system handling other people's children's data and payment
 records; a leaked query is not a bug to fix later, it is the one failure mode that ends trust
 in the product.
 
 ### II. API-First Architecture
-The backend is a Django REST Framework API with no server-side rendering of application
-views (Django admin excluded). All product features MUST be reachable through the documented
-REST API — the React SPA is one client among future clients. Do not couple business logic to
-the SPA's shape; a future React Native app MUST be able to consume the same endpoints without
-backend changes beyond what any new feature would need anyway.
-Rationale: a native mobile app on the same API is explicitly planned next; retrofitting an
-API onto a template-coupled backend is far more expensive than building API-first now.
+Business logic lives in a framework-agnostic service layer (`lib/services/*`), called from
+BOTH the Next.js UI (Server Components for reads, Server Actions for mutations) AND a
+documented REST API under `/api/v1/` (Next.js Route Handlers). The web UI is one client among
+future clients, not the source of truth for what the backend can do. Do not couple business
+logic to the web UI's shape; a future React Native app MUST be able to consume `/api/v1/`
+without backend changes beyond what any new feature would need anyway.
+Rationale: a native mobile app on the same API is explicitly planned next; retrofitting an API
+onto UI-coupled logic is far more expensive than keeping the service layer framework-agnostic
+now — this also happens to be idiomatic Next.js (Server Components fetch directly, Route
+Handlers exist for external/API consumers), so it costs nothing extra today.
 
 ### III. Test-First on Core Business Logic
 The following MUST have automated tests before a feature is merged: package lesson-count
@@ -56,12 +65,12 @@ Rationale: this is a portfolio MVP with a defined success criterion; scope creep
 primary risk to ever finishing it.
 
 ### V. Production-Quality Codebase
-Code MUST read as something a team would deploy, not a tutorial: real serializers and
-viewsets (no fat views with inline SQL-equivalent logic), migrations committed for every
-model change, environment-based settings (no secrets committed, `.env.example` kept current),
-and OpenAPI schema generation (drf-spectacular) kept accurate as the API evolves.
-Rationale: this project exists in part to demonstrate professional-grade backend work; shortcuts
-that wouldn't survive a code review shouldn't survive here either.
+Code MUST read as something a team would deploy, not a tutorial: business logic lives in
+`lib/services/*`, not inlined in page components or route handlers; Drizzle migrations
+committed for every schema change; environment-based config (no secrets committed,
+`.env.example` kept current); TypeScript strict mode with no untyped `any` on the data layer.
+Rationale: this project exists in part to demonstrate professional-grade work; shortcuts that
+wouldn't survive a code review shouldn't survive here either.
 
 ### VI. Bilingual & Themeable UI
 The frontend MUST support English and Italian (IT is a first-class locale, not an
@@ -73,14 +82,18 @@ components are built hardcoded is expensive and error-prone.
 
 ## Additional Constraints
 
-- **Stack**: Django + DRF + PostgreSQL + Celery/Redis (backend); React + Vite + TypeScript SPA
-  (frontend); JWT auth (djangorestframework-simplejwt); Docker Compose for local dev; AWS
-  container deployment (ECS or documented EC2 + Docker Compose) as a deliverable, not an
-  afterthought.
+- **Stack**: Next.js (App Router, TypeScript) for both frontend and backend, deployed as one
+  Vercel project; Drizzle ORM + Neon Postgres (Vercel Marketplace) for persistence; Auth.js
+  (Credentials provider, JWT sessions) for authentication — no third-party auth vendor, because
+  accounts are invite-only (teachers/admins provision parents) rather than public self-signup,
+  so a custom-role credentials flow against our own `users` table is the better fit than a
+  social-login-oriented SaaS auth product; Vercel Cron Jobs replace the Celery Beat sweep for
+  lesson reminders (the only "background job" in this MVP is a periodic idempotent scan, which
+  a scheduled HTTP endpoint handles without needing a queue/worker).
 - **No payment gateway**: payments are recorded manually (cash/bank transfer/manual entry)
   for MVP — see Principle IV.
-- **Secrets**: never committed; all environments configured via env vars, with a checked-in
-  `.env.example` documenting required keys.
+- **Secrets**: never committed; all environments configured via env vars (Vercel-managed in
+  prod, `.env.local` locally), with a checked-in `.env.example` documenting required keys.
 
 ## Development Workflow
 
@@ -89,9 +102,9 @@ components are built hardcoded is expensive and error-prone.
   trivial fix is discouraged.
 - Every PR/change touching Student, Lesson, Package, or Payment data is self-reviewed against
   Principle I and III before being considered complete.
-- Two long-lived branches exist for this product: `web` (this Django/DRF + React platform) and
-  a future `app` branch (React Native, same API). Work stays on the branch matching its
-  target client.
+- Two long-lived branches exist for this product: `web` (this Next.js platform, deployed on
+  Vercel) and a future `app` branch (React Native, same `/api/v1/` surface). Work stays on the
+  branch matching its target client.
 
 ## Governance
 
@@ -102,4 +115,4 @@ materially expanded; PATCH: clarification/wording). Any change that touches Stud
 Package, or Payment data must be checked against Principle I and III at review time; violations
 must be fixed or explicitly justified in the PR description before merge.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-09-17
+**Version**: 2.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-09-17
