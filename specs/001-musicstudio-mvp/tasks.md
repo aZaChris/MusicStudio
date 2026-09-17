@@ -132,32 +132,32 @@ registration.
 
 ### Tests for User Story 2
 
-- [ ] T029 [P] [US2] Test payment creation rejects a `package`/`student` mismatch (400) and
+- [x] T029 [P] [US2] Test payment creation rejects a `package`/`student` mismatch (400) and
       payment status transitions (pending→paid/overdue) in
       `backend/apps/payments/tests/test_payments.py`
-- [ ] T030 [P] [US2] Test roster/student-detail endpoint scoping (teacher sees only own
+- [x] T030 [P] [US2] Test roster/student-detail endpoint scoping (teacher sees only own
       students; studio_owner sees studio-wide) in
       `backend/apps/students/tests/test_permissions.py`
 
 ### Implementation for User Story 2
 
-- [ ] T031 [P] [US2] `Payment` model + migration in `backend/apps/payments/models.py`
-- [ ] T032 [US2] `PackageSerializer`/`PackageViewSet` (create = renewal action) in
+- [x] T031 [P] [US2] `Payment` model + migration in `backend/apps/payments/models.py`
+- [x] T032 [US2] `PackageSerializer`/`PackageViewSet` (create = renewal action) in
       `backend/apps/packages/serializers.py`, `backend/apps/packages/views.py` (depends on T020)
-- [ ] T033 [US2] `StudentSerializer` (nested `active_package` + payment status) and
+- [x] T033 [US2] `StudentSerializer` (nested `active_package` + payment status) and
       `StudentViewSet` (role-scoped via T012, `/students/{id}/lessons/`) in
       `backend/apps/students/serializers.py`, `backend/apps/students/views.py`
-- [ ] T034 [US2] `PaymentSerializer`/`PaymentViewSet` (mismatch validation from T029) in
+- [x] T034 [US2] `PaymentSerializer`/`PaymentViewSet` (mismatch validation from T029) in
       `backend/apps/payments/serializers.py`, `backend/apps/payments/views.py`
-- [ ] T035 [US2] URL routing for students/packages/payments in `backend/apps/students/urls.py`,
+- [x] T035 [US2] URL routing for students/packages/payments in `backend/apps/students/urls.py`,
       `backend/apps/packages/urls.py`, `backend/apps/payments/urls.py`
-- [ ] T036 [US2] Roster page (table: student, package, remaining, payment status, low-package
+- [x] T036 [US2] Roster page (table: student, package, remaining, payment status, low-package
       flag) in `frontend/src/features/teacher/Roster.tsx`
-- [ ] T037 [US2] Student detail page (lesson history, attendance, notes, package/renewal) in
+- [x] T037 [US2] Student detail page (lesson history, attendance, notes, package/renewal) in
       `frontend/src/features/teacher/StudentDetail.tsx`
-- [ ] T038 [US2] Payments list + "register payment" form in
+- [x] T038 [US2] Payments list + "register payment" form in
       `frontend/src/features/teacher/Payments.tsx`
-- [ ] T039 [US2] TanStack Query hooks for students/packages/payments in
+- [x] T039 [US2] TanStack Query hooks for students/packages/payments in
       `frontend/src/features/teacher/api/{students,packages,payments}.ts`
 
 **Checkpoint**: US1 + US2 both work independently — full teacher-side loop complete.
