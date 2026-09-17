@@ -4,11 +4,16 @@ import { getDb } from "../db";
 import { lessons, parentAccounts, parentStudentLinks, students, users } from "../db/schema";
 import { renderReminderEmail } from "./email";
 
-const WINDOW_START_MS = (23 * 60 + 45) * 60 * 1000;
-const WINDOW_END_MS = 24 * 60 * 60 * 1000;
+// ponytail: Vercel Hobby plan only allows daily cron jobs (see vercel.json —
+// a 15-min cadence was the original design but got rejected at deploy time),
+// so the sweep runs once/day and catches everything in the next 48h instead
+// of a narrow 24h-exact window. Upgrade to Pro + narrow this back to a
+// 23h45m-24h window if per-lesson "exactly 24h before" timing matters later.
+const WINDOW_START_MS = 0;
+const WINDOW_END_MS = 48 * 60 * 60 * 1000;
 
 /**
- * Celery-Beat-equivalent sweep, invoked by Vercel Cron every 15 min.
+ * Daily reminder sweep (Vercel Cron, see vercel.json).
  * Idempotent via `reminderSentAt` — safe to re-run the same window twice.
  * Only `scheduled` lessons are considered (cancelled/no_show are skipped).
  */

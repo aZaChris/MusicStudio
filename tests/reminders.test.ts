@@ -51,10 +51,10 @@ describe("sendLessonReminders", () => {
     expect(second.sent).toBe(0);
   });
 
-  it("skips a lesson outside the 24h window", async () => {
+  it("skips a lesson outside the (daily-cadence) 48h window", async () => {
     const teacher = await createTeacher();
     const student = await createStudent(teacher.id);
-    await createLesson(student.id, teacher.id, { startTime: new Date(Date.now() + 48 * 60 * 60 * 1000) });
+    await createLesson(student.id, teacher.id, { startTime: new Date(Date.now() + 72 * 60 * 60 * 1000) });
 
     const { sent } = await sendLessonReminders();
 

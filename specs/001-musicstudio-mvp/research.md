@@ -77,11 +77,15 @@
 
 ## Background reminders
 
-- **Decision**: a Vercel Cron Job (`vercel.json`, `*/15 * * * *`) hits
-  `GET /api/cron/reminders` (protected by a `CRON_SECRET` bearer token), which runs
-  `sendLessonReminders()`: queries `scheduled` lessons with `start_time` in the
-  23h45m–24h window and `reminder_sent_at IS NULL`, sends one email per linked parent, and
-  stamps `reminder_sent_at` for idempotency.
+- **Decision**: a Vercel Cron Job (`vercel.json`, `0 9 * * *` — once daily; the Hobby plan
+  rejects sub-daily cron schedules, so the originally-planned `*/15 * * * *` cadence isn't
+  available without a Pro plan) hits `GET /api/cron/reminders` (protected by a `CRON_SECRET`
+  bearer token), which runs `sendLessonReminders()`: queries `scheduled` lessons with
+  `start_time` in the next 48h and `reminder_sent_at IS NULL`, sends one email per linked
+  parent, and stamps `reminder_sent_at` for idempotency. A 48h window under a once-daily sweep
+  is the adaptation that keeps every lesson covered by at least one run before it happens,
+  trading exact "24h before" timing for guaranteed coverage — see the `ponytail:` comment in
+  `lib/services/reminders.ts` for the upgrade path if a Pro plan removes the constraint.
 - **Rationale**: the only "background job" this MVP needs is a periodic, idempotent sweep — not
   a job queue with retries/fan-out. Vercel Cron Jobs are the direct platform-native fit and
   remove Celery + Redis entirely (no broker/worker to run or pay for).
