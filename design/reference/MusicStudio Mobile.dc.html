@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MusicStudio — Mobile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@500;600;700&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>body { margin: 0; }</style>
+</helmet>
+<div style="min-height:100vh;background:oklch(95% 0.01 55);font-family:'Nunito Sans',sans-serif;color:oklch(22% 0.02 40);padding:40px 24px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;gap:28px">
+
+  <div style="display:flex;border-radius:9999px;overflow:hidden;border:1px solid oklch(88% 0.015 55);background:white">
+    <div onClick="{{ setTeacher }}" style="{{ toggleStyleTeacher }}">Vista Insegnante</div>
+    <div onClick="{{ setParent }}" style="{{ toggleStyleParent }}">Vista Genitore</div>
+  </div>
+
+  <div style="display:flex;gap:56px;flex-wrap:wrap;justify-content:center;align-items:flex-start">
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.04em;color:oklch(48% 0.02 45)">iOS</div>
+      <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" hint-size="402,874">
+        <div style="height:100%;display:flex;flex-direction:column;font-family:'Nunito Sans',sans-serif;position:relative">
+          <div style="flex:none;display:flex;align-items:center;gap:10px;padding:62px 16px 12px;background:white;border-bottom:1px solid oklch(91% 0.015 55)">
+            <sc-if value="{{ isTeacher }}" hint-placeholder-val="{{ true }}">
+              <div onClick="{{ toggleMenu }}" style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer">☰</div>
+            </sc-if>
+            <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:16px">{{ screenTitle }}</div>
+          </div>
+          <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ closeMenu }}" style="position:absolute;inset:0;background:rgba(0,0,0,0.35);z-index:40"></div>
+            <div style="position:absolute;top:0;left:0;bottom:0;width:210px;background:white;z-index:41;padding:96px 14px 16px;display:flex;flex-direction:column;gap:4px;box-shadow:6px 0 24px rgba(0,0,0,0.15)">
+              <div onClick="{{ goHomeAndClose }}" style="{{ drawerItemStyleHome }}">Home</div>
+              <div onClick="{{ goRosterAndClose }}" style="{{ drawerItemStyleRoster }}">Studenti</div>
+              <div onClick="{{ goPaymentsAndClose }}" style="{{ drawerItemStylePayments }}">Pagamenti</div>
+            </div>
+          </sc-if>
+          <div style="flex:1;overflow:auto;padding:16px 18px 20px">
+
+            <sc-if value="{{ isTeacher }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ showHome }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:20px">
+                  <div>
+                    <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:21px">Ciao, Anna 👋</div>
+                    <div style="font-size:12.5px;color:oklch(48% 0.02 45);margin-top:2px">{{ todayLabel }}</div>
+                  </div>
+                  <div style="display:flex;gap:10px">
+                    <div style="flex:1;background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:20px">{{ activeStudentsCount }}</div>
+                      <div style="font-size:11.5px;color:oklch(48% 0.02 45)">studenti attivi</div>
+                    </div>
+                    <div style="flex:1;background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:20px;color:oklch(60% 0.19 28)">{{ pendingPaymentsCount }}</div>
+                      <div style="font-size:11.5px;color:oklch(48% 0.02 45)">pagamenti sospesi</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-weight:800;font-size:13px;margin-bottom:8px">Prossime lezioni</div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ nextLessons }}" as="lsn" hint-placeholder-count="3">
+                        <div style="display:flex;align-items:center;gap:10px;background:white;border-radius:12px;padding:10px;border:1px solid oklch(91% 0.015 55)">
+                          <div style="width:34px;height:34px;border-radius:9px;background:oklch(93% 0.02 55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:oklch(45% 0.05 45);flex:none">{{ lsn.initials }}</div>
+                          <div style="flex:1;min-width:0">
+                            <div style="font-weight:700;font-size:13px">{{ lsn.student }}</div>
+                            <div style="font-size:11.5px;color:oklch(50% 0.02 45)">{{ lsn.when }} · {{ lsn.instrument }}</div>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+                      <div style="font-weight:800;font-size:13px">Pagamenti in sospeso</div>
+                      <div onClick="{{ goPayments }}" style="font-size:12px;font-weight:700;color:oklch(58% 0.15 50);cursor:pointer">Vedi tutti</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ pendingPaymentsPreview }}" as="p" hint-placeholder-count="2">
+                        <div style="display:flex;justify-content:space-between;align-items:center;background:white;border-radius:12px;padding:10px 12px;border:1px solid oklch(91% 0.015 55)">
+                          <div>
+                            <div style="font-weight:700;font-size:12.5px">{{ p.student }}</div>
+                            <div style="font-size:11px;color:oklch(50% 0.02 45)">Scadenza {{ p.dueDate }}</div>
+                          </div>
+                          <div style="font-weight:800;font-size:12.5px;color:{{ p.color }}">{{ p.amount }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ showRoster }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:20px">Studenti</div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ studentsView }}" as="st" hint-placeholder-count="6">
+                      <div onClick="{{ st.openDetail }}" style="background:white;border-radius:12px;padding:12px;border:1px solid oklch(91% 0.015 55);display:flex;align-items:center;gap:10px">
+                        <div style="width:36px;height:36px;border-radius:10px;background:oklch(93% 0.02 55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12.5px;color:oklch(45% 0.05 45);flex:none">{{ st.initials }}</div>
+                        <div style="flex:1;min-width:0">
+                          <div style="font-weight:700;font-size:13.5px">{{ st.name }}</div>
+                          <div style="font-size:11.5px;color:oklch(50% 0.02 45)">{{ st.instrument }} · {{ st.pkg.remaining }} lezioni rimaste</div>
+                        </div>
+                        <span style="font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:100px;background:{{ st.pay.bg }};color:{{ st.pay.color }};flex:none">{{ st.pay.label }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+                <sc-if value="{{ selectedStudent }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:16px">
+                    <div onClick="{{ goRoster }}" style="font-size:13px;font-weight:700;color:oklch(50% 0.02 45)">‹ Studenti</div>
+                    <div style="display:flex;align-items:center;gap:12px">
+                      <div style="width:46px;height:46px;border-radius:12px;background:oklch(93% 0.02 55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:oklch(45% 0.05 45)">{{ selectedStudent.initials }}</div>
+                      <div>
+                        <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:18px">{{ selectedStudent.name }}</div>
+                        <div style="font-size:12px;color:oklch(48% 0.02 45)">{{ selectedStudent.instrument }}</div>
+                      </div>
+                    </div>
+                    <div style="background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                      <div style="font-size:11px;font-weight:800;color:oklch(50% 0.02 45);margin-bottom:6px">PACCHETTO</div>
+                      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:18px">{{ selectedStudent.pkg.remaining }} <span style="font-size:12px;font-weight:600;color:oklch(50% 0.02 45)">di {{ selectedStudent.packageTotal }}</span></div>
+                      <div style="height:6px;border-radius:4px;background:oklch(90% 0.012 55);margin-top:8px;overflow:hidden"><div style="height:100%;border-radius:4px;background:{{ selectedStudent.pkg.barColor }};width:{{ selectedStudent.pkg.pct }}"></div></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <div style="font-weight:800;font-size:13px">Presenze</div>
+                      <div onClick="{{ toggleAttendanceForm }}" style="cursor:pointer;font-size:11.5px;font-weight:800;color:white;background:oklch(72% 0.16 55);padding:7px 12px;border-radius:8px">+ Registra</div>
+                    </div>
+                    <sc-if value="{{ attendanceFormOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="background:oklch(97% 0.014 55);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px">
+                        <div style="display:flex;border-radius:8px;overflow:hidden;border:1px solid oklch(88% 0.015 55)">
+                          <div onClick="{{ setAttendancePresente }}" style="{{ attendanceStatusStylePresente }}">Presente</div>
+                          <div onClick="{{ setAttendanceAssente }}" style="{{ attendanceStatusStyleAssente }}">Assente</div>
+                          <div onClick="{{ setAttendanceRimandata }}" style="{{ attendanceStatusStyleRimandata }}">Rimand.</div>
+                        </div>
+                        <textarea placeholder="Nota di progresso" value="{{ attendanceDraft.note }}" onChange="{{ setAttendanceNote }}" style="padding:8px;border-radius:8px;border:1px solid oklch(88% 0.015 55);font-size:12.5px;font-family:inherit;min-height:44px"></textarea>
+                        <div style="display:flex;gap:8px;justify-content:flex-end">
+                          <div onClick="{{ toggleAttendanceForm }}" style="cursor:pointer;padding:7px 12px;font-size:12px;font-weight:700;color:oklch(45% 0.02 45)">Annulla</div>
+                          <div onClick="{{ saveAttendance }}" style="cursor:pointer;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:800;color:white;background:oklch(72% 0.16 55)">Salva</div>
+                        </div>
+                      </div>
+                    </sc-if>
+                    <div style="display:flex;flex-direction:column;gap:2px">
+                      <sc-for list="{{ selectedStudent.attendanceView }}" as="a" hint-placeholder-count="4">
+                        <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid oklch(94% 0.012 55)">
+                          <div style="width:56px;flex:none;font-size:11.5px;color:oklch(50% 0.02 45)">{{ a.date }}</div>
+                          <span style="flex:none;height:fit-content;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:{{ a.bg }};color:{{ a.color }}">{{ a.status }}</span>
+                          <div style="flex:1;font-size:12px;color:oklch(30% 0.02 45)">{{ a.note }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </sc-if>
+
+              <sc-if value="{{ showPayments }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:20px">Pagamenti</div>
+                    <div onClick="{{ togglePaymentForm }}" style="cursor:pointer;font-size:11.5px;font-weight:800;color:white;background:oklch(72% 0.16 55);padding:7px 12px;border-radius:8px">+ Registra</div>
+                  </div>
+                  <sc-if value="{{ paymentFormOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="background:white;border-radius:12px;padding:12px;border:1px solid oklch(91% 0.015 55);display:flex;flex-direction:column;gap:8px">
+                      <select value="{{ paymentDraft.studentId }}" onChange="{{ setPaymentStudent }}" style="padding:8px;border-radius:8px;border:1px solid oklch(88% 0.015 55);font-size:12.5px;font-family:inherit">
+                        <sc-for list="{{ studentOptions }}" as="opt" hint-placeholder-count="6">
+                          <option value="{{ opt.id }}">{{ opt.name }}</option>
+                        </sc-for>
+                      </select>
+                      <input type="number" placeholder="Importo (€)" value="{{ paymentDraft.amount }}" onChange="{{ setPaymentAmount }}" style="padding:8px;border-radius:8px;border:1px solid oklch(88% 0.015 55);font-size:12.5px;font-family:inherit"/>
+                      <div style="display:flex;border-radius:8px;overflow:hidden;border:1px solid oklch(88% 0.015 55)">
+                        <div onClick="{{ setMethodContanti }}" style="{{ methodStyleContanti }}">Contanti</div>
+                        <div onClick="{{ setMethodCarta }}" style="{{ methodStyleCarta }}">Carta</div>
+                        <div onClick="{{ setMethodBonifico }}" style="{{ methodStyleBonifico }}">Bonifico</div>
+                      </div>
+                      <div style="display:flex;gap:8px;justify-content:flex-end">
+                        <div onClick="{{ togglePaymentForm }}" style="cursor:pointer;padding:7px 12px;font-size:12px;font-weight:700;color:oklch(45% 0.02 45)">Annulla</div>
+                        <div onClick="{{ savePayment }}" style="cursor:pointer;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:800;color:white;background:oklch(72% 0.16 55)">Salva</div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ paymentsView }}" as="p" hint-placeholder-count="6">
+                      <div style="background:white;border-radius:12px;padding:12px;border:1px solid oklch(91% 0.015 55);display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                          <div style="font-weight:700;font-size:13px">{{ p.student }}</div>
+                          <div style="font-size:11px;color:oklch(50% 0.02 45)">{{ p.dueDate }} · {{ p.method }}</div>
+                        </div>
+                        <div style="text-align:right">
+                          <div style="font-weight:800;font-size:13px">{{ p.amount }}</div>
+                          <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</span>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isParent }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:12px;background:oklch(93% 0.02 55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:oklch(45% 0.05 45)">{{ parentChild.initials }}</div>
+                  <div>
+                    <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:18px">{{ parentChild.name }}</div>
+                    <div style="font-size:12px;color:oklch(48% 0.02 45)">{{ parentChild.instrument }}</div>
+                  </div>
+                </div>
+                <div style="background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                  <div style="font-weight:800;font-size:12.5px;margin-bottom:8px">Prossime lezioni</div>
+                  <sc-for list="{{ parentChild.upcoming }}" as="lsn" hint-placeholder-count="2">
+                    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid oklch(94% 0.012 55);font-size:12.5px">
+                      <div style="font-weight:700">{{ lsn.when }}</div>
+                      <div style="color:oklch(48% 0.02 45)">{{ lsn.instrument }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <div style="flex:1;background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                    <div style="font-size:11px;font-weight:800;color:oklch(50% 0.02 45);margin-bottom:6px">PACCHETTO</div>
+                    <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:16px">{{ parentChild.pkg.remaining }}<span style="font-size:11px;font-weight:600;color:oklch(50% 0.02 45)"> / {{ parentChild.packageTotal }}</span></div>
+                  </div>
+                  <div style="flex:1;background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                    <div style="font-size:11px;font-weight:800;color:oklch(50% 0.02 45);margin-bottom:6px">PAGAMENTO</div>
+                    <span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:100px;background:{{ parentChild.pay.bg }};color:{{ parentChild.pay.color }}">{{ parentChild.pay.label }}</span>
+                  </div>
+                </div>
+                <div style="background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                  <div style="font-weight:800;font-size:12.5px;margin-bottom:8px">Storico presenze</div>
+                  <sc-for list="{{ parentChild.attendanceView }}" as="a" hint-placeholder-count="3">
+                    <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid oklch(94% 0.012 55)">
+                      <div style="width:56px;flex:none;font-size:11.5px;color:oklch(50% 0.02 45)">{{ a.date }}</div>
+                      <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:{{ a.bg }};color:{{ a.color }};height:fit-content">{{ a.status }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+    <div style="display:flex;flex-direction:column;align-items:center;gap:14px">
+      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:13px;letter-spacing:0.04em;color:oklch(48% 0.02 45)">ANDROID</div>
+      <x-import component-from-global-scope="AndroidDevice" from="./android-frame.jsx" hint-size="412,892">
+        <div style="height:100%;display:flex;flex-direction:column;font-family:'Nunito Sans',sans-serif;position:relative">
+          <div style="flex:none;display:flex;align-items:center;gap:10px;padding:14px 16px;background:white;border-bottom:1px solid oklch(91% 0.015 55)">
+            <sc-if value="{{ isTeacher }}" hint-placeholder-val="{{ true }}">
+              <div onClick="{{ toggleMenu }}" style="width:32px;height:32px;flex:none;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer">☰</div>
+            </sc-if>
+            <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:16px">{{ screenTitle }}</div>
+          </div>
+          <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ closeMenu }}" style="position:absolute;inset:0;background:rgba(0,0,0,0.35);z-index:40"></div>
+            <div style="position:absolute;top:0;left:0;bottom:0;width:210px;background:white;z-index:41;padding:56px 14px 16px;display:flex;flex-direction:column;gap:4px;box-shadow:6px 0 24px rgba(0,0,0,0.15)">
+              <div onClick="{{ goHomeAndClose }}" style="{{ drawerItemStyleHome }}">Home</div>
+              <div onClick="{{ goRosterAndClose }}" style="{{ drawerItemStyleRoster }}">Studenti</div>
+              <div onClick="{{ goPaymentsAndClose }}" style="{{ drawerItemStylePayments }}">Pagamenti</div>
+            </div>
+          </sc-if>
+          <div style="flex:1;overflow:auto;padding:16px 18px 20px">
+
+            <sc-if value="{{ isTeacher }}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{ showHome }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:20px">
+                  <div>
+                    <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:21px">Ciao, Anna 👋</div>
+                    <div style="font-size:12.5px;color:oklch(48% 0.02 45);margin-top:2px">{{ todayLabel }}</div>
+                  </div>
+                  <div style="display:flex;gap:10px">
+                    <div style="flex:1;background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:20px">{{ activeStudentsCount }}</div>
+                      <div style="font-size:11.5px;color:oklch(48% 0.02 45)">studenti attivi</div>
+                    </div>
+                    <div style="flex:1;background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:20px;color:oklch(60% 0.19 28)">{{ pendingPaymentsCount }}</div>
+                      <div style="font-size:11.5px;color:oklch(48% 0.02 45)">pagamenti sospesi</div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-weight:800;font-size:13px;margin-bottom:8px">Prossime lezioni</div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ nextLessons }}" as="lsn" hint-placeholder-count="3">
+                        <div style="display:flex;align-items:center;gap:10px;background:white;border-radius:12px;padding:10px;border:1px solid oklch(91% 0.015 55)">
+                          <div style="width:34px;height:34px;border-radius:9px;background:oklch(93% 0.02 55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:oklch(45% 0.05 45);flex:none">{{ lsn.initials }}</div>
+                          <div style="flex:1;min-width:0">
+                            <div style="font-weight:700;font-size:13px">{{ lsn.student }}</div>
+                            <div style="font-size:11.5px;color:oklch(50% 0.02 45)">{{ lsn.when }} · {{ lsn.instrument }}</div>
+                          </div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px">
+                      <div style="font-weight:800;font-size:13px">Pagamenti in sospeso</div>
+                      <div onClick="{{ goPayments }}" style="font-size:12px;font-weight:700;color:oklch(58% 0.15 50);cursor:pointer">Vedi tutti</div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px">
+                      <sc-for list="{{ pendingPaymentsPreview }}" as="p" hint-placeholder-count="2">
+                        <div style="display:flex;justify-content:space-between;align-items:center;background:white;border-radius:12px;padding:10px 12px;border:1px solid oklch(91% 0.015 55)">
+                          <div>
+                            <div style="font-weight:700;font-size:12.5px">{{ p.student }}</div>
+                            <div style="font-size:11px;color:oklch(50% 0.02 45)">Scadenza {{ p.dueDate }}</div>
+                          </div>
+                          <div style="font-weight:800;font-size:12.5px;color:{{ p.color }}">{{ p.amount }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ showRoster }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:20px">Studenti</div>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ studentsView }}" as="st" hint-placeholder-count="6">
+                      <div onClick="{{ st.openDetail }}" style="background:white;border-radius:12px;padding:12px;border:1px solid oklch(91% 0.015 55);display:flex;align-items:center;gap:10px">
+                        <div style="width:36px;height:36px;border-radius:10px;background:oklch(93% 0.02 55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12.5px;color:oklch(45% 0.05 45);flex:none">{{ st.initials }}</div>
+                        <div style="flex:1;min-width:0">
+                          <div style="font-weight:700;font-size:13.5px">{{ st.name }}</div>
+                          <div style="font-size:11.5px;color:oklch(50% 0.02 45)">{{ st.instrument }} · {{ st.pkg.remaining }} lezioni rimaste</div>
+                        </div>
+                        <span style="font-size:10.5px;font-weight:800;padding:3px 8px;border-radius:100px;background:{{ st.pay.bg }};color:{{ st.pay.color }};flex:none">{{ st.pay.label }}</span>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ showDetail }}" hint-placeholder-val="{{ false }}">
+                <sc-if value="{{ selectedStudent }}" hint-placeholder-val="{{ false }}">
+                  <div style="display:flex;flex-direction:column;gap:16px">
+                    <div onClick="{{ goRoster }}" style="font-size:13px;font-weight:700;color:oklch(50% 0.02 45)">‹ Studenti</div>
+                    <div style="display:flex;align-items:center;gap:12px">
+                      <div style="width:46px;height:46px;border-radius:12px;background:oklch(93% 0.02 55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:oklch(45% 0.05 45)">{{ selectedStudent.initials }}</div>
+                      <div>
+                        <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:18px">{{ selectedStudent.name }}</div>
+                        <div style="font-size:12px;color:oklch(48% 0.02 45)">{{ selectedStudent.instrument }}</div>
+                      </div>
+                    </div>
+                    <div style="background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                      <div style="font-size:11px;font-weight:800;color:oklch(50% 0.02 45);margin-bottom:6px">PACCHETTO</div>
+                      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:18px">{{ selectedStudent.pkg.remaining }} <span style="font-size:12px;font-weight:600;color:oklch(50% 0.02 45)">di {{ selectedStudent.packageTotal }}</span></div>
+                      <div style="height:6px;border-radius:4px;background:oklch(90% 0.012 55);margin-top:8px;overflow:hidden"><div style="height:100%;border-radius:4px;background:{{ selectedStudent.pkg.barColor }};width:{{ selectedStudent.pkg.pct }}"></div></div>
+                    </div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                      <div style="font-weight:800;font-size:13px">Presenze</div>
+                      <div onClick="{{ toggleAttendanceForm }}" style="cursor:pointer;font-size:11.5px;font-weight:800;color:white;background:oklch(72% 0.16 55);padding:7px 12px;border-radius:8px">+ Registra</div>
+                    </div>
+                    <sc-if value="{{ attendanceFormOpen }}" hint-placeholder-val="{{ false }}">
+                      <div style="background:oklch(97% 0.014 55);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:8px">
+                        <div style="display:flex;border-radius:8px;overflow:hidden;border:1px solid oklch(88% 0.015 55)">
+                          <div onClick="{{ setAttendancePresente }}" style="{{ attendanceStatusStylePresente }}">Presente</div>
+                          <div onClick="{{ setAttendanceAssente }}" style="{{ attendanceStatusStyleAssente }}">Assente</div>
+                          <div onClick="{{ setAttendanceRimandata }}" style="{{ attendanceStatusStyleRimandata }}">Rimand.</div>
+                        </div>
+                        <textarea placeholder="Nota di progresso" value="{{ attendanceDraft.note }}" onChange="{{ setAttendanceNote }}" style="padding:8px;border-radius:8px;border:1px solid oklch(88% 0.015 55);font-size:12.5px;font-family:inherit;min-height:44px"></textarea>
+                        <div style="display:flex;gap:8px;justify-content:flex-end">
+                          <div onClick="{{ toggleAttendanceForm }}" style="cursor:pointer;padding:7px 12px;font-size:12px;font-weight:700;color:oklch(45% 0.02 45)">Annulla</div>
+                          <div onClick="{{ saveAttendance }}" style="cursor:pointer;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:800;color:white;background:oklch(72% 0.16 55)">Salva</div>
+                        </div>
+                      </div>
+                    </sc-if>
+                    <div style="display:flex;flex-direction:column;gap:2px">
+                      <sc-for list="{{ selectedStudent.attendanceView }}" as="a" hint-placeholder-count="4">
+                        <div style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid oklch(94% 0.012 55)">
+                          <div style="width:56px;flex:none;font-size:11.5px;color:oklch(50% 0.02 45)">{{ a.date }}</div>
+                          <span style="flex:none;height:fit-content;font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:{{ a.bg }};color:{{ a.color }}">{{ a.status }}</span>
+                          <div style="flex:1;font-size:12px;color:oklch(30% 0.02 45)">{{ a.note }}</div>
+                        </div>
+                      </sc-for>
+                    </div>
+                  </div>
+                </sc-if>
+              </sc-if>
+
+              <sc-if value="{{ showPayments }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex;flex-direction:column;gap:14px">
+                  <div style="display:flex;justify-content:space-between;align-items:center">
+                    <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:20px">Pagamenti</div>
+                    <div onClick="{{ togglePaymentForm }}" style="cursor:pointer;font-size:11.5px;font-weight:800;color:white;background:oklch(72% 0.16 55);padding:7px 12px;border-radius:8px">+ Registra</div>
+                  </div>
+                  <sc-if value="{{ paymentFormOpen }}" hint-placeholder-val="{{ false }}">
+                    <div style="background:white;border-radius:12px;padding:12px;border:1px solid oklch(91% 0.015 55);display:flex;flex-direction:column;gap:8px">
+                      <select value="{{ paymentDraft.studentId }}" onChange="{{ setPaymentStudent }}" style="padding:8px;border-radius:8px;border:1px solid oklch(88% 0.015 55);font-size:12.5px;font-family:inherit">
+                        <sc-for list="{{ studentOptions }}" as="opt" hint-placeholder-count="6">
+                          <option value="{{ opt.id }}">{{ opt.name }}</option>
+                        </sc-for>
+                      </select>
+                      <input type="number" placeholder="Importo (€)" value="{{ paymentDraft.amount }}" onChange="{{ setPaymentAmount }}" style="padding:8px;border-radius:8px;border:1px solid oklch(88% 0.015 55);font-size:12.5px;font-family:inherit"/>
+                      <div style="display:flex;border-radius:8px;overflow:hidden;border:1px solid oklch(88% 0.015 55)">
+                        <div onClick="{{ setMethodContanti }}" style="{{ methodStyleContanti }}">Contanti</div>
+                        <div onClick="{{ setMethodCarta }}" style="{{ methodStyleCarta }}">Carta</div>
+                        <div onClick="{{ setMethodBonifico }}" style="{{ methodStyleBonifico }}">Bonifico</div>
+                      </div>
+                      <div style="display:flex;gap:8px;justify-content:flex-end">
+                        <div onClick="{{ togglePaymentForm }}" style="cursor:pointer;padding:7px 12px;font-size:12px;font-weight:700;color:oklch(45% 0.02 45)">Annulla</div>
+                        <div onClick="{{ savePayment }}" style="cursor:pointer;padding:7px 14px;border-radius:8px;font-size:12px;font-weight:800;color:white;background:oklch(72% 0.16 55)">Salva</div>
+                      </div>
+                    </div>
+                  </sc-if>
+                  <div style="display:flex;flex-direction:column;gap:8px">
+                    <sc-for list="{{ paymentsView }}" as="p" hint-placeholder-count="6">
+                      <div style="background:white;border-radius:12px;padding:12px;border:1px solid oklch(91% 0.015 55);display:flex;justify-content:space-between;align-items:center">
+                        <div>
+                          <div style="font-weight:700;font-size:13px">{{ p.student }}</div>
+                          <div style="font-size:11px;color:oklch(50% 0.02 45)">{{ p.dueDate }} · {{ p.method }}</div>
+                        </div>
+                        <div style="text-align:right">
+                          <div style="font-weight:800;font-size:13px">{{ p.amount }}</div>
+                          <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:{{ p.bg }};color:{{ p.color }}">{{ p.label }}</span>
+                        </div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-if>
+            </sc-if>
+
+            <sc-if value="{{ isParent }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;flex-direction:column;gap:16px">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="width:44px;height:44px;border-radius:12px;background:oklch(93% 0.02 55);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:oklch(45% 0.05 45)">{{ parentChild.initials }}</div>
+                  <div>
+                    <div style="font-family:'Poppins',sans-serif;font-weight:600;font-size:18px">{{ parentChild.name }}</div>
+                    <div style="font-size:12px;color:oklch(48% 0.02 45)">{{ parentChild.instrument }}</div>
+                  </div>
+                </div>
+                <div style="background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                  <div style="font-weight:800;font-size:12.5px;margin-bottom:8px">Prossime lezioni</div>
+                  <sc-for list="{{ parentChild.upcoming }}" as="lsn" hint-placeholder-count="2">
+                    <div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid oklch(94% 0.012 55);font-size:12.5px">
+                      <div style="font-weight:700">{{ lsn.when }}</div>
+                      <div style="color:oklch(48% 0.02 45)">{{ lsn.instrument }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <div style="flex:1;background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                    <div style="font-size:11px;font-weight:800;color:oklch(50% 0.02 45);margin-bottom:6px">PACCHETTO</div>
+                    <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:16px">{{ parentChild.pkg.remaining }}<span style="font-size:11px;font-weight:600;color:oklch(50% 0.02 45)"> / {{ parentChild.packageTotal }}</span></div>
+                  </div>
+                  <div style="flex:1;background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                    <div style="font-size:11px;font-weight:800;color:oklch(50% 0.02 45);margin-bottom:6px">PAGAMENTO</div>
+                    <span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:100px;background:{{ parentChild.pay.bg }};color:{{ parentChild.pay.color }}">{{ parentChild.pay.label }}</span>
+                  </div>
+                </div>
+                <div style="background:white;border-radius:14px;padding:14px;border:1px solid oklch(91% 0.015 55)">
+                  <div style="font-weight:800;font-size:12.5px;margin-bottom:8px">Storico presenze</div>
+                  <sc-for list="{{ parentChild.attendanceView }}" as="a" hint-placeholder-count="3">
+                    <div style="display:flex;gap:10px;padding:7px 0;border-bottom:1px solid oklch(94% 0.012 55)">
+                      <div style="width:56px;flex:none;font-size:11.5px;color:oklch(50% 0.02 45)">{{ a.date }}</div>
+                      <span style="font-size:10px;font-weight:800;padding:2px 7px;border-radius:100px;background:{{ a.bg }};color:{{ a.color }};height:fit-content">{{ a.status }}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-if>
+
+          </div>
+        </div>
+      </x-import>
+    </div>
+
+  </div>
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    view: 'teacher',
+    screen: 'home',
+    selectedStudentId: 1,
+    attendanceFormOpen: false,
+    attendanceDraft: { status: 'presente', note: '' },
+    paymentFormOpen: false,
+    paymentDraft: { studentId: 1, amount: '', method: 'Contanti' },
+    menuOpen: false,
+    students: [
+      { id: 1, name: 'Giulia Bianchi', initials: 'GB', instrument: 'Pianoforte', packageTotal: 10, packageUsed: 8, paymentStatus: 'pagato',
+        attendance: [{date:'02/09',status:'presente',note:'Ottimo lavoro sulle scale in Do maggiore.'},{date:'26/08',status:'presente',note:'Ripasso Chopin, Notturno op.9.'},{date:'19/08',status:'assente',note:''},{date:'12/08',status:'presente',note:'Iniziato nuovo brano.'}] },
+      { id: 2, name: 'Marco Rossi', initials: 'MR', instrument: 'Chitarra', packageTotal: 8, packageUsed: 3, paymentStatus: 'in_sospeso',
+        attendance: [{date:'10/09',status:'presente',note:'Accordi barrè, buoni progressi.'},{date:'03/09',status:'presente',note:''}] },
+      { id: 3, name: 'Sara Conti', initials: 'SC', instrument: 'Violino', packageTotal: 12, packageUsed: 11, paymentStatus: 'scaduto',
+        attendance: [{date:'11/09',status:'presente',note:'Intonazione migliorata.'},{date:'04/09',status:'rimandata',note:'Rimandata per malattia.'}] },
+      { id: 4, name: 'Luca Ferrari', initials: 'LF', instrument: 'Batteria', packageTotal: 10, packageUsed: 4, paymentStatus: 'pagato', attendance: [{date:'09/09',status:'presente',note:'Lavoro su ritmi in 6/8.'}] },
+      { id: 5, name: 'Elena Moretti', initials: 'EM', instrument: 'Canto', packageTotal: 8, packageUsed: 8, paymentStatus: 'in_sospeso', attendance: [{date:'08/09',status:'presente',note:'Pacchetto concluso, da rinnovare.'}] },
+      { id: 6, name: 'Tommaso Russo', initials: 'TR', instrument: 'Pianoforte', packageTotal: 10, packageUsed: 2, paymentStatus: 'pagato', attendance: [{date:'05/09',status:'presente',note:'Ottimo entusiasmo.'}] }
+    ],
+    payments: [
+      { id: 1, studentId: 2, student: 'Marco Rossi', amount: 120, dueDate: '20/09', method: 'Bonifico', status: 'in_sospeso' },
+      { id: 2, studentId: 3, student: 'Sara Conti', amount: 150, dueDate: '10/09', method: 'Contanti', status: 'scaduto' },
+      { id: 3, studentId: 5, student: 'Elena Moretti', amount: 96, dueDate: '18/09', method: 'Carta', status: 'in_sospeso' },
+      { id: 4, studentId: 1, student: 'Giulia Bianchi', amount: 150, dueDate: '01/09', method: 'Bonifico', status: 'pagato' },
+      { id: 5, studentId: 4, student: 'Luca Ferrari', amount: 120, dueDate: '05/09', method: 'Contanti', status: 'pagato' },
+      { id: 6, studentId: 6, student: 'Tommaso Russo', amount: 150, dueDate: '08/09', method: 'Carta', status: 'pagato' }
+    ]
+  };
+
+  paymentStyle(status) {
+    if (status === 'pagato') return { bg: 'oklch(93% 0.06 150)', color: 'oklch(38% 0.09 150)', label: 'Pagato' };
+    if (status === 'in_sospeso') return { bg: 'oklch(94% 0.06 80)', color: 'oklch(45% 0.11 70)', label: 'In sospeso' };
+    return { bg: 'oklch(93% 0.07 25)', color: 'oklch(45% 0.16 25)', label: 'Scaduto' };
+  }
+  attStyle(status) {
+    if (status === 'presente') return { bg: 'oklch(93% 0.06 150)', color: 'oklch(38% 0.09 150)' };
+    if (status === 'assente') return { bg: 'oklch(93% 0.07 25)', color: 'oklch(45% 0.16 25)' };
+    return { bg: 'oklch(94% 0.06 80)', color: 'oklch(45% 0.11 70)' };
+  }
+  pkgInfo(total, used) {
+    const remaining = total - used;
+    const pct = Math.round((used / total) * 100) + '%';
+    const barColor = remaining <= 0 ? 'oklch(60% 0.19 25)' : remaining <= 2 ? 'oklch(72% 0.14 75)' : 'oklch(65% 0.13 150)';
+    return { remaining, pct, barColor };
+  }
+  segStyle(active) {
+    return `flex:1;text-align:center;padding:8px 6px;font-size:11.5px;font-weight:700;cursor:pointer;background:${active ? 'oklch(72% 0.16 55)' : 'white'};color:${active ? 'white' : 'oklch(40% 0.02 45)'}`;
+  }
+  pillStyle(active) {
+    return `padding:10px 18px;font-size:12.5px;font-weight:800;cursor:pointer;background:${active ? 'oklch(72% 0.16 55)' : 'white'};color:${active ? 'white' : 'oklch(40% 0.02 45)'}`;
+  }
+  drawerItemStyle(active) {
+    return `padding:11px 14px;border-radius:9px;font-size:14px;font-weight:700;cursor:pointer;background:${active ? 'oklch(94% 0.03 55)' : 'transparent'};color:${active ? 'oklch(45% 0.13 50)' : 'oklch(32% 0.02 45)'}`;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const students = s.students.map(st => ({
+      ...st,
+      pkg: this.pkgInfo(st.packageTotal, st.packageUsed),
+      pay: this.paymentStyle(st.paymentStatus),
+      attendanceView: st.attendance.map(a => ({ ...a, ...this.attStyle(a.status), status: a.status.charAt(0).toUpperCase() + a.status.slice(1) })),
+      openDetail: () => this.setState({ selectedStudentId: st.id, screen: 'detail' })
+    }));
+    const selectedStudent = students.find(x => x.id === s.selectedStudentId);
+    const parentSource = students.find(x => x.id === 1);
+    const paymentsView = s.payments.map(p => ({ ...p, amount: '€' + p.amount, ...this.paymentStyle(p.status) }));
+    const pendingPaymentsPreview = paymentsView.filter(p => p.status !== 'pagato').slice(0, 2);
+
+    return {
+      isTeacher: s.view === 'teacher',
+      isParent: s.view === 'parent',
+      setTeacher: () => this.setState({ view: 'teacher' }),
+      setParent: () => this.setState({ view: 'parent' }),
+      toggleStyleTeacher: this.pillStyle(s.view === 'teacher'),
+      toggleStyleParent: this.pillStyle(s.view === 'parent'),
+
+      showHome: s.screen === 'home',
+      showRoster: s.screen === 'roster',
+      showDetail: s.screen === 'detail',
+      showPayments: s.screen === 'payments',
+      goHome: () => this.setState({ screen: 'home' }),
+      goRoster: () => this.setState({ screen: 'roster' }),
+      goPayments: () => this.setState({ screen: 'payments' }),
+      menuOpen: s.menuOpen,
+      toggleMenu: () => this.setState({ menuOpen: !s.menuOpen }),
+      closeMenu: () => this.setState({ menuOpen: false }),
+      goHomeAndClose: () => this.setState({ screen: 'home', menuOpen: false }),
+      goRosterAndClose: () => this.setState({ screen: 'roster', menuOpen: false }),
+      goPaymentsAndClose: () => this.setState({ screen: 'payments', menuOpen: false }),
+      drawerItemStyleHome: this.drawerItemStyle(s.screen === 'home'),
+      drawerItemStyleRoster: this.drawerItemStyle(s.screen === 'roster'),
+      drawerItemStylePayments: this.drawerItemStyle(s.screen === 'payments'),
+      screenTitle: s.view === 'parent' ? 'Portale Genitore' : (s.screen === 'home' ? 'Home' : s.screen === 'roster' ? 'Studenti' : s.screen === 'payments' ? 'Pagamenti' : (selectedStudent ? selectedStudent.name : 'Studente')),
+
+      todayLabel: 'Giovedì 17 Settembre',
+      activeStudentsCount: students.length,
+      pendingPaymentsCount: paymentsView.filter(p => p.status !== 'pagato').length,
+      nextLessons: [
+        { student: 'Giulia Bianchi', initials: 'GB', when: 'Oggi, 16:00', instrument: 'Pianoforte' },
+        { student: 'Marco Rossi', initials: 'MR', when: 'Oggi, 17:30', instrument: 'Chitarra' },
+        { student: 'Sara Conti', initials: 'SC', when: 'Domani, 10:00', instrument: 'Violino' }
+      ],
+      pendingPaymentsPreview,
+      studentsView: students,
+      studentOptions: students.map(st => ({ id: st.id, name: st.name })),
+      selectedStudent,
+      paymentsView,
+
+      attendanceFormOpen: s.attendanceFormOpen,
+      attendanceDraft: s.attendanceDraft,
+      toggleAttendanceForm: () => this.setState({ attendanceFormOpen: !s.attendanceFormOpen }),
+      setAttendanceNote: e => this.setState({ attendanceDraft: { ...s.attendanceDraft, note: e.target.value } }),
+      setAttendancePresente: () => this.setState({ attendanceDraft: { ...s.attendanceDraft, status: 'presente' } }),
+      setAttendanceAssente: () => this.setState({ attendanceDraft: { ...s.attendanceDraft, status: 'assente' } }),
+      setAttendanceRimandata: () => this.setState({ attendanceDraft: { ...s.attendanceDraft, status: 'rimandata' } }),
+      attendanceStatusStylePresente: this.segStyle(s.attendanceDraft.status === 'presente'),
+      attendanceStatusStyleAssente: this.segStyle(s.attendanceDraft.status === 'assente'),
+      attendanceStatusStyleRimandata: this.segStyle(s.attendanceDraft.status === 'rimandata'),
+      saveAttendance: () => {
+        const updated = s.students.map(st => {
+          if (st.id !== s.selectedStudentId) return st;
+          return { ...st, packageUsed: st.packageUsed + 1, attendance: [{ date: 'Oggi', status: s.attendanceDraft.status, note: s.attendanceDraft.note }, ...st.attendance] };
+        });
+        this.setState({ students: updated, attendanceFormOpen: false, attendanceDraft: { status: 'presente', note: '' } });
+      },
+
+      paymentFormOpen: s.paymentFormOpen,
+      paymentDraft: s.paymentDraft,
+      togglePaymentForm: () => this.setState({ paymentFormOpen: !s.paymentFormOpen }),
+      setPaymentStudent: e => this.setState({ paymentDraft: { ...s.paymentDraft, studentId: Number(e.target.value) } }),
+      setPaymentAmount: e => this.setState({ paymentDraft: { ...s.paymentDraft, amount: e.target.value } }),
+      setMethodContanti: () => this.setState({ paymentDraft: { ...s.paymentDraft, method: 'Contanti' } }),
+      setMethodCarta: () => this.setState({ paymentDraft: { ...s.paymentDraft, method: 'Carta' } }),
+      setMethodBonifico: () => this.setState({ paymentDraft: { ...s.paymentDraft, method: 'Bonifico' } }),
+      methodStyleContanti: this.segStyle(s.paymentDraft.method === 'Contanti'),
+      methodStyleCarta: this.segStyle(s.paymentDraft.method === 'Carta'),
+      methodStyleBonifico: this.segStyle(s.paymentDraft.method === 'Bonifico'),
+      savePayment: () => {
+        const st = s.students.find(x => x.id === s.paymentDraft.studentId) || s.students[0];
+        const newPayment = { id: Date.now(), studentId: st.id, student: st.name, amount: Number(s.paymentDraft.amount) || 0, dueDate: 'Oggi', method: s.paymentDraft.method, status: 'pagato' };
+        this.setState({ payments: [newPayment, ...s.payments], paymentFormOpen: false, paymentDraft: { studentId: s.students[0].id, amount: '', method: 'Contanti' } });
+      },
+
+      parentChild: {
+        ...parentSource,
+        upcoming: [{ when: 'Oggi, 16:00', instrument: 'Pianoforte' }, { when: 'Gio 24 Set, 16:00', instrument: 'Pianoforte' }],
+        pkg: this.pkgInfo(parentSource.packageTotal, parentSource.packageUsed),
+        pay: this.paymentStyle(parentSource.paymentStatus),
+        attendanceView: parentSource.attendance.map(a => ({ ...a, ...this.attStyle(a.status), status: a.status.charAt(0).toUpperCase() + a.status.slice(1) }))
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>
