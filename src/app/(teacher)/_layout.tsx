@@ -36,7 +36,11 @@ export default function TeacherLayout() {
       />
       <Tabs.Screen
         name="roster"
-        options={{ title: t("nav.students"), tabBarIcon: ({ color }) => <TabIcon symbol="☰" color={color} /> }}
+        options={{
+          title: t("nav.students"),
+          headerShown: false, // roster/_layout.tsx's own Stack renders the header instead
+          tabBarIcon: ({ color }) => <TabIcon symbol="☰" color={color} />,
+        }}
       />
       <Tabs.Screen
         name="payments"
