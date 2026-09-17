@@ -25,19 +25,19 @@ coverage on the core business logic." Other CRUD surface area is not separately 
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Create `backend/` and `frontend/` skeletons per plan.md's Project Structure (empty
+- [x] T001 Create `backend/` and `frontend/` skeletons per plan.md's Project Structure (empty
       app/feature directories, no logic yet)
-- [ ] T002 Initialize Django project in `backend/config/` (`settings/{base,dev,prod}.py` using
+- [x] T002 Initialize Django project in `backend/config/` (`settings/{base,dev,prod}.py` using
       django-environ for env vars, `urls.py`, `wsgi.py`/`asgi.py`) and `backend/pyproject.toml`
       with Django, djangorestframework, djangorestframework-simplejwt, drf-spectacular,
       django-cors-headers, django-filter, celery, redis, psycopg, pytest-django, factory_boy
-- [ ] T003 [P] Initialize `frontend/` with Vite + React + TypeScript, add react-router,
+- [x] T003 [P] Initialize `frontend/` with Vite + React + TypeScript, add react-router,
       @tanstack/react-query, react-i18next, i18next-browser-languagedetector, vitest,
       @testing-library/react
-- [ ] T004 [P] Write `infra/docker-compose.yml`, `infra/backend.Dockerfile`,
+- [x] T004 [P] Write `infra/docker-compose.yml`, `infra/backend.Dockerfile`,
       `infra/frontend.Dockerfile`, and `infra/.env.example` (db, redis, Django SECRET_KEY, JWT
       signing key, SMTP vars, CORS allowed origins)
-- [ ] T005 [P] Configure backend linting (ruff) in `backend/pyproject.toml` and frontend
+- [x] T005 [P] Configure backend linting (ruff) in `backend/pyproject.toml` and frontend
       linting (eslint + prettier) in `frontend/.eslintrc.cjs`
 
 ---
@@ -46,32 +46,32 @@ coverage on the core business logic." Other CRUD surface area is not separately 
 
 **⚠️ CRITICAL**: no user story work starts until this phase is complete.
 
-- [ ] T006 Configure `INSTALLED_APPS`, DRF defaults (pagination, auth classes), CORS, and
+- [x] T006 Configure `INSTALLED_APPS`, DRF defaults (pagination, auth classes), CORS, and
       drf-spectacular settings in `backend/config/settings/base.py`
-- [ ] T007 Custom `User` model (`role`, `email` unique, `preferred_language`) in
+- [x] T007 Custom `User` model (`role`, `email` unique, `preferred_language`) in
       `backend/apps/accounts/models.py`, set `AUTH_USER_MODEL`, initial migration
-- [ ] T008 [P] JWT auth endpoints (`/auth/token/`, `/auth/token/refresh/`, `/auth/me/`) in
+- [x] T008 [P] JWT auth endpoints (`/auth/token/`, `/auth/token/refresh/`, `/auth/me/`) in
       `backend/apps/accounts/views.py` + `backend/apps/accounts/urls.py`
-- [ ] T009 [P] Wire drf-spectacular schema/Swagger UI at `/api/schema/` and `/api/docs/` in
+- [x] T009 [P] Wire drf-spectacular schema/Swagger UI at `/api/schema/` and `/api/docs/` in
       `backend/config/urls.py`
-- [ ] T010 `Studio` and `Teacher` models + migration in `backend/apps/studios/models.py`
+- [x] T010 `Studio` and `Teacher` models + migration in `backend/apps/studios/models.py`
       (`is_owner` requires `studio` set — model-level validation)
-- [ ] T011 [P] `Student`, `ParentAccount`, and the `ParentStudentLink` through-model +
+- [x] T011 [P] `Student`, `ParentAccount`, and the `ParentStudentLink` through-model +
       migration in `backend/apps/students/models.py`
-- [ ] T012 Shared queryset-scoping permission classes (`IsTeacherOwner`, `IsStudioOwner`,
+- [x] T012 Shared queryset-scoping permission classes (`IsTeacherOwner`, `IsStudioOwner`,
       `IsParentOfStudent`, plus a `role_scoped_queryset(user, base_qs, teacher_path,
       studio_path, parent_path)` helper) in `backend/apps/common/permissions.py` — this is the
       single choke point Constitution Principle I's tests target
-- [ ] T013 Celery app + Celery Beat schedule skeleton in `backend/config/celery.py`, wired to
+- [x] T013 Celery app + Celery Beat schedule skeleton in `backend/config/celery.py`, wired to
       Redis via env vars
-- [ ] T014 [P] Frontend auth: JWT storage/refresh + role-based route guards in
+- [x] T014 [P] Frontend auth: JWT storage/refresh + role-based route guards in
       `frontend/src/auth/AuthProvider.tsx` and `frontend/src/auth/RequireRole.tsx`
-- [ ] T015 [P] Frontend i18n bootstrap with `frontend/src/i18n/en.json`,
+- [x] T015 [P] Frontend i18n bootstrap with `frontend/src/i18n/en.json`,
       `frontend/src/i18n/it.json` (nav/dashboard strings from `design/reference/*.dc.html`),
       `frontend/src/i18n/index.ts`
-- [ ] T016 [P] Frontend theme: CSS custom properties (light + `[data-theme="dark"]`) from
+- [x] T016 [P] Frontend theme: CSS custom properties (light + `[data-theme="dark"]`) from
       `design/tokens.md` in `frontend/src/theme/tokens.css`, `frontend/src/theme/ThemeProvider.tsx`
-- [ ] T017 [P] Frontend typed API client base (fetch wrapper, auth header injection, error
+- [x] T017 [P] Frontend typed API client base (fetch wrapper, auth header injection, error
       shape) in `frontend/src/api/client.ts`
 
 **Checkpoint**: foundation ready — user stories can now proceed.
@@ -88,35 +88,35 @@ dashboard, complete a lesson with a note, confirm exactly one decrement even on 
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Test `Lesson.mark_completed()` decrements `Package.lessons_remaining`
+- [x] T018 [P] [US1] Test `Lesson.mark_completed()` decrements `Package.lessons_remaining`
       exactly once, is a no-op on a second call, and never decrements on
       cancel/no-show, in `backend/apps/lessons/tests/test_completion.py`
-- [ ] T019 [P] [US1] Test lesson-completion endpoint permission boundaries (a teacher cannot
+- [x] T019 [P] [US1] Test lesson-completion endpoint permission boundaries (a teacher cannot
       complete another teacher's lesson; studio_owner can complete any lesson in their studio)
       in `backend/apps/lessons/tests/test_permissions.py`
 
 ### Implementation for User Story 1
 
-- [ ] T020 [P] [US1] `Package` model (fields + computed `status`, `is_low` property, DB
+- [x] T020 [P] [US1] `Package` model (fields + computed `status`, `is_low` property, DB
       `CheckConstraint` for `0 <= lessons_remaining <= total_lessons`) + migration in
       `backend/apps/packages/models.py`
-- [ ] T021 [US1] `Lesson` model with `mark_completed()`/`cancel()` methods (atomic,
+- [x] T021 [US1] `Lesson` model with `mark_completed()`/`cancel()` methods (atomic,
       `select_for_update`, idempotency guard) + migration in `backend/apps/lessons/models.py`
       (depends on T020)
-- [ ] T022 [US1] `LessonSerializer` + `LessonCompleteSerializer` in
+- [x] T022 [US1] `LessonSerializer` + `LessonCompleteSerializer` in
       `backend/apps/lessons/serializers.py`
-- [ ] T023 [US1] `LessonViewSet` (role-scoped queryset via T012 helper, `complete`/`cancel`
+- [x] T023 [US1] `LessonViewSet` (role-scoped queryset via T012 helper, `complete`/`cancel`
       actions, `?week=` filter) in `backend/apps/lessons/views.py`
-- [ ] T024 [US1] `DashboardView` (week lessons, upcoming 3, pending_payments_count,
+- [x] T024 [US1] `DashboardView` (week lessons, upcoming 3, pending_payments_count,
       active_students_count, low_package_students) in `backend/apps/lessons/views.py`
-- [ ] T025 [US1] URL routing for lessons + dashboard in `backend/apps/lessons/urls.py`,
+- [x] T025 [US1] URL routing for lessons + dashboard in `backend/apps/lessons/urls.py`,
       registered in `backend/config/urls.py`
-- [ ] T026 [US1] Teacher dashboard page (weekly calendar grid, stat counters, upcoming-3 list)
+- [x] T026 [US1] Teacher dashboard page (weekly calendar grid, stat counters, upcoming-3 list)
       matching `design/reference/MusicStudio.dc.html` in
       `frontend/src/features/teacher/Dashboard.tsx`
-- [ ] T027 [US1] Lesson-complete action + progress-note modal in
+- [x] T027 [US1] Lesson-complete action + progress-note modal in
       `frontend/src/features/teacher/LessonCompleteModal.tsx`
-- [ ] T028 [US1] TanStack Query hooks for dashboard/lessons (with cache invalidation on
+- [x] T028 [US1] TanStack Query hooks for dashboard/lessons (with cache invalidation on
       complete) in `frontend/src/features/teacher/api/lessons.ts`
 
 **Checkpoint**: teacher can log in, see their week, complete a lesson, package count updates.
