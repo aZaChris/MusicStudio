@@ -1,5 +1,14 @@
 # Quickstart: validate MusicStudio MVP end-to-end
 
+> **Status**: everything below Docker itself has already been verified from this
+> environment (WSL without Docker integration enabled) against a local sqlite DB:
+> migrations apply cleanly, `seed_demo` runs, all 26 backend tests pass, `ruff check`
+> is clean, the OpenAPI schema generates with zero warnings, and a full login →
+> dashboard → students → docs smoke test via `APIClient` succeeded. What has **not**
+> been run from here is `docker compose up` itself and the actual browser walkthrough
+> below — do that from a machine with Docker (e.g. enable WSL integration in Docker
+> Desktop, or run from Windows/macOS/Linux directly) to close the loop.
+
 ## Prerequisites
 
 - Docker + Docker Compose installed.

@@ -1,6 +1,7 @@
 import datetime
 
 from django.utils import timezone
+from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -10,7 +11,12 @@ from apps.common.permissions import IsTeacherOrStudioOwner, role_scoped_queryset
 from apps.students.models import Student
 
 from .models import Lesson
-from .serializers import LessonCancelSerializer, LessonCompleteSerializer, LessonSerializer
+from .serializers import (
+    DashboardSerializer,
+    LessonCancelSerializer,
+    LessonCompleteSerializer,
+    LessonSerializer,
+)
 
 
 def _week_bounds(anchor: datetime.date) -> tuple[datetime.date, datetime.date]:
@@ -72,6 +78,7 @@ class LessonViewSet(viewsets.ModelViewSet):
 class DashboardView(APIView):
     permission_classes = [IsTeacherOrStudioOwner]
 
+    @extend_schema(responses=DashboardSerializer)
     def get(self, request):
         from apps.payments.models import Payment  # avoid import cycle at module load
 

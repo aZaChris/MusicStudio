@@ -34,3 +34,16 @@ class LessonCompleteSerializer(serializers.Serializer):
 
 class LessonCancelSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=[Lesson.Status.CANCELLED, Lesson.Status.NO_SHOW])
+
+
+class LowPackageStudentSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    full_name = serializers.CharField()
+
+
+class DashboardSerializer(serializers.Serializer):
+    week = LessonSerializer(many=True)
+    upcoming = LessonSerializer(many=True)
+    pending_payments_count = serializers.IntegerField()
+    active_students_count = serializers.IntegerField()
+    low_package_students = LowPackageStudentSerializer(many=True)

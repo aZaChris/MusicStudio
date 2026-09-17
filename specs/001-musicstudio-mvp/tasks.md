@@ -224,24 +224,28 @@ and roster (see T024/T036) — this phase wires the automation, not the UI flag.
 
 ## Phase 7: Polish & Cross-Cutting Concerns
 
-- [ ] T049 `seed_demo` management command (solo teacher, studio_owner + 2 teachers, students
+- [x] T049 `seed_demo` management command (solo teacher, studio_owner + 2 teachers, students
       with packages incl. one low-package, one parent linked to one student, one lesson ~24h
       out) in `backend/apps/common/management/commands/seed_demo.py` — required by
       quickstart.md
-- [ ] T050 [P] `infra/aws/README.md`: ECS Fargate deployment (task defs, RDS, ElastiCache) as
+- [x] T050 [P] `infra/aws/README.md`: ECS Fargate deployment (task defs, RDS, ElastiCache) as
       primary path + documented EC2 + Docker Compose fallback
-- [ ] T051 [P] Root `README.md`: local dev quickstart, architecture summary, links to
+- [x] T051 [P] Root `README.md`: local dev quickstart, architecture summary, links to
       `specs/001-musicstudio-mvp/` artifacts
-- [ ] T052 Finalize `infra/.env.example` against everything actually read by
+- [x] T052 Finalize `infra/.env.example` against everything actually read by
       `backend/config/settings/*.py` and `frontend/` build
-- [ ] T053 [P] Basic accessibility pass on teacher/parent UI (keyboard nav, focus states,
+- [x] T053 [P] Basic accessibility pass on teacher/parent UI (keyboard nav, focus states,
       color-contrast check against `design/tokens.md` dark theme) across
       `frontend/src/features/**`
-- [ ] T054 [P] Frontend Vitest smoke tests for Dashboard, Roster, and ParentPortal render
+- [x] T054 [P] Frontend Vitest smoke tests for Dashboard, Roster, and ParentPortal render
       paths in `frontend/src/features/**/*.test.tsx`
 - [ ] T055 Run `specs/001-musicstudio-mvp/quickstart.md` end-to-end against the Docker Compose
-      stack and fix any drift found
-- [ ] T056 `.gitignore` review (env files, `__pycache__`, `node_modules`, build output) at
+      stack and fix any drift found — **blocked**: this environment has no Docker access
+      (WSL without Docker Desktop integration); everything short of `docker compose up`
+      itself was verified via sqlite (migrations, `seed_demo`, all 26 backend tests, `ruff`,
+      OpenAPI schema generation, an `APIClient` smoke walkthrough) — see the note at the top
+      of `quickstart.md`. Run this task from a machine with Docker to close the loop.
+- [x] T056 `.gitignore` review (env files, `__pycache__`, `node_modules`, build output) at
       repo root
 
 ---

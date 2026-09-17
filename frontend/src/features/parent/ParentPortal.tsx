@@ -40,10 +40,14 @@ export function ParentPortal() {
           {t('parent.portalTitle')}
         </h1>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button type="button" onClick={toggleTheme} title={t('theme.toggle')}>
+          <button type="button" onClick={toggleTheme} title={t('theme.toggle')} aria-label={t('theme.toggle')}>
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
-          <button type="button" onClick={toggleLanguage}>
+          <button
+            type="button"
+            onClick={toggleLanguage}
+            aria-label={i18n.language.startsWith('it') ? 'Switch to English' : 'Passa all’italiano'}
+          >
             {i18n.language.startsWith('it') ? 'EN' : 'IT'}
           </button>
           <button type="button" onClick={logout}>

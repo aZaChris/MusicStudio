@@ -55,7 +55,9 @@ def test_parent_sees_linked_students_lessons_and_payments_readonly():
     student = StudentFactory()
     package = PackageFactory(student=student)
     lesson = LessonFactory(student=student, package=package)
-    Payment.objects.create(student=student, amount="40.00", date="2026-01-01", method="cash", status="paid")
+    Payment.objects.create(
+        student=student, amount="40.00", date="2026-01-01", method="cash", status="paid"
+    )
     parent = ParentAccountFactory()
     link_parent_to_student(parent, student)
 
@@ -79,10 +81,9 @@ def test_parent_cannot_write_anywhere():
     client = _client_for(parent.user)
 
     assert client.post("/api/v1/students/", {"first_name": "x"}, format="json").status_code == 403
-    assert (
-        client.post(f"/api/v1/lessons/{LessonFactory(student=student).id}/complete/", {}, format="json").status_code
-        == 403
-    )
+    lesson_id = LessonFactory(student=student).id
+    complete_res = client.post(f"/api/v1/lessons/{lesson_id}/complete/", {}, format="json")
+    assert complete_res.status_code == 403
     assert (
         client.post(
             "/api/v1/payments/",
