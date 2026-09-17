@@ -21,19 +21,20 @@ export function LoginForm({ locale }: { locale: Locale }) {
         borderRadius: "var(--ms-radius-lg)",
         border: "1px solid var(--ms-border)",
         background: "var(--ms-surface)",
+        boxShadow: "0 8px 24px oklch(0% 0 0 / 0.06)",
       }}
     >
-      <h1 style={{ fontFamily: "var(--ms-font-heading)", fontSize: 20, margin: 0 }}>MusicStudio</h1>
+      <h1 style={{ fontFamily: "var(--ms-font-heading)", fontSize: 20, margin: "0 0 8px" }}>MusicStudio</h1>
       <label>
         {t(locale, "auth.email")}
-        <input type="email" name="email" required style={{ width: "100%" }} />
+        <input type="email" name="email" required />
       </label>
       <label>
         {t(locale, "auth.password")}
-        <input type="password" name="password" required style={{ width: "100%" }} />
+        <input type="password" name="password" required />
       </label>
-      {error && <p style={{ color: "var(--ms-danger-text)", margin: 0 }}>Invalid credentials</p>}
-      <button type="submit" disabled={pending}>
+      {error && <p style={{ color: "var(--ms-danger-text)", fontSize: 13, margin: 0 }}>Invalid credentials</p>}
+      <button type="submit" className="primary" disabled={pending} style={{ marginTop: 8 }}>
         {t(locale, "auth.login")}
       </button>
     </form>

@@ -61,7 +61,7 @@ export function LessonCompleteModal({
           <button type="button" onClick={onClose}>
             {t(locale, "lesson.cancel")}
           </button>
-          <button type="button" onClick={handleComplete} disabled={pending}>
+          <button type="button" className="primary" onClick={handleComplete} disabled={pending}>
             {t(locale, "lesson.markComplete")}
           </button>
         </div>

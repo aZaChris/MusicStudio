@@ -65,7 +65,9 @@ export default async function PaymentsPage() {
               <option value="manual_entry">manual_entry</option>
             </select>
           </label>
-          <button type="submit">{t(locale, "payments.registerPayment")}</button>
+          <button type="submit" className="primary">
+            {t(locale, "payments.registerPayment")}
+          </button>
         </form>
 
         <table style={{ width: "100%", borderCollapse: "collapse" }}>

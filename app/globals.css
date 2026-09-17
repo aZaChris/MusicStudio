@@ -51,17 +51,69 @@ body {
   font-family: var(--ms-font-body);
 }
 
-a,
+a {
+  color: inherit;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ms-text-muted);
+}
+
 button,
 input,
 select,
 textarea {
-  font: inherit;
-  color: inherit;
+  font-family: var(--ms-font-body);
+  font-size: 14px;
+  color: var(--ms-text);
+}
+
+input,
+select,
+textarea {
+  font-weight: 400;
+  padding: 9px 12px;
+  border-radius: var(--ms-radius-sm);
+  border: 1px solid var(--ms-border);
+  background: var(--ms-surface);
+}
+
+textarea {
+  resize: vertical;
 }
 
 button {
   cursor: pointer;
+  padding: 9px 18px;
+  border-radius: var(--ms-radius-sm);
+  border: 1px solid var(--ms-border);
+  background: var(--ms-surface);
+  font-weight: 700;
+  transition: background-color 0.15s ease;
+}
+
+button:hover {
+  background: var(--ms-surface-muted);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+button.primary {
+  background: var(--ms-accent);
+  border-color: var(--ms-accent);
+  color: white;
+}
+
+button.primary:hover {
+  filter: brightness(0.94);
 }
 
 :focus-visible {
