@@ -4,8 +4,8 @@ import { requireActor } from "@/lib/api-helpers";
 import { listStudentLessons } from "@/lib/services/lessons";
 import { getStudentForActor } from "@/lib/services/students";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { actor, error } = await requireActor();
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { actor, error } = await requireActor(request);
   if (error) return error;
 
   const { id } = await params;

@@ -4,7 +4,7 @@ import { requireActor } from "@/lib/api-helpers";
 import { listWeekLessons } from "@/lib/services/lessons";
 
 export async function GET(request: Request) {
-  const { actor, error } = await requireActor();
+  const { actor, error } = await requireActor(request);
   if (error) return error;
 
   const { searchParams } = new URL(request.url);

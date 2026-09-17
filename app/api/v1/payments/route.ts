@@ -4,7 +4,7 @@ import { requireActor, requireWriteRole } from "@/lib/api-helpers";
 import { createPayment, listPaymentsForActor, PaymentValidationError } from "@/lib/services/payments";
 
 export async function GET(request: Request) {
-  const { actor, error } = await requireActor();
+  const { actor, error } = await requireActor(request);
   if (error) return error;
 
   const { searchParams } = new URL(request.url);
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const { actor, error } = await requireActor();
+  const { actor, error } = await requireActor(request);
   if (error) return error;
   if (!requireWriteRole(actor.role)) {
     return NextResponse.json({ detail: "Forbidden" }, { status: 403 });

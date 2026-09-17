@@ -4,7 +4,7 @@ import { requireActor, requireWriteRole } from "@/lib/api-helpers";
 import { markLessonCompleted } from "@/lib/services/lessons";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { actor, error } = await requireActor();
+  const { actor, error } = await requireActor(request);
   if (error) return error;
   if (!requireWriteRole(actor.role)) {
     return NextResponse.json({ detail: "Forbidden" }, { status: 403 });
