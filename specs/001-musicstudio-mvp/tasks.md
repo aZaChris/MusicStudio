@@ -173,22 +173,22 @@ cross-family access attempt (must 404).
 
 ### Tests for User Story 3
 
-- [ ] T040 [P] [US3] Test parent-role queryset scoping across Student/Lesson/Package/Payment
+- [x] T040 [P] [US3] Test parent-role queryset scoping across Student/Lesson/Package/Payment
       viewsets: linked students visible, non-linked student ID returns 404, multi-student
       (sibling) parents see only their own, and every write attempt as parent returns 403, in
       `backend/apps/students/tests/test_parent_scoping.py`
 
 ### Implementation for User Story 3
 
-- [ ] T041 [US3] Extend `get_queryset()` on Student/Lesson/Package/Payment ViewSets with the
+- [x] T041 [US3] Extend `get_queryset()` on Student/Lesson/Package/Payment ViewSets with the
       parent branch of the T012 scoping helper in `backend/apps/students/views.py`,
       `backend/apps/lessons/views.py`, `backend/apps/packages/views.py`,
       `backend/apps/payments/views.py` (depends on T023, T033, T032, T034)
-- [ ] T042 [US3] Parent portal shell + route guard (parent role only, no write controls
+- [x] T042 [US3] Parent portal shell + route guard (parent role only, no write controls
       rendered) in `frontend/src/features/parent/ParentPortal.tsx`
-- [ ] T043 [US3] Parent views: upcoming lessons, attendance history, payment status (read-only)
+- [x] T043 [US3] Parent views: upcoming lessons, attendance history, payment status (read-only)
       in `frontend/src/features/parent/{UpcomingLessons,Attendance,PaymentStatus}.tsx`
-- [ ] T044 [US3] Student switcher for parents linked to multiple students in
+- [x] T044 [US3] Student switcher for parents linked to multiple students in
       `frontend/src/features/parent/StudentSwitcher.tsx`
 
 **Checkpoint**: parent portal is isolated and read-only; all three delivered stories compose.
