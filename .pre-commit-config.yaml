@@ -3,7 +3,7 @@
 # Fast checks only; the full test suite runs in CI.
 # frontend/ is out of scope and must not be modified (Constitution VI); design/ and
 # .specify/ hold generated or reference files.
-exclude: ^(frontend/|design/|\.specify/)
+exclude: ^(frontend/|design/|\.specify/|backend/openapi\.yaml$)
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v5.0.0
@@ -35,6 +35,12 @@ repos:
       - id: mypy
         name: mypy
         entry: bash -c 'cd backend && uv run mypy .'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+      - id: openapi
+        name: openapi.yaml up to date
+        entry: bash -c 'cd backend && DJANGO_SETTINGS_MODULE=config.settings.test uv run python manage.py spectacular --fail-on-warn --file openapi.yaml'
         language: system
         files: ^backend/.*\.py$
         pass_filenames: false

@@ -71,5 +71,7 @@ jobs:
       - name: Tests + coverage (fails under 90%)
         run: uv run pytest --cov-report=xml
 
-      - name: OpenAPI schema generates without warnings
-        run: uv run python manage.py spectacular --settings=config.settings.test --fail-on-warn --file /tmp/schema.yml
+      - name: OpenAPI contract is committed and up to date
+        run: |
+          uv run python manage.py spectacular --settings=config.settings.test --fail-on-warn --file /tmp/schema.yml
+          diff -u openapi.yaml /tmp/schema.yml

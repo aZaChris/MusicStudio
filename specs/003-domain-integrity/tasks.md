@@ -42,8 +42,8 @@
 
 ## Phase 7: User Story 5 — API contract (P2)
 
-- [ ] T019 [US5] `MusicStudioAutoSchema` (tags) + error-response postprocessing hook in `backend/apps/common/schema.py`; settings wiring
-- [ ] T020 [US5] Generate and commit `backend/openapi.yaml`; CI diff step in `.github/workflows/ci.yml`; pre-commit hook; schema test
+- [X] T019 [US5] `MusicStudioAutoSchema` (tags) + error-response postprocessing hook in `backend/apps/common/schema.py`; settings wiring
+- [X] T020 [US5] Generate and commit `backend/openapi.yaml`; CI diff step in `.github/workflows/ci.yml`; pre-commit hook; schema test
 
 ## Phase 8: User Story 6 — Study docs (P2)
 

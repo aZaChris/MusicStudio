@@ -1,0 +1,2576 @@
+openapi: 3.0.3
+info:
+  title: MusicStudio API
+  version: 1.0.0
+  description: REST API for the MusicStudio teacher/parent platform.
+paths:
+  /api/v1/auth/me/:
+    get:
+      operationId: v1_auth_me_retrieve
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/auth/token/:
+    post:
+      operationId: v1_auth_token_create
+      description: Login with a tight per-client rate (THROTTLE_LOGIN) against password
+        guessing.
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPairRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid credentials or token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: v1_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Invalid credentials or token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/dashboard/:
+    get:
+      operationId: v1_dashboard_retrieve
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/lessons/:
+    get:
+      operationId: v1_lessons_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        description: 'Any day of the week to list (list only; default: current week).'
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLessonList'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: v1_lessons_create
+      parameters:
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        description: 'Any day of the week to list (list only; default: current week).'
+      tags:
+      - lessons
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LessonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LessonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The time slot is already taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/lessons/{id}/:
+    get:
+      operationId: v1_lessons_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lesson.
+        required: true
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        description: 'Any day of the week to list (list only; default: current week).'
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: v1_lessons_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lesson.
+        required: true
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        description: 'Any day of the week to list (list only; default: current week).'
+      tags:
+      - lessons
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LessonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LessonRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The time slot is already taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: v1_lessons_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lesson.
+        required: true
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        description: 'Any day of the week to list (list only; default: current week).'
+      tags:
+      - lessons
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedLessonRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedLessonRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedLessonRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The time slot is already taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: v1_lessons_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lesson.
+        required: true
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        description: 'Any day of the week to list (list only; default: current week).'
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/lessons/{id}/cancel/:
+    post:
+      operationId: v1_lessons_cancel_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lesson.
+        required: true
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        description: 'Any day of the week to list (list only; default: current week).'
+      tags:
+      - lessons
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonCancelRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LessonCancelRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LessonCancelRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/lessons/{id}/complete/:
+    post:
+      operationId: v1_lessons_complete_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this lesson.
+        required: true
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        description: 'Any day of the week to list (list only; default: current week).'
+      tags:
+      - lessons
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LessonCompleteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LessonCompleteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LessonCompleteRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '409':
+          description: The time slot is already taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/lessons/upcoming/:
+    get:
+      operationId: v1_lessons_upcoming_retrieve
+      parameters:
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        description: 'Any day of the week to list (list only; default: current week).'
+      tags:
+      - lessons
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lesson'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/packages/:
+    get:
+      operationId: v1_packages_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: student
+        schema:
+          type: integer
+      tags:
+      - packages
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPackageList'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: v1_packages_create
+      tags:
+      - packages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PackageRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PackageRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/packages/{id}/:
+    get:
+      operationId: v1_packages_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this package.
+        required: true
+      tags:
+      - packages
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: v1_packages_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this package.
+        required: true
+      tags:
+      - packages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PackageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PackageRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PackageRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: v1_packages_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this package.
+        required: true
+      tags:
+      - packages
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPackageRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPackageRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPackageRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Package'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: v1_packages_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this package.
+        required: true
+      tags:
+      - packages
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/payments/:
+    get:
+      operationId: v1_payments_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - overdue
+          - paid
+          - pending
+        description: |-
+          * `paid` - Paid
+          * `pending` - Pending
+          * `overdue` - Overdue
+      - in: query
+        name: student
+        schema:
+          type: integer
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentList'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: v1_payments_create
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/payments/{id}/:
+    get:
+      operationId: v1_payments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: v1_payments_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: v1_payments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Payment'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: v1_payments_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/students/:
+    get:
+      operationId: v1_students_list
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - students
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStudentList'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: v1_students_create
+      tags:
+      - students
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/students/{id}/:
+    get:
+      operationId: v1_students_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: v1_students_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StudentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      operationId: v1_students_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStudentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStudentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStudentRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      operationId: v1_students_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/students/{id}/lessons/:
+    get:
+      operationId: v1_students_lessons_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/students/{id}/reassign/:
+    post:
+      operationId: v1_students_reassign_create
+      description: 'Studio owner only: give the student to another teacher of the
+        same studio.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this student.
+        required: true
+      tags:
+      - students
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReassignStudentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReassignStudentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReassignStudentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Student'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/studio/:
+    get:
+      operationId: v1_studio_retrieve
+      tags:
+      - studios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Studio'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/studio/teachers/:
+    get:
+      operationId: v1_studio_teachers_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - studios
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTeacherList'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Dashboard:
+      type: object
+      properties:
+        week:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lesson'
+        upcoming:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lesson'
+        pending_payments_count:
+          type: integer
+        active_students_count:
+          type: integer
+        low_package_students:
+          type: array
+          items:
+            $ref: '#/components/schemas/LowPackageStudent'
+      required:
+      - active_students_count
+      - low_package_students
+      - pending_payments_count
+      - upcoming
+      - week
+    Lesson:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+        student_name:
+          type: string
+          readOnly: true
+        teacher:
+          type: integer
+          readOnly: true
+        package:
+          type: integer
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+        duration_minutes:
+          type: integer
+          maximum: 480
+          minimum: 5
+          default: 30
+        end_time:
+          type: string
+          format: date-time
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/LessonStatusEnum'
+          readOnly: true
+        notes:
+          type: string
+      required:
+      - end_time
+      - id
+      - start_time
+      - status
+      - student
+      - student_name
+      - teacher
+    LessonCancelRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/LessonCancelStatusEnum'
+      required:
+      - status
+    LessonCancelStatusEnum:
+      enum:
+      - cancelled
+      - no_show
+      type: string
+      description: |-
+        * `cancelled` - cancelled
+        * `no_show` - no_show
+    LessonCompleteRequest:
+      type: object
+      properties:
+        note:
+          type: string
+          default: ''
+    LessonRequest:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        student:
+          type: integer
+        package:
+          type: integer
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+        duration_minutes:
+          type: integer
+          maximum: 480
+          minimum: 5
+          default: 30
+        notes:
+          type: string
+      required:
+      - start_time
+      - student
+    LessonStatusEnum:
+      enum:
+      - scheduled
+      - completed
+      - cancelled
+      - no_show
+      type: string
+      description: |-
+        * `scheduled` - Scheduled
+        * `completed` - Completed
+        * `cancelled` - Cancelled
+        * `no_show` - No-show
+    LowPackageStudent:
+      type: object
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+      required:
+      - full_name
+      - id
+    Me:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        preferred_language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
+        teacher:
+          allOf:
+          - $ref: '#/components/schemas/TeacherProfile'
+          readOnly: true
+        parent_account:
+          allOf:
+          - $ref: '#/components/schemas/ParentProfile'
+          readOnly: true
+      required:
+      - email
+      - id
+      - parent_account
+      - role
+      - teacher
+    MethodEnum:
+      enum:
+      - cash
+      - bank_transfer
+      - manual_entry
+      type: string
+      description: |-
+        * `cash` - Cash
+        * `bank_transfer` - Bank transfer
+        * `manual_entry` - Manual entry
+    Package:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+        total_lessons:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        lessons_remaining:
+          type: integer
+          readOnly: true
+        purchase_date:
+          type: string
+          format: date
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        status:
+          type: string
+          readOnly: true
+        is_low:
+          type: boolean
+          readOnly: true
+      required:
+      - id
+      - is_low
+      - lessons_remaining
+      - price
+      - purchase_date
+      - status
+      - student
+      - total_lessons
+    PackageRequest:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        student:
+          type: integer
+        total_lessons:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        purchase_date:
+          type: string
+          format: date
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+      required:
+      - price
+      - purchase_date
+      - student
+      - total_lessons
+    PaginatedLessonList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lesson'
+    PaginatedPackageList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Package'
+    PaginatedPaymentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Payment'
+    PaginatedStudentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Student'
+    PaginatedTeacherList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Teacher'
+    ParentProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+      required:
+      - id
+    PatchedLessonRequest:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        student:
+          type: integer
+        package:
+          type: integer
+          nullable: true
+        start_time:
+          type: string
+          format: date-time
+        duration_minutes:
+          type: integer
+          maximum: 480
+          minimum: 5
+          default: 30
+        notes:
+          type: string
+    PatchedPackageRequest:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        student:
+          type: integer
+        total_lessons:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        purchase_date:
+          type: string
+          format: date
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+    PatchedPaymentRequest:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        student:
+          type: integer
+        package:
+          type: integer
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        date:
+          type: string
+          format: date
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+    PatchedStudentRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        instrument:
+          type: string
+          minLength: 1
+          maxLength: 100
+        is_active:
+          type: boolean
+    Payment:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+        student_name:
+          type: string
+          readOnly: true
+        package:
+          type: integer
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        date:
+          type: string
+          format: date
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+      required:
+      - amount
+      - date
+      - id
+      - method
+      - student
+      - student_name
+    PaymentRequest:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        student:
+          type: integer
+        package:
+          type: integer
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        date:
+          type: string
+          format: date
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+      required:
+      - amount
+      - date
+      - method
+      - student
+    PaymentStatusEnum:
+      enum:
+      - paid
+      - pending
+      - overdue
+      type: string
+      description: |-
+        * `paid` - Paid
+        * `pending` - Pending
+        * `overdue` - Overdue
+    PreferredLanguageEnum:
+      enum:
+      - en
+      - it
+      type: string
+      description: |-
+        * `en` - English
+        * `it` - Italiano
+    ReassignStudentRequest:
+      type: object
+      description: Target teacher, validated against the owner's own studio only.
+      properties:
+        teacher:
+          type: integer
+      required:
+      - teacher
+    RoleEnum:
+      enum:
+      - teacher
+      - studio_owner
+      - parent
+      type: string
+      description: |-
+        * `teacher` - Teacher
+        * `studio_owner` - Studio owner
+        * `parent` - Parent
+    Student:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        first_name:
+          type: string
+          maxLength: 100
+        last_name:
+          type: string
+          maxLength: 100
+        full_name:
+          type: string
+          readOnly: true
+        instrument:
+          type: string
+          maxLength: 100
+        teacher:
+          type: integer
+          readOnly: true
+        studio:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+        active_package:
+          allOf:
+          - $ref: '#/components/schemas/Package'
+          readOnly: true
+        payment_status:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - active_package
+      - first_name
+      - full_name
+      - id
+      - instrument
+      - last_name
+      - payment_status
+      - studio
+      - teacher
+    StudentRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        instrument:
+          type: string
+          minLength: 1
+          maxLength: 100
+        is_active:
+          type: boolean
+      required:
+      - first_name
+      - instrument
+      - last_name
+    Studio:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        teacher_count:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - name
+      - teacher_count
+    Teacher:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          readOnly: true
+        is_owner:
+          type: boolean
+      required:
+      - email
+      - id
+    TeacherProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        studio:
+          type: integer
+        is_owner:
+          type: boolean
+      required:
+      - id
+      - studio
+    TokenObtainPair:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - refresh
+    TokenObtainPairRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    TokenRefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+          description: Machine-readable reason (e.g. 409).
+      required:
+      - detail
+    ValidationError:
+      description: Field name → list of messages, or a list of non-field messages.
+      oneOf:
+      - type: object
+        additionalProperties:
+          type: array
+          items: {}
+      - type: array
+        items:
+          type: string
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+tags:
+- name: accounts
+  description: Login (JWT) and the current user.
+- name: studios
+  description: The studio (tenant) and its teachers.
+- name: students
+  description: Students, their history and reassignment.
+- name: packages
+  description: Prepaid lesson packages.
+- name: lessons
+  description: Agenda, completion, cancellation, dashboard.
+- name: payments
+  description: Manually recorded payments.

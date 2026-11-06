@@ -133,7 +133,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 25,
     "DEFAULT_FILTER_BACKENDS": ("django_filters.rest_framework.DjangoFilterBackend",),
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_SCHEMA_CLASS": "apps.common.schema.MusicStudioAutoSchema",
     "TEST_REQUEST_DEFAULT_FORMAT": "json",
     # Converts django.core.exceptions.ValidationError raised by services into a 400.
     "EXCEPTION_HANDLER": "apps.common.exceptions.exception_handler",
@@ -162,6 +162,20 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "REST API for the MusicStudio teacher/parent platform.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Separate request/response components: read-only fields are not required in requests.
+    "COMPONENT_SPLIT_REQUEST": True,
+    "TAGS": [
+        {"name": "accounts", "description": "Login (JWT) and the current user."},
+        {"name": "studios", "description": "The studio (tenant) and its teachers."},
+        {"name": "students", "description": "Students, their history and reassignment."},
+        {"name": "packages", "description": "Prepaid lesson packages."},
+        {"name": "lessons", "description": "Agenda, completion, cancellation, dashboard."},
+        {"name": "payments", "description": "Manually recorded payments."},
+    ],
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+        "apps.common.schema.add_error_responses",
+    ],
 }
 
 CORS_ALLOWED_ORIGINS: list[str] = env.list("CORS_ALLOWED_ORIGINS", default=[])
