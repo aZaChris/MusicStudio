@@ -23,7 +23,22 @@ def create_payment(*, student: Student, package: Package | None = None, **fields
     return Payment.objects.create(student=student, package=package, **fields)
 
 
+# The only allowed status changes. "paid" is final: money records must not silently go back.
+ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
+    Payment.Status.PENDING: frozenset({Payment.Status.PAID, Payment.Status.OVERDUE}),
+    Payment.Status.OVERDUE: frozenset({Payment.Status.PAID}),
+    Payment.Status.PAID: frozenset(),
+}
+
+
+def ensure_transition_allowed(current: str, target: str) -> None:
+    if target != current and target not in ALLOWED_TRANSITIONS[current]:
+        raise ValidationError({"status": f"Cannot change status from {current} to {target}."})
+
+
 def update_payment(payment: Payment, **changes: Any) -> Payment:
+    if "status" in changes:
+        ensure_transition_allowed(payment.status, changes["status"])
     for field, value in changes.items():
         setattr(payment, field, value)
     ensure_package_matches_student(payment.student, payment.package)
