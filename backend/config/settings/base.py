@@ -140,8 +140,8 @@ REST_FRAMEWORK = {
     # OWASP API4: bound how fast one client can hit the API. The `login` scope is applied
     # only to the token endpoint (see apps/accounts/views.py).
     "DEFAULT_THROTTLE_CLASSES": (
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "apps.common.throttling.AnonRateThrottle",
+        "apps.common.throttling.UserRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
         "anon": env("THROTTLE_ANON", default="100/hour"),

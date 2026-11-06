@@ -13,6 +13,7 @@ from apps.common.permissions import CanWriteTenantObject, IsTeacherOrStudioOwner
 from apps.common.tenancy import get_tenant
 
 from . import selectors, services
+from .cache import cached_dashboard
 from .models import Lesson
 from .serializers import (
     DashboardSerializer,
@@ -78,4 +79,6 @@ class DashboardView(APIView):
 
     @extend_schema(responses=DashboardSerializer)
     def get(self, request: Request) -> Response:
-        return Response(DashboardSerializer(selectors.dashboard_for(get_tenant(request))).data)
+        ctx = get_tenant(request)
+        data = cached_dashboard(ctx, lambda: DashboardSerializer(selectors.dashboard_for(ctx)).data)
+        return Response(data)

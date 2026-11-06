@@ -29,12 +29,12 @@
 
 ## Phase 6: US4 — Celery reliability (P2)
 
-- [ ] T011 [US4] Test asserting reliability settings and that every task is registered with retry policy where relevant in `backend/config/tests/test_celery.py`
+- [X] T011 [US4] Test asserting reliability settings and that every task is registered with retry policy where relevant in `backend/config/tests/test_celery.py`
 
 ## Phase 7: US5 — Dashboard cache (P2)
 
-- [ ] T012 [P] [US5] Tests: second request ≤ 2 queries; write in studio → fresh; other studio unaffected; parent not cached; cache failure falls back, in `backend/apps/lessons/tests/test_dashboard_cache.py`
-- [ ] T013 [US5] `backend/apps/lessons/cache.py` + signals in `backend/apps/common/signals.py`
+- [X] T012 [P] [US5] Tests: second request ≤ 2 queries; write in studio → fresh; other studio unaffected; parent not cached; cache failure falls back, in `backend/apps/lessons/tests/test_dashboard_cache.py`
+- [X] T013 [US5] `backend/apps/lessons/cache.py` + signals in `backend/apps/common/signals.py`
 
 ## Phase 8: US6 — Docs
 

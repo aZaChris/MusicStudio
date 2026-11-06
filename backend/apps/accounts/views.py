@@ -2,8 +2,9 @@ from typing import Any
 
 from rest_framework.generics import RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.views import TokenObtainPairView
+
+from apps.common.throttling import ScopedRateThrottle
 
 from .serializers import MeSerializer
 

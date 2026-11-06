@@ -8,6 +8,7 @@ this test tells you to add a select_related/prefetch/annotation to the selector.
 from collections.abc import Callable
 
 import pytest
+from django.core.cache import cache
 from django.db import connection
 from django.test.utils import CaptureQueriesContext
 
@@ -35,6 +36,7 @@ def _seed_student(teacher: Teacher) -> None:
 
 def _count(user, url: str) -> int:
     client = client_for(user)  # fresh user per request, as with real token auth
+    cache.clear()  # measure the computation, not the dashboard cache (ADR-017)
     with CaptureQueriesContext(connection) as ctx:
         res = client.get(url)
     assert res.status_code == 200, res.data
