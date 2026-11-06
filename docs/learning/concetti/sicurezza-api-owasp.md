@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-La OWASP API Security Top 10 è la lista dei dieci rischi di sicurezza più comuni nelle API. La constitution di MusicStudio chiede di verificarla alla fine di ogni fase. Questo documento la spiega e registra lo stato aggiornato alla fine della fase 2: cosa è coperto, cosa è parziale, cosa è aperto. Interventi principali: scritture cross-tenant chiuse e rate limiting sul login (fase 1); tenant esplicito, permessi per oggetto e stati dei pagamenti (fase 2).
+La OWASP API Security Top 10 è la lista dei dieci rischi di sicurezza più comuni nelle API. La constitution di MusicStudio chiede di verificarla alla fine di ogni fase. Questo documento la spiega e registra lo stato aggiornato alla fine della fase 3: cosa è coperto, cosa è parziale, cosa è aperto. Interventi principali: scritture cross-tenant chiuse e rate limiting sul login (fase 1); tenant esplicito, permessi per oggetto e stati dei pagamenti (fase 2); pagamenti Stripe e webhook verificati (fase 3).
 
 ## Il problema reale
 
@@ -20,7 +20,7 @@ Il **rate limiting** merita una spiegazione a parte. Limita quante richieste un 
 
 ## Come lo abbiamo applicato in MusicStudio
 
-Ecco lo stato alla fine della fase 2, voce per voce.
+Ecco lo stato alla fine della fase 3, voce per voce.
 
 **API1 — Broken Object Level Authorization.** *Coperto.* Le letture erano già filtrate per tenant. Le scritture no: un insegnante poteva creare lezioni e pagamenti sugli allievi di un altro. Ora i campi di relazione sono filtrati per utente (`backend/apps/common/serializers.py`) e ogni endpoint di scrittura ha un test cross-tenant. Nella fase 2 lo studio è diventato un tenant obbligatorio, e un permesso per oggetto (`CanWriteTenantObject`) ricontrolla ogni modifica.
 
@@ -38,11 +38,11 @@ Ecco lo stato alla fine della fase 2, voce per voce.
 },
 ```
 
-E la view di login in `backend/apps/accounts/views.py` usa `ScopedRateThrottle` con lo scope `login`. Il test `test_login_is_throttled_after_five_attempts` verifica che il sesto tentativo riceva 429. I contatori stanno nella cache Redis, condivisa da tutti i processi web: con una cache in memoria ogni processo avrebbe il suo contatore e il limite si moltiplicherebbe.
+E la view di login in `backend/apps/accounts/views.py` usa `ScopedRateThrottle` con lo scope `login`. Il test `test_login_is_throttled_after_five_attempts` verifica che il sesto tentativo riceva 429. I contatori stanno nella cache Redis, condivisa da tutti i processi web: con una cache in memoria ogni processo avrebbe il suo contatore e il limite si moltiplicherebbe. Dalla fase 3 i throttle "falliscono aperti": con Redis giù lasciano passare, perché prima un guasto di Redis faceva rispondere 500 a tutta l'API. Durante un guasto, quindi, non c'è rate limiting.
 
 **API5 — Broken Function Level Authorization.** *Coperto.* Le azioni di scrittura richiedono il ruolo insegnante o titolare; lo studio e lo spostamento degli allievi sono solo per i titolari; i genitori sono in sola lettura. Ogni ruolo ha un test per l'azione di spostamento.
 
-**API6 — Unrestricted Access to Sensitive Business Flows.** *Non applicabile oggi.* Non ci sono flussi come acquisti o prenotazioni pubbliche. Diventerà rilevante con Stripe nella fase 3.
+**API6 — Unrestricted Access to Sensitive Business Flows.** *Coperto per la fase 3.* Il flusso sensibile è il pagamento online: un pacchetto già pagato non si può ripagare (409), un doppio clic riusa lo stesso tentativo, e il pagamento si registra solo dal webhook, mai dalla pagina di successo.
 
 **API7 — Server Side Request Forgery.** *Non applicabile.* L'API non scarica URL fornite dagli utenti.
 
@@ -50,7 +50,7 @@ E la view di login in `backend/apps/accounts/views.py` usa `ScopedRateThrottle` 
 
 **API9 — Improper Inventory Management.** *Parziale.* L'API è versionata (`/api/v1/`) e il contratto OpenAPI è salvato nel repository: la CI fallisce se il codice lo cambia senza aggiornarlo. Manca una politica di deprecazione: fase 5.
 
-**API10 — Unsafe Consumption of APIs.** *Non applicabile oggi.* Nessuna API esterna. Lo diventerà con i webhook di Stripe, che andranno verificati con la firma.
+**API10 — Unsafe Consumption of APIs.** *Coperto per la fase 3.* I webhook di Stripe sono accettati solo con firma valida, calcolata sul corpo grezzo; ogni evento è salvato una volta per id; l'importo registrato è quello che Stripe ha addebitato. Manca l'allowlist degli IP di Stripe sul proxy: fase 4.
 
 **Altro.** Nessun segreto nel repository. Il comando `seed_demo`, che crea utenti con password nota, si rifiuta di girare con `DEBUG=False`. Il linter controlla anche alcune regole di sicurezza di bandit.
 
@@ -71,7 +71,7 @@ E la view di login in `backend/apps/accounts/views.py` usa `ScopedRateThrottle` 
 
 ## Come lo spiegheresti a un colloquio
 
-Alla fine di ogni fase verifico l'API contro la OWASP API Security Top 10 e registro cosa è coperto e cosa no. Nella fase 1 il problema più serio era il primo della lista, BOLA: le scritture non erano filtrate per tenant, e l'ho corretto con test dedicati per ogni endpoint. Per il consumo di risorse ho aggiunto throttle globali e uno stretto sul login, con i contatori in Redis condivisi tra i processi. In produzione la configurazione è sicura di default e l'applicazione non parte senza segreti. Nella fase 2 ho reso lo studio un tenant esplicito e aggiunto permessi per oggetto. Restano aperti, e documentati, la revoca dei token e i flussi legati ai pagamenti, che arriveranno con Stripe.
+Alla fine di ogni fase verifico l'API contro la OWASP API Security Top 10 e registro cosa è coperto e cosa no. Nella fase 1 il problema più serio era il primo della lista, BOLA: le scritture non erano filtrate per tenant, e l'ho corretto con test dedicati per ogni endpoint. Per il consumo di risorse ho aggiunto throttle globali e uno stretto sul login, con i contatori in Redis condivisi tra i processi. In produzione la configurazione è sicura di default e l'applicazione non parte senza segreti. Nella fase 2 ho reso lo studio un tenant esplicito e aggiunto permessi per oggetto. Nella fase 3 ho aggiunto i pagamenti Stripe con webhook verificati e idempotenti. Resta aperta, e documentata, la revoca dei token.
 
 ## Domande di autoverifica
 
@@ -87,5 +87,5 @@ Alla fine di ogni fase verifico l'API contro la OWASP API Security Top 10 e regi
 4. **Cosa resta aperto per l'autenticazione?**
    La blacklist dei refresh token, il logout lato server e l'MFA.
 
-5. **Quali rischi diventeranno rilevanti con Stripe?**
-   API6 per i flussi di acquisto e API10 per i webhook, che andranno verificati con la firma e resi idempotenti.
+5. **Quali rischi sono diventati rilevanti con Stripe, e come li copriamo?**
+   API6 per il flusso di pagamento (niente doppio pagamento, registrazione solo dal webhook) e API10 per i webhook, verificati con la firma e salvati una volta per id.

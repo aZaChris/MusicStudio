@@ -2,7 +2,7 @@
 
 Questa cartella è materiale di studio, in italiano. Ogni file si capisce da solo e si può caricare singolarmente in NotebookLM. Il codice, i commenti e i commit sono in inglese.
 
-Stato: **fine della fase 2** (dominio), 6 novembre 2026.
+Stato: **fine della fase 3** (Celery e pagamenti), 6 novembre 2026.
 
 ## Ordine di lettura consigliato
 
@@ -21,10 +21,14 @@ Stato: **fine della fase 2** (dominio), 6 novembre 2026.
 13. `concetti/exclusion-constraint.md` — niente lezioni sovrapposte, anche in concorrenza (fase 2).
 14. `concetti/permessi-drf.md` — permessi per azione e per oggetto (fase 2).
 15. `concetti/openapi-e-contratti.md` — il contratto API versionato (fase 2).
-16. `concetti/sicurezza-api-owasp.md` — la checklist OWASP, aggiornata a ogni fase.
-17. Gli ADR, in ordine di numero.
-18. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
-19. `glossario.md` — da consultare quando serve.
+16. `concetti/pagamenti-online-stripe.md` — Stripe Checkout in modalità test (fase 3).
+17. `concetti/webhook-idempotenti.md` — notifiche verificate, salvate una volta, elaborate in background (fase 3).
+18. `concetti/task-celery-idempotenti.md` — acks late, idempotenza, outbox dei promemoria (fase 3).
+19. `concetti/caching.md` — chiavi versionate e il guasto di Redis (fase 3).
+20. `concetti/sicurezza-api-owasp.md` — la checklist OWASP, aggiornata a ogni fase.
+21. Gli ADR, in ordine di numero.
+22. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
+23. `glossario.md` — da consultare quando serve.
 
 Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA, quello sull'ExclusionConstraint e le domande da colloquio.
 
@@ -44,11 +48,16 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-005-backup-postgres-con-sidecar.md` — pg_dump giornaliero con rotazione.
 - `adr/ADR-006-health-endpoint-live-e-ready.md` — due controlli di salute separati.
 - `adr/ADR-007-ci-github-actions.md` — la pipeline di qualità.
-- `adr/ADR-008-promemoria-at-most-once.md` — promemoria senza duplicati, con il loro limite.
+- `adr/ADR-008-promemoria-at-most-once.md` — promemoria senza duplicati, con il loro limite (sostituito da ADR-015).
 - `adr/ADR-009-exclusion-constraint-per-le-sovrapposizioni.md` — il database vieta le lezioni sovrapposte.
 - `adr/ADR-010-studio-come-tenant.md` — lo studio obbligatorio per insegnanti e allievi.
 - `adr/ADR-011-permessi-per-oggetto.md` — permessi per oggetto, spostamento allievi, limite insegnanti.
 - `adr/ADR-012-contratto-openapi-versionato.md` — lo schema OpenAPI nel repository, controllato in CI.
+- `adr/ADR-013-pagamenti-online-stripe-checkout.md` — Stripe Checkout, solo modalità test.
+- `adr/ADR-014-webhook-salvati-poi-elaborati.md` — verifica, salva una volta, elabora in background.
+- `adr/ADR-015-outbox-per-i-promemoria.md` — promemoria affidabili con una outbox.
+- `adr/ADR-016-affidabilita-celery.md` — acks late e task idempotenti.
+- `adr/ADR-017-cache-dashboard-con-versioni.md` — cache con chiavi versionate e throttling fail open.
 
 ### Concetti (fase 1)
 
@@ -70,10 +79,17 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/permessi-drf.md` — has_permission, has_object_permission, regole di prodotto.
 - `concetti/openapi-e-contratti.md` — code-first con schema versionato, tag, errori documentati.
 
+### Concetti (fase 3)
+
+- `concetti/pagamenti-online-stripe.md` — Checkout Session, chiavi ristrette, idempotency key, modalità test.
+- `concetti/webhook-idempotenti.md` — firma HMAC, deduplica per id, elaborazione in background, riconciliazione.
+- `concetti/task-celery-idempotenti.md` — acks late, retry con backoff, outbox e lease.
+- `concetti/caching.md` — cache-aside, chiavi versionate, invalidazione con i segnali, fail open.
+
 ### Ripasso
 
 - `glossario.md` — ogni termine tecnico in italiano semplice.
-- `colloquio/domande-e-risposte.md` — 24 domande con risposta modello e punto debole.
+- `colloquio/domande-e-risposte.md` — 29 domande con risposta modello e punto debole.
 
 ## Formato dei documenti di concetto
 
@@ -81,7 +97,6 @@ Ogni documento in `concetti/` ha da 800 a 1500 parole e sempre le stesse sezioni
 
 ## Prossime fasi (concetti previsti)
 
-- **Fase 3, Celery e pagamenti**: task Celery idempotenti, webhook idempotenti con Stripe in modalità test, caching.
 - **Fase 4, produzione**: osservabilità con Sentry e log strutturati, test di carico con Locust, deploy reale su Coolify, prova di ripristino dei backup.
 - **Fase 5, rifinitura**.
 
@@ -106,3 +121,13 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Contratto:** `backend/openapi.yaml` nel repository, tag per dominio, errori documentati, controllo in CI.
 - **Bug trovati dai test:** durata sbagliata la notte del cambio d'ora; deadlock tra prenotazioni simultanee.
 - **Aperto:** coerenza studio allievo/insegnante garantita solo dai service; Row Level Security da valutare; tutto ciò che era aperto alla fase 1 (Docker reale, branch protection, backup off-site, revoca dei token).
+
+## Riepilogo della fase 3
+
+- **Pagamenti online:** Stripe Checkout in modalità test (chiavi live rifiutate all'avvio); un doppio clic riusa lo stesso tentativo; il pagamento si registra solo dal webhook.
+- **Webhook:** firma verificata sul corpo grezzo, evento salvato una volta per id, elaborazione idempotente in Celery, un pagamento per tentativo garantito dal database, riconciliazione oraria.
+- **Promemoria:** outbox con retry e lease; da "al massimo una volta" a "almeno una volta" senza doppioni.
+- **Celery:** acks late, riconsegna dei task di un worker morto, prefetch 1, limiti di tempo, impostazioni fissate da un test.
+- **Cache:** dashboard in cache con chiavi versionate per studio, invalidate dai segnali; da 6 query a 1.
+- **Bug trovato dai test:** con Redis giù il rate limiting faceva cadere tutta l'API; ora fallisce aperto.
+- **Aperto:** prova end-to-end con una sandbox Stripe reale; allowlist IP di Stripe; tutto ciò che era aperto prima (Docker reale, branch protection, backup off-site, revoca dei token).

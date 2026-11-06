@@ -12,7 +12,8 @@ Built spec-first with [spec-kit](https://github.com/github/spec-kit). Principles
 
 - **API**: Python 3.12, Django 5.2 LTS, Django REST Framework (API-only), JWT (simplejwt),
   OpenAPI with drf-spectacular (`/api/schema/`, `/api/docs/`).
-- **Data**: PostgreSQL 16. **Background jobs**: Celery + Redis (lesson reminders).
+- **Data**: PostgreSQL 16. **Background jobs**: Celery + Redis (reminders, Stripe webhooks,
+  hourly reconciliation). **Payments**: Stripe Checkout, test mode only.
 - **Quality**: pytest + factory_boy (real PostgreSQL), coverage gate 90%, query-count budgets,
   ruff, mypy (django-stubs), pre-commit, GitHub Actions.
 - **Deploy**: Docker Compose on [Coolify](https://coolify.io) (self-hosted). No AWS.
@@ -26,7 +27,10 @@ stay thin. The **studio is the tenant**: every teacher and student belongs to on
 is enforced at the ORM level for reads **and** writes through `apps/common/scoping.py`, plus
 object-level DRF permissions. PostgreSQL exclusion constraints forbid overlapping lessons per
 teacher and per student, even under concurrent requests. The API contract is committed at
-`backend/openapi.yaml` and checked in CI. See
+`backend/openapi.yaml` and checked in CI. Packages can be paid online with Stripe Checkout
+(**test mode only**), fulfilled exclusively by signature-verified, idempotently processed
+webhooks; reminders go through a retried outbox; the dashboard is cached with per-studio
+version keys. See
 [`docs/learning/01-panoramica-architettura.md`](docs/learning/01-panoramica-architettura.md).
 
 ## Repository layout

@@ -25,10 +25,10 @@ Immagina cinque scatole.
 1. **Il proxy di Coolify** riceve il traffico HTTPS da Internet, gestisce il certificato e inoltra le richieste al backend.
 2. **Il backend web**: Django con Django REST Framework, servito da gunicorn. Espone l'API su `/api/v1/`, la documentazione OpenAPI su `/api/docs/` e i controlli di salute su `/health/`.
 3. **PostgreSQL**: tutti i dati.
-4. **Redis**: la coda dei task di Celery e la cache usata per il rate limiting.
-5. **Celery**: un worker che esegue i task e un processo beat che li programma. Oggi c'è un solo task: ogni 15 minuti, i promemoria delle lezioni di domani.
+4. **Redis**: la coda dei task di Celery e la cache (rate limiting e dashboard).
+5. **Celery**: un worker che esegue i task e un processo beat che li programma. Ogni 15 minuti registra e invia i promemoria delle lezioni di domani; elabora i webhook di Stripe; ogni ora riconcilia con Stripe i pagamenti rimasti aperti.
 
-In più c'è un sesto servizio di supporto, il **backup**, che ogni notte salva il database.
+In più c'è un sesto servizio di supporto, il **backup**, che ogni notte salva il database. E c'è un servizio esterno: **Stripe**, che gestisce i pagamenti online in modalità test, con una pagina di pagamento ospitata e notifiche via webhook.
 
 Backend, worker e beat usano la stessa immagine Docker. Cambia solo il comando di avvio.
 
@@ -41,8 +41,8 @@ Il codice è in `backend/`. La configurazione Django è in `backend/config/`, le
 - `students`: allievi e collegamenti con i genitori.
 - `packages`: i pacchetti di lezioni.
 - `lessons`: le lezioni e la dashboard dell'insegnante.
-- `payments`: i pagamenti, registrati a mano (contanti, bonifico).
-- `notifications`: i promemoria via email.
+- `payments`: i pagamenti, registrati a mano (contanti, bonifico) o online con Stripe Checkout, i webhook e la riconciliazione.
+- `notifications`: i promemoria via email, con una outbox che li rende affidabili.
 - `common`: codice trasversale. Lo scoping per tenant, i permessi, l'exception handler, le factory dei test.
 
 Dentro ogni app la struttura è sempre la stessa. `models.py` per i dati e i vincoli. `services.py` per le operazioni di scrittura. `selectors.py` per le letture. `serializers.py` e `views.py` per l'HTTP, il più sottili possibile. `tests/` per i test.

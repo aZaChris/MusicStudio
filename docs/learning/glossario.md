@@ -26,7 +26,7 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 
 **CI (Continuous Integration).** Un sistema che a ogni push controlla automaticamente il codice: lint, test, build.
 
-**Claim (reclamare).** Segnare un lavoro come "preso" in modo atomico, così che un altro processo non lo faccia di nuovo. Noi lo facciamo con un `UPDATE ... WHERE reminder_sent_at IS NULL`.
+**Claim (reclamare).** Segnare un lavoro come "preso" in modo atomico, così che un altro processo non lo faccia di nuovo. Noi lo facciamo con un `UPDATE ... WHERE stato = 'in attesa'` sulle consegne dei promemoria.
 
 **Composite index (indice composto).** Un indice su più colonne, per esempio insegnante e data insieme.
 
@@ -179,3 +179,43 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **TenantContext.** Nel nostro codice, l'oggetto immutabile con ruolo, studio e profilo dell'utente, calcolato una volta per richiesta.
 
 **Wall-clock time (ora da orologio).** L'ora come la legge una persona nel suo fuso. Sommare minuti in ora da orologio sbaglia nei cambi d'ora; per le durate si usa UTC.
+
+## Termini aggiunti nella fase 3
+
+**Acks late.** Impostazione di Celery: il messaggio di un task si conferma solo quando il task finisce, così un task interrotto torna in coda.
+
+**At-least-once (almeno una volta).** Garanzia di consegna senza perdite, ma con possibili duplicati, che vanno riconosciuti.
+
+**Backoff esponenziale.** Strategia di retry con attese che raddoppiano: 30 secondi, 60, 120, e così via.
+
+**Cache-aside.** Il codice guarda prima in cache; se non trova, calcola, salva e restituisce.
+
+**Checkout Session.** In Stripe, una sessione di pagamento con una pagina ospitata da Stripe.
+
+**Dynamic payment methods.** Stripe sceglie i metodi di pagamento più adatti al cliente, configurati dalla Dashboard, invece di una lista fissa nel codice.
+
+**Fail open.** Quando un controllo non può funzionare (per esempio la cache del rate limiting è giù), lascia passare invece di bloccare.
+
+**HMAC.** Una firma calcolata con un segreto condiviso. Stripe la usa per firmare i webhook.
+
+**Idempotency key.** Una chiave inviata con una richiesta: se arriva due volte, il servizio esegue solo la prima.
+
+**Lease.** Un "prestito" a tempo: un worker tiene un lavoro per un tempo massimo, poi un altro può riprenderlo.
+
+**Outbox (transactional outbox).** Una tabella in cui si registra cosa va inviato, nella stessa transazione dei dati; un processo separato la legge e invia.
+
+**PCI DSS.** Le regole di sicurezza per chi gestisce dati delle carte di pagamento.
+
+**Reconciliation (riconciliazione).** Confrontare il nostro stato con quello di un sistema esterno per trovare e correggere differenze.
+
+**Restricted API key (chiave ristretta).** Chiave Stripe (`rk_`) con solo i permessi assegnati.
+
+**Sandbox (Stripe).** Ambiente di prova isolato di Stripe, senza denaro reale.
+
+**Signal (Django).** Un avviso che Django emette, per esempio dopo il salvataggio di un modello, a cui si può collegare una funzione.
+
+**TTL (time to live).** Quanto a lungo una voce resta in cache.
+
+**Visibility timeout.** In Redis come broker di Celery: dopo questo tempo un task non confermato viene riconsegnato.
+
+**Webhook.** Una richiesta HTTP che un servizio esterno manda al nostro server quando succede qualcosa.

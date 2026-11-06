@@ -1,6 +1,6 @@
 # Domande da colloquio su MusicStudio
 
-Domande realistiche su ciò che è stato costruito, con una risposta modello e il punto debole da conoscere. Il punto debole è la domanda successiva che un buon intervistatore farebbe: preparati a quella. Aggiornato alla fine della fase 2.
+Domande realistiche su ciò che è stato costruito, con una risposta modello e il punto debole da conoscere. Il punto debole è la domanda successiva che un buon intervistatore farebbe: preparati a quella. Aggiornato alla fine della fase 3.
 
 ## Architettura
 
@@ -70,11 +70,11 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 ## Task in background
 
-### 11. Come funzionano i promemoria e cosa succede se due esecuzioni si sovrappongono?
+### 11. Come funzionano i promemoria e cosa succede se un worker muore?
 
-**Risposta modello.** Celery Beat lancia il task ogni 15 minuti. Il task cerca le lezioni tra 23 ore e 45 minuti e 24 ore. Per ognuna fa un `UPDATE` condizionale che la reclama: solo un'esecuzione vince, e solo quella manda le email. È una consegna at-most-once.
+**Risposta modello.** Con una outbox. Ogni 15 minuti lo sweep trova le lezioni tra circa 24 ore e, in una transazione, registra una riga per ogni coppia lezione-genitore, con un vincolo unico: ripeterlo non crea doppioni. Ogni consegna è un task che la reclama con un UPDATE condizionale e un lease di 10 minuti, manda l'email e la segna come inviata; se fallisce, Celery riprova con backoff esponenziale. Se un worker muore, dopo il lease un altro riprende la consegna.
 
-**Punto debole.** Se il worker muore tra il claim e l'invio, il promemoria è perso. L'ho scelto consapevolmente, perché un'email mancata è meglio di uno spam ripetuto. La soluzione completa, una outbox con retry e deduplica, è prevista nella fase 3.
+**Punto debole.** È "almeno una volta": se il server SMTP accetta l'email e il worker muore prima di segnarla come inviata, il genitore riceve due email. Con SMTP "esattamente una volta" non esiste. Nella fase 1 avevo scelto il contrario, "al massimo una volta", e perdevo promemoria: l'ADR-015 spiega il cambio.
 
 ## Deploy e operazioni
 
@@ -153,6 +153,38 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 **Risposta modello.** Lo schema è generato dal codice, ma è salvato nel repository. Un test, la CI e un hook pre-commit lo rigenerano e falliscono se è diverso. Così ogni cambio di contratto si vede nel diff della pull request. Un postprocessing hook documenta in un punto solo gli errori di ogni operazione.
 
 **Punto debole.** Le regole che decidono quali errori documentare sono euristiche, basate su metodo e percorso. Un nuovo tipo di conflitto richiede di aggiornarle.
+
+## Fase 3: Celery e pagamenti
+
+### 25. Come gestisci i webhook di Stripe?
+
+**Risposta modello.** Verifico la firma HMAC sul corpo grezzo e rispondo 400 se non è valida. Salvo l'evento con il suo id unico, così un duplicato non fa niente, e rispondo 200 subito. Un task Celery avviato dopo il commit lo elabora in modo idempotente, e un vincolo uno-a-uno tra pagamento e tentativo impedisce il doppio pagamento. Una riconciliazione oraria chiede a Stripe lo stato dei tentativi rimasti aperti.
+
+**Punto debole.** Non ho ancora l'allowlist degli IP di Stripe sul proxy, che sarebbe una difesa in più. E l'integrazione non è stata provata contro una sandbox Stripe reale: i test usano un finto per le chiamate e firme vere per i webhook.
+
+### 26. Come eviti un doppio pagamento se il genitore fa doppio clic?
+
+**Risposta modello.** Il service blocca la riga del pacchetto per tutta l'operazione. La seconda richiesta aspetta, poi trova il tentativo aperto e restituisce lo stesso link. In più, la chiamata a Stripe porta una chiave di idempotenza legata all'UUID del tentativo, così anche i retry di rete dell'SDK non creano una seconda sessione.
+
+**Punto debole.** La riga resta bloccata durante una chiamata di rete. Con volumi alti si separerebbe la chiamata dalla transazione.
+
+### 27. Perché un pagamento "completato" a volte non lo registri?
+
+**Risposta modello.** Perché con i metodi differiti, come l'addebito SEPA, Stripe completa la sessione con `payment_status` "unpaid" e conferma giorni dopo con `async_payment_succeeded`. Registro il pagamento solo quando il denaro c'è, come raccomanda Stripe.
+
+**Punto debole.** Nessuno dal lato del codice; l'errore comune è proprio registrare su ogni `completed`.
+
+### 28. Cosa succede ai task se un worker Celery muore?
+
+**Risposta modello.** Con `acks_late` e `reject_on_worker_lost` il task torna in coda e un altro worker lo riprende. Il prezzo è che può girare due volte, quindi ogni task è idempotente: marcatori di "già fatto" con la riga bloccata, vincoli unici, claim condizionali. Un test fissa queste impostazioni.
+
+**Punto debole.** Il `visibility_timeout` di Redis deve restare più lungo del task più lungo, altrimenti Redis riconsegna un task ancora in esecuzione.
+
+### 29. Come invalidi la cache della dashboard?
+
+**Risposta modello.** Con chiavi versionate per studio. La versione fa parte della chiave, e i segnali `post_save` e `post_delete` la incrementano dopo il commit per ogni scrittura su lezioni, pacchetti, pagamenti e allievi. Così invalido tutte le chiavi dello studio in un colpo e catturo anche l'admin. Una richiesta servita dalla cache costa una query invece di sei.
+
+**Punto debole.** `update()` e `bulk_create()` non inviano segnali. E testando Redis spento ho scoperto che il rate limiting di DRF faceva cadere tutta l'API: ora fallisce aperto, quindi durante un guasto di Redis non c'è rate limiting.
 
 ## Domanda finale tipica
 

@@ -11,3 +11,4 @@ Problemi non banali risolti nel progetto: sintomo, causa radice, verifica, soluz
 | [pre-commit-e-core-hookspath.md](pre-commit-e-core-hookspath.md) | `pre-commit install` rifiuta con un `core.hooksPath` globale: hook versionati |
 | [fine-lezione-e-ora-legale.md](fine-lezione-e-ora-legale.md) | Sommare minuti in ora di Roma sbagliava la durata la notte del cambio d'ora |
 | [deadlock-su-exclusion-constraint.md](deadlock-su-exclusion-constraint.md) | Inserimenti simultanei sullo stesso orario: deadlock gestito con retry, poi 409 |
+| [redis-giu-e-throttling.md](redis-giu-e-throttling.md) | I throttle DRF leggono da Redis: con Redis giù ogni richiesta dava 500; ora falliscono aperti |

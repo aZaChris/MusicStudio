@@ -1,6 +1,6 @@
 # ADR-008: Promemoria delle lezioni con consegna "at most once"
 
-- Stato: accettato
+- Stato: sostituito da ADR-015 (fase 3)
 - Data: 2026-11-06
 
 ## Contesto

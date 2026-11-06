@@ -38,9 +38,9 @@
 
 ## Phase 8: US6 — Docs
 
-- [ ] T014 [P] [US6] ADR-013 (Stripe Checkout, test mode), ADR-014 (webhook store-then-process), ADR-015 (reminder outbox, supersedes ADR-008), ADR-016 (Celery reliability), ADR-017 (cache versioning)
-- [ ] T015 [P] [US6] Concepts: `task-celery-idempotenti.md`, `webhook-idempotenti.md`, `pagamenti-online-stripe.md`, `caching.md`
-- [ ] T016 [US6] Glossary, Q&A, overview, index, OWASP walk (API6, API10), ADR-008 status → superseded, KB if needed
+- [X] T014 [P] [US6] ADR-013 (Stripe Checkout, test mode), ADR-014 (webhook store-then-process), ADR-015 (reminder outbox, supersedes ADR-008), ADR-016 (Celery reliability), ADR-017 (cache versioning)
+- [X] T015 [P] [US6] Concepts: `task-celery-idempotenti.md`, `webhook-idempotenti.md`, `pagamenti-online-stripe.md`, `caching.md`
+- [X] T016 [US6] Glossary, Q&A, overview, index, OWASP walk (API6, API10), ADR-008 status → superseded, KB if needed
 
 ## Phase 9: Polish
 
