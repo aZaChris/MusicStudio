@@ -14,6 +14,8 @@ Gli attori sono tre.
 - **Il titolare dello studio** fa le stesse cose, ma per tutti gli insegnanti del suo studio.
 - **Il genitore** vede, in sola lettura, le lezioni, i pacchetti e i pagamenti dei suoi figli. Riceve un'email il giorno prima di ogni lezione.
 
+Un'altra regola è garantita direttamente dal database: un insegnante non può avere due lezioni sovrapposte, e un allievo nemmeno. Lo impediscono due vincoli di esclusione di PostgreSQL, che funzionano anche con richieste simultanee.
+
 Il concetto di business più importante è il **pacchetto**. Un genitore compra, per esempio, otto lezioni. Ogni lezione completata ne scala una. Quando ne restano due, l'insegnante vede un avviso. Questo contatore deve essere sempre giusto: se sbaglia, qualcuno perde soldi.
 
 ## Il sistema dall'alto
@@ -67,17 +69,17 @@ Una richiesta tipica, per esempio "crea una lezione", passa così: la view ricev
 
 ## Come è protetto
 
-La regola più importante del progetto è l'isolamento tra tenant: un utente non deve mai leggere o scrivere i dati di un altro insegnante o di un'altra famiglia. È applicata nel database, tramite i queryset, sia in lettura sia in scrittura, da un unico modulo: `backend/apps/common/scoping.py`. Ogni endpoint di scrittura ha un test che prova a violarla. Il resto della sicurezza (rate limiting, configurazione di produzione, OWASP) è in `docs/learning/concetti/sicurezza-api-owasp.md`.
+La regola più importante del progetto è l'isolamento tra tenant: un utente non deve mai leggere o scrivere i dati di un altro studio o di un'altra famiglia. Il tenant è lo **studio**: ogni insegnante e ogni allievo ne ha uno, e un insegnante solista ha uno studio personale. A ogni richiesta un contesto (ruolo, studio, profilo) viene calcolato una volta, e tutti i queryset passano da un unico modulo: `backend/apps/common/scoping.py`. Sopra la visibilità, un permesso per oggetto decide chi può modificare cosa. Ogni endpoint di scrittura ha un test che prova a violarla. Il resto della sicurezza (rate limiting, configurazione di produzione, OWASP) è in `docs/learning/concetti/sicurezza-api-owasp.md`.
 
 ## Come si verifica la qualità
 
-A ogni push GitHub Actions esegue lint, formattazione, tipi, controllo delle migrazioni, 92 test con copertura minima del 90% su PostgreSQL e Redis veri, e la generazione dello schema OpenAPI. In locale gli stessi controlli veloci girano prima di ogni commit.
+A ogni push GitHub Actions esegue lint, formattazione, tipi, controllo delle migrazioni, i test con copertura minima del 90% su PostgreSQL e Redis veri, e il confronto tra lo schema OpenAPI generato e quello salvato nel repository (`backend/openapi.yaml`), che è il contratto con i client. In locale gli stessi controlli veloci girano prima di ogni commit.
 
 ## Cosa è discutibile, detto onestamente
 
 - **Un solo server.** Se cade, cade tutto, backup compresi. È accettabile per la scala del prodotto, ma è un limite reale.
 - **Migrazioni all'avvio del web.** Semplici e sicure con una replica, non con più repliche.
-- **Lo scoping per ruolo ha tre rami.** Funziona, ma con altri ruoli diventerebbe fragile. La fase 2 introduce un tenant esplicito.
+- **La coerenza dello studio** tra un allievo e il suo insegnante è garantita dai service, non da un vincolo del database.
 - **Il frontend esistente** (`frontend/`, una SPA React) e l'app Expo del branch `app` parlano con API diverse: la SPA con queste, l'app con quelle Next.js del branch `web`. Riallinearli è un lavoro futuro.
 - **Docker non è stato eseguito** nell'ambiente in cui è stata scritta la fase 1. Le impostazioni di produzione sono state provate con gunicorn, ma il primo `docker compose up` reale è ancora da fare.
 

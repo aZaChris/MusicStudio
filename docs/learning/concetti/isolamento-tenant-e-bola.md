@@ -26,7 +26,7 @@ In Django REST Framework un campo di relazione, come `PrimaryKeyRelatedField`, v
 
 ## Come lo abbiamo applicato in MusicStudio
 
-**Le letture erano già protette.** La funzione `role_scoped_queryset`, ora in `backend/apps/common/scoping.py`, filtra un queryset in base al ruolo: l'insegnante vede i propri allievi, il titolare tutti quelli del suo studio, il genitore solo i figli collegati. Ogni ViewSet la usava.
+**Le letture erano già protette.** Una funzione di scoping, oggi `scope` in `backend/apps/common/scoping.py` (nella fase 1 si chiamava `role_scoped_queryset`), filtra un queryset in base al ruolo: l'insegnante vede i propri allievi, il titolare tutti quelli del suo studio, il genitore solo i figli collegati. Ogni ViewSet la usava.
 
 **Le scritture no.** Durante l'audit ho fatto un test semplice. L'insegnante A manda un POST a `/api/v1/lessons/` con l'id di un allievo dell'insegnante B. Risposta: 201 Created. Stessa cosa per `/api/v1/payments/`. La lezione finiva davvero nell'agenda di B.
 
@@ -68,7 +68,7 @@ Durante il lavoro è emersa anche un'altra fuga. La view degli insegnanti dello 
 - **Rispondere 403 a un oggetto di un altro tenant.** Rivela che esiste. Meglio 404 in lettura e 400 generico in scrittura.
 - **Fidarsi del frontend.** Se l'interfaccia mostra solo i propri allievi, nessuno impedisce a un client di mandare un altro id.
 - **`filter(campo=None)` per sbaglio.** Se una variabile è `None`, Django filtra per `IS NULL`. In un sistema multi-tenant può diventare "tutti i record senza tenant".
-- **Trade-off:** lo scoping per ruolo oggi ha tre rami (insegnante, titolare, genitore). Con più ruoli diventa fragile. La fase 2 introdurrà un tenant esplicito su ogni tabella.
+- **Trade-off, e come è evoluto:** nella fase 1 lo scoping aveva tre rami ripetuti per ogni modello. Nella fase 2 lo studio è diventato un tenant esplicito, obbligatorio per insegnanti e allievi, e lo scoping riceve un contesto calcolato una volta per richiesta. Vedi `docs/learning/concetti/multi-tenancy.md`.
 
 ## Come lo spiegheresti a un colloquio
 

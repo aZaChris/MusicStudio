@@ -1,6 +1,6 @@
 # Domande da colloquio su MusicStudio
 
-Domande realistiche su ciò che è stato costruito, con una risposta modello e il punto debole da conoscere. Il punto debole è la domanda successiva che un buon intervistatore farebbe: preparati a quella. Aggiornato alla fine della fase 1.
+Domande realistiche su ciò che è stato costruito, con una risposta modello e il punto debole da conoscere. Il punto debole è la domanda successiva che un buon intervistatore farebbe: preparati a quella. Aggiornato alla fine della fase 2.
 
 ## Architettura
 
@@ -26,7 +26,7 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 ### 4. Come garantisci che un insegnante non veda i dati di un altro?
 
-**Risposta modello.** Con lo scoping nel database: ogni queryset passa da `role_scoped_queryset`, che filtra in base al ruolo. Un oggetto di un altro tenant restituisce 404, non 403, per non rivelarne l'esistenza. E dalla fase 1 lo stesso filtro si applica ai campi di relazione nelle scritture.
+**Risposta modello.** Il tenant è lo studio, obbligatorio per ogni insegnante e allievo. A ogni richiesta calcolo una volta un contesto con ruolo e studio, e ogni queryset passa da una funzione di scoping che lo usa. Un oggetto di un altro tenant restituisce 404, non 403, per non rivelarne l'esistenza. E dalla fase 1 lo stesso filtro si applica ai campi di relazione nelle scritture.
 
 **Punto debole.** Prima della fase 1 le scritture non erano protette: un insegnante poteva creare lezioni sugli allievi di un altro. Raccontalo come una scoperta del tuo audit, con il test che lo dimostrava.
 
@@ -122,10 +122,42 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Punto debole.** I test sono più lenti, circa 13 secondi. È un prezzo che accetto.
 
+## Fase 2: dominio
+
+### 20. Come impedisci due lezioni sovrapposte?
+
+**Risposta modello.** Con due ExclusionConstraint di PostgreSQL, uno per insegnante e uno per allievo, su `tstzrange(inizio, fine, '[)')` con l'operatore di sovrapposizione. Sono parziali: valgono solo per le lezioni programmate o completate. Un controllo nel codice avrebbe una race condition tra lettura e scrittura; il vincolo no. Il service traduce la violazione in un 409.
+
+**Punto debole.** Due inserimenti simultanei possono andare in deadlock sul controllo del vincolo. L'ho scoperto con un test a due thread e lo gestisco riprovando la scrittura: il secondo tentativo riceve una violazione normale.
+
+### 21. Perché hai salvato la fine della lezione invece di calcolarla?
+
+**Risposta modello.** Perché in un indice PostgreSQL accetta solo funzioni immutabili, e `timestamptz + interval` è STABLE: dipende dal fuso orario. L'ho verificato provando a creare il vincolo sull'espressione. L'API continua a usare `duration_minutes`, calcolato dal service.
+
+**Punto debole.** Calcolando la fine in Python su un datetime con il fuso di Roma, la notte del cambio dell'ora una lezione di un'ora ne durava due, perché Python somma sull'orologio locale. Un test sul 25 ottobre l'ha trovato. Ora il calcolo si fa in UTC.
+
+### 22. Come hai implementato la multi-tenancy?
+
+**Risposta modello.** Tabelle condivise con il tenant esplicito: lo studio è obbligatorio per insegnanti e allievi, e un solista ha uno studio personale creato da una migrazione. Il contesto del tenant si calcola con una query per richiesta e si mette in cache sulla richiesta Django, perché con JWT un middleware non conosce ancora l'utente. Ho scartato uno schema per tenant: moltiplica le migrazioni senza un vero beneficio a questa scala.
+
+**Punto debole.** La regola "lo studio dell'allievo è quello del suo insegnante" è garantita dai service, non dal database.
+
+### 23. Che differenza fai tra visibilità e permessi?
+
+**Risposta modello.** La visibilità viene dal queryset filtrato per tenant, e fuori dal proprio studio dà 404. I permessi DRF lavorano su ciò che vedi: `has_permission` controlla il ruolo per l'azione, `has_object_permission` controlla se puoi modificare quell'oggetto. Lo spostamento di un allievo è un'azione solo per il titolare, verso un insegnante dello stesso studio.
+
+**Punto debole.** `has_object_permission` non viene chiamato nelle liste né nella creazione. Lì la protezione è il queryset e la validazione dei campi di relazione.
+
+### 24. Come eviti che lo schema OpenAPI e il codice divergano?
+
+**Risposta modello.** Lo schema è generato dal codice, ma è salvato nel repository. Un test, la CI e un hook pre-commit lo rigenerano e falliscono se è diverso. Così ogni cambio di contratto si vede nel diff della pull request. Un postprocessing hook documenta in un punto solo gli errori di ogni operazione.
+
+**Punto debole.** Le regole che decidono quali errori documentare sono euristiche, basate su metodo e percorso. Un nuovo tipo di conflitto richiede di aggiornarle.
+
 ## Domanda finale tipica
 
 ### 19. Cosa faresti diversamente o cosa miglioreresti per primo?
 
-**Risposta modello.** Per prima cosa proverei davvero il deploy con Docker e il ripristino di un backup, perché sono le due cose non ancora verificate. Poi introdurrei un tenant esplicito su ogni tabella, per sostituire lo scoping a tre rami. E aggiungerei la revoca dei token.
+**Risposta modello.** Per prima cosa proverei davvero il deploy con Docker e il ripristino di un backup, perché sono le due cose non ancora verificate. Poi aggiungerei la revoca dei token. E valuterei la Row Level Security di PostgreSQL, per avere l'isolamento tra studi garantito anche dal database e non solo dal codice.
 
 **Punto debole.** Nessuno: è una domanda che premia l'onestà. Mostra che conosci i limiti di quello che hai costruito.

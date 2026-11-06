@@ -2,7 +2,7 @@
 
 ## TL;DR
 
-La OWASP API Security Top 10 è la lista dei dieci rischi di sicurezza più comuni nelle API. La constitution di MusicStudio chiede di verificarla alla fine di ogni fase. Questo documento la spiega e registra lo stato dopo la fase 1: cosa è coperto, cosa è parziale, cosa è aperto. Due interventi concreti di questa fase: la chiusura delle scritture cross-tenant (rischio 1) e il rate limiting sul login (rischio 4).
+La OWASP API Security Top 10 è la lista dei dieci rischi di sicurezza più comuni nelle API. La constitution di MusicStudio chiede di verificarla alla fine di ogni fase. Questo documento la spiega e registra lo stato aggiornato alla fine della fase 2: cosa è coperto, cosa è parziale, cosa è aperto. Interventi principali: scritture cross-tenant chiuse e rate limiting sul login (fase 1); tenant esplicito, permessi per oggetto e stati dei pagamenti (fase 2).
 
 ## Il problema reale
 
@@ -20,13 +20,13 @@ Il **rate limiting** merita una spiegazione a parte. Limita quante richieste un 
 
 ## Come lo abbiamo applicato in MusicStudio
 
-Ecco lo stato dopo la fase 1, voce per voce.
+Ecco lo stato alla fine della fase 2, voce per voce.
 
-**API1 — Broken Object Level Authorization.** *Coperto.* Le letture erano già filtrate per tenant. Le scritture no: un insegnante poteva creare lezioni e pagamenti sugli allievi di un altro. Ora i campi di relazione sono filtrati per utente (`backend/apps/common/serializers.py`) e ogni endpoint di scrittura ha un test cross-tenant. Corretta anche la fuga degli insegnanti solisti nella view dello studio.
+**API1 — Broken Object Level Authorization.** *Coperto.* Le letture erano già filtrate per tenant. Le scritture no: un insegnante poteva creare lezioni e pagamenti sugli allievi di un altro. Ora i campi di relazione sono filtrati per utente (`backend/apps/common/serializers.py`) e ogni endpoint di scrittura ha un test cross-tenant. Nella fase 2 lo studio è diventato un tenant obbligatorio, e un permesso per oggetto (`CanWriteTenantObject`) ricontrolla ogni modifica.
 
 **API2 — Broken Authentication.** *Parziale.* JWT con token di accesso di 60 minuti e refresh con rotazione. Login limitato a 5 tentativi al minuto per client. Manca: la blacklist dei refresh token dopo la rotazione, il logout lato server e l'MFA. La chiave di firma in produzione è obbligatoria e separata dalla `SECRET_KEY`.
 
-**API3 — Broken Object Property Level Authorization.** *Parziale.* `lessons_remaining` era scrivibile dal client: ora è in sola lettura. Così anche `teacher` e `status` della lezione. Da rivedere nella fase 2: un insegnante può modificare `status` di un pagamento senza vincoli di transizione.
+**API3 — Broken Object Property Level Authorization.** *Coperto.* `lessons_remaining`, `teacher`, `studio`, `end_time` e lo stato della lezione sono in sola lettura. L'insegnante di un allievo si cambia solo con l'azione riservata al titolare. Lo stato di un pagamento segue una macchina a stati, e «pagato» è finale.
 
 **API4 — Unrestricted Resource Consumption.** *Coperto per la fase 1.* Throttle globali (100 richieste l'ora da anonimi, 1000 da autenticati) e uno specifico per il login, configurabili da variabili d'ambiente. Paginazione a 25 elementi. Le query hanno un numero costante, quindi una richiesta non può far lavorare il database in proporzione ai dati. La configurazione è in `backend/config/settings/base.py`:
 
@@ -40,7 +40,7 @@ Ecco lo stato dopo la fase 1, voce per voce.
 
 E la view di login in `backend/apps/accounts/views.py` usa `ScopedRateThrottle` con lo scope `login`. Il test `test_login_is_throttled_after_five_attempts` verifica che il sesto tentativo riceva 429. I contatori stanno nella cache Redis, condivisa da tutti i processi web: con una cache in memoria ogni processo avrebbe il suo contatore e il limite si moltiplicherebbe.
 
-**API5 — Broken Function Level Authorization.** *Coperto.* Le azioni di scrittura richiedono il ruolo insegnante o titolare. Gli endpoint dello studio sono solo per i titolari. I genitori sono in sola lettura, con test dedicati.
+**API5 — Broken Function Level Authorization.** *Coperto.* Le azioni di scrittura richiedono il ruolo insegnante o titolare; lo studio e lo spostamento degli allievi sono solo per i titolari; i genitori sono in sola lettura. Ogni ruolo ha un test per l'azione di spostamento.
 
 **API6 — Unrestricted Access to Sensitive Business Flows.** *Non applicabile oggi.* Non ci sono flussi come acquisti o prenotazioni pubbliche. Diventerà rilevante con Stripe nella fase 3.
 
@@ -48,7 +48,7 @@ E la view di login in `backend/apps/accounts/views.py` usa `ScopedRateThrottle` 
 
 **API8 — Security Misconfiguration.** *Coperto per la fase 1.* `DEBUG` disattivo in produzione, host ammessi espliciti, HSTS, cookie sicuri, redirect HTTPS dietro proxy, `nosniff`, admin su un path configurabile. La produzione non parte senza segreti. Verificato avviando gunicorn: host sconosciuto 400, HTTP 301, intestazioni di sicurezza presenti.
 
-**API9 — Improper Inventory Management.** *Parziale.* L'API è versionata (`/api/v1/`) e documentata con OpenAPI, e la CI fallisce se lo schema genera avvisi. Manca una politica di deprecazione: fase 5.
+**API9 — Improper Inventory Management.** *Parziale.* L'API è versionata (`/api/v1/`) e il contratto OpenAPI è salvato nel repository: la CI fallisce se il codice lo cambia senza aggiornarlo. Manca una politica di deprecazione: fase 5.
 
 **API10 — Unsafe Consumption of APIs.** *Non applicabile oggi.* Nessuna API esterna. Lo diventerà con i webhook di Stripe, che andranno verificati con la firma.
 
@@ -71,7 +71,7 @@ E la view di login in `backend/apps/accounts/views.py` usa `ScopedRateThrottle` 
 
 ## Come lo spiegheresti a un colloquio
 
-Alla fine di ogni fase verifico l'API contro la OWASP API Security Top 10 e registro cosa è coperto e cosa no. Nella fase 1 il problema più serio era il primo della lista, BOLA: le scritture non erano filtrate per tenant, e l'ho corretto con test dedicati per ogni endpoint. Per il consumo di risorse ho aggiunto throttle globali e uno stretto sul login, con i contatori in Redis condivisi tra i processi. In produzione la configurazione è sicura di default e l'applicazione non parte senza segreti. Restano aperti, e documentati, la revoca dei token e i flussi legati ai pagamenti, che arriveranno con Stripe.
+Alla fine di ogni fase verifico l'API contro la OWASP API Security Top 10 e registro cosa è coperto e cosa no. Nella fase 1 il problema più serio era il primo della lista, BOLA: le scritture non erano filtrate per tenant, e l'ho corretto con test dedicati per ogni endpoint. Per il consumo di risorse ho aggiunto throttle globali e uno stretto sul login, con i contatori in Redis condivisi tra i processi. In produzione la configurazione è sicura di default e l'applicazione non parte senza segreti. Nella fase 2 ho reso lo studio un tenant esplicito e aggiunto permessi per oggetto. Restano aperti, e documentati, la revoca dei token e i flussi legati ai pagamenti, che arriveranno con Stripe.
 
 ## Domande di autoverifica
 

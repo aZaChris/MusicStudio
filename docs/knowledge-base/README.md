@@ -9,3 +9,5 @@ Problemi non banali risolti nel progetto: sintomo, causa radice, verifica, soluz
 | [settings-di-default-vuoto.md](settings-di-default-vuoto.md) | wsgi/asgi/celery puntavano a un package di settings vuoto o di sviluppo |
 | [budget-query-falsati-da-force-authenticate.md](budget-query-falsati-da-force-authenticate.md) | `force_authenticate` riusava un utente con il profilo in cache |
 | [pre-commit-e-core-hookspath.md](pre-commit-e-core-hookspath.md) | `pre-commit install` rifiuta con un `core.hooksPath` globale: hook versionati |
+| [fine-lezione-e-ora-legale.md](fine-lezione-e-ora-legale.md) | Sommare minuti in ora di Roma sbagliava la durata la notte del cambio d'ora |
+| [deadlock-su-exclusion-constraint.md](deadlock-su-exclusion-constraint.md) | Inserimenti simultanei sullo stesso orario: deadlock gestito con retry, poi 409 |

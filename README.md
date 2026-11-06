@@ -22,8 +22,11 @@ Built spec-first with [spec-kit](https://github.com/github/spec-kit). Principles
 A modular monolith: one Django app per domain (`accounts`, `studios`, `students`,
 `packages`, `lessons`, `payments`, `notifications`, plus `common`). Inside each app,
 `services.py` holds write use-cases and `selectors.py` holds reads; views and serializers
-stay thin. Tenant isolation is enforced at the ORM level for reads **and** writes through
-`apps/common/scoping.py`. See
+stay thin. The **studio is the tenant**: every teacher and student belongs to one, and isolation
+is enforced at the ORM level for reads **and** writes through `apps/common/scoping.py`, plus
+object-level DRF permissions. PostgreSQL exclusion constraints forbid overlapping lessons per
+teacher and per student, even under concurrent requests. The API contract is committed at
+`backend/openapi.yaml` and checked in CI. See
 [`docs/learning/01-panoramica-architettura.md`](docs/learning/01-panoramica-architettura.md).
 
 ## Repository layout

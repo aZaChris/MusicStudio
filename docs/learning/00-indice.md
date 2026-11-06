@@ -2,7 +2,7 @@
 
 Questa cartella è materiale di studio, in italiano. Ogni file si capisce da solo e si può caricare singolarmente in NotebookLM. Il codice, i commenti e i commit sono in inglese.
 
-Stato: **fine della fase 1** (fondamenta e allineamento), 6 novembre 2026.
+Stato: **fine della fase 2** (dominio), 6 novembre 2026.
 
 ## Ordine di lettura consigliato
 
@@ -17,12 +17,16 @@ Stato: **fine della fase 1** (fondamenta e allineamento), 6 novembre 2026.
 9. `concetti/docker-e-deploy-con-coolify.md` — immagine, Compose e Coolify.
 10. `concetti/health-check-e-backup.md` — liveness, readiness e backup.
 11. `concetti/ci-e-quality-gate.md` — la pipeline che blocca il codice difettoso.
-12. `concetti/sicurezza-api-owasp.md` — la checklist OWASP di fine fase.
-13. Gli ADR, in ordine di numero.
-14. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
-15. `glossario.md` — da consultare quando serve.
+12. `concetti/multi-tenancy.md` — lo studio come tenant (fase 2).
+13. `concetti/exclusion-constraint.md` — niente lezioni sovrapposte, anche in concorrenza (fase 2).
+14. `concetti/permessi-drf.md` — permessi per azione e per oggetto (fase 2).
+15. `concetti/openapi-e-contratti.md` — il contratto API versionato (fase 2).
+16. `concetti/sicurezza-api-owasp.md` — la checklist OWASP, aggiornata a ogni fase.
+17. Gli ADR, in ordine di numero.
+18. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
+19. `glossario.md` — da consultare quando serve.
 
-Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA e le domande da colloquio.
+Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA, quello sull'ExclusionConstraint e le domande da colloquio.
 
 ## Mappa dei documenti
 
@@ -41,6 +45,10 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-006-health-endpoint-live-e-ready.md` — due controlli di salute separati.
 - `adr/ADR-007-ci-github-actions.md` — la pipeline di qualità.
 - `adr/ADR-008-promemoria-at-most-once.md` — promemoria senza duplicati, con il loro limite.
+- `adr/ADR-009-exclusion-constraint-per-le-sovrapposizioni.md` — il database vieta le lezioni sovrapposte.
+- `adr/ADR-010-studio-come-tenant.md` — lo studio obbligatorio per insegnanti e allievi.
+- `adr/ADR-011-permessi-per-oggetto.md` — permessi per oggetto, spostamento allievi, limite insegnanti.
+- `adr/ADR-012-contratto-openapi-versionato.md` — lo schema OpenAPI nel repository, controllato in CI.
 
 ### Concetti (fase 1)
 
@@ -53,12 +61,19 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/ci-e-quality-gate.md` — GitHub Actions, pre-commit, branch protection.
 - `concetti/docker-e-deploy-con-coolify.md` — multi-stage, entrypoint, Compose per Coolify.
 - `concetti/health-check-e-backup.md` — probe, RPO, rotazione dei backup.
-- `concetti/sicurezza-api-owasp.md` — OWASP API Top 10, stato alla fine della fase 1, rate limiting.
+- `concetti/sicurezza-api-owasp.md` — OWASP API Top 10, stato alla fine della fase 2, rate limiting.
+
+### Concetti (fase 2)
+
+- `concetti/exclusion-constraint.md` — vincoli di esclusione, range di tempo, deadlock e fusi orari.
+- `concetti/multi-tenancy.md` — modelli di multi-tenancy, contesto per richiesta, migrazione.
+- `concetti/permessi-drf.md` — has_permission, has_object_permission, regole di prodotto.
+- `concetti/openapi-e-contratti.md` — code-first con schema versionato, tag, errori documentati.
 
 ### Ripasso
 
 - `glossario.md` — ogni termine tecnico in italiano semplice.
-- `colloquio/domande-e-risposte.md` — 19 domande con risposta modello e punto debole.
+- `colloquio/domande-e-risposte.md` — 24 domande con risposta modello e punto debole.
 
 ## Formato dei documenti di concetto
 
@@ -66,7 +81,6 @@ Ogni documento in `concetti/` ha da 800 a 1500 parole e sempre le stesse sezioni
 
 ## Prossime fasi (concetti previsti)
 
-- **Fase 2, dominio**: ExclusionConstraint contro le sovrapposizioni, multi-tenancy, permessi DRF, OpenAPI.
 - **Fase 3, Celery e pagamenti**: task Celery idempotenti, webhook idempotenti con Stripe in modalità test, caching.
 - **Fase 4, produzione**: osservabilità con Sentry e log strutturati, test di carico con Locust, deploy reale su Coolify, prova di ripristino dei backup.
 - **Fase 5, rifinitura**.
@@ -82,3 +96,13 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Operazioni:** settings per ambiente, health live e ready, Dockerfile multi-stage non root, Compose di sviluppo e per Coolify con healthcheck ovunque e backup giornaliero, AWS rimosso.
 - **Qualità:** da 26 a 92 test, copertura 96%, CI su GitHub Actions, pre-commit.
 - **Aperto:** primo `docker compose up` reale, branch protection su GitHub, copia off-site e prova di ripristino dei backup, revoca dei token.
+
+## Riepilogo della fase 2
+
+- **Agenda:** due vincoli di esclusione di PostgreSQL vietano lezioni sovrapposte per insegnante e per allievo, anche con richieste simultanee; 409 con messaggio chiaro; l'API mantiene `duration_minutes`.
+- **Tenant:** lo studio è obbligatorio per insegnanti e allievi (studio personale per i solisti, via migrazione); contesto del tenant calcolato una volta per richiesta.
+- **Permessi:** permesso per oggetto, spostamento degli allievi riservato al titolare, limite di 10 insegnanti protetto dalla concorrenza.
+- **Pagamenti:** macchina a stati, «pagato» è finale.
+- **Contratto:** `backend/openapi.yaml` nel repository, tag per dominio, errori documentati, controllo in CI.
+- **Bug trovati dai test:** durata sbagliata la notte del cambio d'ora; deadlock tra prenotazioni simultanee.
+- **Aperto:** coerenza studio allievo/insegnante garantita solo dai service; Row Level Security da valutare; tutto ciò che era aperto alla fase 1 (Docker reale, branch protection, backup off-site, revoca dei token).

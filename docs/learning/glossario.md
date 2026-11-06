@@ -141,3 +141,41 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **Whitenoise.** Una libreria che permette a Django di servire i file statici in produzione, senza un web server separato.
 
 **Worker.** Il processo Celery che esegue i task presi dalla coda.
+
+## Termini aggiunti nella fase 2
+
+**btree_gist.** Un'estensione di PostgreSQL che permette di usare confronti normali, come `=` su un id, dentro un indice GiST insieme agli intervalli.
+
+**Contract-first / code-first.** Due modi di mantenere un contratto API. Contract-first: prima lo schema, poi il codice. Code-first: lo schema è generato dal codice.
+
+**Deadlock.** Due transazioni che si aspettano a vicenda. PostgreSQL lo rileva e interrompe una delle due con il codice 40P01.
+
+**Defense in depth (difesa in profondità).** Più livelli di protezione indipendenti, così se uno fallisce gli altri reggono.
+
+**ExclusionConstraint.** Un vincolo di PostgreSQL che vieta a due righe di soddisfare insieme una serie di confronti, per esempio "stesso insegnante e orari sovrapposti".
+
+**GiST index.** Un tipo di indice di PostgreSQL adatto a forme, intervalli e ricerche di sovrapposizione.
+
+**Half-open interval (intervallo semiaperto).** Un intervallo che include l'inizio ed esclude la fine, scritto `[)`. Due lezioni consecutive non si sovrappongono.
+
+**IMMUTABLE / STABLE.** Categorie delle funzioni di PostgreSQL. Una funzione immutabile dà sempre lo stesso risultato con gli stessi argomenti. Una stabile può dipendere da impostazioni come il fuso orario. Negli indici sono ammesse solo le immutabili.
+
+**Object-level permission (permesso per oggetto).** In DRF, il controllo `has_object_permission`: decide se l'utente può agire su quell'oggetto preciso.
+
+**Postprocessing hook.** In drf-spectacular, una funzione che modifica lo schema OpenAPI dopo la generazione.
+
+**Race condition.** Un errore che dipende da chi arriva prima tra due operazioni quasi simultanee.
+
+**Range type.** Un tipo di PostgreSQL che rappresenta un intervallo, per esempio `tstzrange` per intervalli di date e ore con fuso.
+
+**Row Level Security (RLS).** Una funzione di PostgreSQL che filtra le righe in base all'utente o al tenant della sessione, direttamente nel database.
+
+**Savepoint.** Un punto dentro una transazione a cui si può tornare in caso di errore, senza annullare tutta la transazione. In Django: un `atomic()` dentro un altro.
+
+**State machine (macchina a stati).** Un insieme di stati e di passaggi ammessi tra loro. Il pagamento: in attesa, pagato, scaduto, con "pagato" finale.
+
+**Tag (OpenAPI).** Un'etichetta che raggruppa le operazioni nella documentazione, per noi una per dominio.
+
+**TenantContext.** Nel nostro codice, l'oggetto immutabile con ruolo, studio e profilo dell'utente, calcolato una volta per richiesta.
+
+**Wall-clock time (ora da orologio).** L'ora come la legge una persona nel suo fuso. Sommare minuti in ora da orologio sbaglia nei cambi d'ora; per le durate si usa UTC.

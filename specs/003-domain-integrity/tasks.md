@@ -47,10 +47,10 @@
 
 ## Phase 8: User Story 6 — Study docs (P2)
 
-- [ ] T021 [P] [US6] ADR-009 (exclusion constraint + stored end_time), ADR-010 (studio tenant), ADR-011 (permissions), ADR-012 (committed contract)
-- [ ] T022 [P] [US6] Concepts: `exclusion-constraint.md`, `multi-tenancy.md`, `permessi-drf.md`, `openapi-e-contratti.md` in `docs/learning/concetti/`
-- [ ] T023 [US6] Update `glossario.md`, `colloquio/domande-e-risposte.md`, `01-panoramica-architettura.md`, `00-indice.md`, audit addendum if new defects
-- [ ] T024 [US6] OWASP walk update in `docs/learning/concetti/sicurezza-api-owasp.md`
+- [X] T021 [P] [US6] ADR-009 (exclusion constraint + stored end_time), ADR-010 (studio tenant), ADR-011 (permissions), ADR-012 (committed contract)
+- [X] T022 [P] [US6] Concepts: `exclusion-constraint.md`, `multi-tenancy.md`, `permessi-drf.md`, `openapi-e-contratti.md` in `docs/learning/concetti/`
+- [X] T023 [US6] Update `glossario.md`, `colloquio/domande-e-risposte.md`, `01-panoramica-architettura.md`, `00-indice.md`, audit addendum if new defects
+- [X] T024 [US6] OWASP walk update in `docs/learning/concetti/sicurezza-api-owasp.md`
 
 ## Phase 9: Polish
 
