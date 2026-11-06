@@ -20,6 +20,11 @@ repos:
 
   - repo: local
     hooks:
+      # Stripe guidance: keys never in code (only in env / the platform's secrets).
+      - id: no-stripe-keys
+        name: no Stripe keys or webhook secrets in code
+        entry: '(sk|rk)_(live|test)_[0-9A-Za-z]{16,}|whsec_[0-9A-Za-z]{20,}'
+        language: pygrep
       - id: ruff
         name: ruff (lint)
         entry: bash -c 'cd backend && uv run ruff check --fix .'
