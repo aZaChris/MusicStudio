@@ -24,8 +24,8 @@
 
 ## Phase 5: US3 — Reminder outbox (P2)
 
-- [ ] T009 [P] [US3] Tests: sweep ×N → one delivery per parent; send failure → retried, one email; stale lease re-claimed; cancelled lesson skipped; max attempts → failed, in `backend/apps/notifications/tests/test_reminders.py`
-- [ ] T010 [US3] `ReminderDelivery` model + migration; outbox services and tasks; remove the at-most-once claim
+- [X] T009 [P] [US3] Tests: sweep ×N → one delivery per parent; send failure → retried, one email; stale lease re-claimed; cancelled lesson skipped; max attempts → failed, in `backend/apps/notifications/tests/test_reminders.py`
+- [X] T010 [US3] `ReminderDelivery` model + migration; outbox services and tasks; remove the at-most-once claim
 
 ## Phase 6: US4 — Celery reliability (P2)
 
