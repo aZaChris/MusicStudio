@@ -22,7 +22,7 @@ experience, English B1, and studies everything that is built here.
 | 1 Foundations | `specs/002-production-foundations` | done |
 | 2 Domain | `specs/003-domain-integrity` | done |
 | 3 Celery & payments | `specs/004-celery-payments` | done |
-| 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | — | next |
+| 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | in progress (spec done, next: plan) |
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
 
 Open items carried over are listed at the end of `docs/learning/00-indice.md`.
