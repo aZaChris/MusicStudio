@@ -1,14 +1,26 @@
 <!--
 Sync Impact Report
-Version change: (template) → 1.0.0
-Modified principles: n/a (initial ratification)
-Added sections: I. Tenant Isolation & RBAC, II. API-First Architecture, III. Test-First on Business Logic,
-  IV. MVP Scope Discipline, V. Production-Quality Codebase, VI. Bilingual & Themeable UI;
-  Additional Constraints; Development Workflow; Governance
-Removed sections: none
-Templates requiring updates: ✅ plan-template.md (Constitution Check section — generic, compatible as-is)
-  ✅ spec-template.md (generic, compatible as-is)  ✅ tasks-template.md (generic, compatible as-is)
-Follow-up TODOs: none
+Version change: 1.0.0 → 2.0.0 (MAJOR: Principle VI redefined, Principle IV scope changed,
+  deployment target changed from AWS to Coolify)
+Modified principles:
+  I. Tenant Isolation & RBAC → extended to write paths (related-field querysets)
+  III. Test-First on Core Business Logic → III. Tested Features & Query Budgets (every feature
+    ships tests; query-count assertions on main endpoints)
+  IV. MVP Scope Discipline → IV. Phased Scope Discipline (payment gateway re-opened for phase 3,
+    Stripe test mode only)
+  V. Production-Quality Codebase → V. Modular Monolith with an Explicit Service Layer
+  VI. Bilingual & Themeable UI → VI. Clients Are Out of Scope; Backend Stays Bilingual
+Added principles: VII. Automated Quality Gate (CI), VIII. Decisions & Study Docs Ship With Code,
+  IX. Security Verified Per Phase (OWASP API Top 10)
+Added sections: Deployment & Operations constraints
+Removed sections: AWS deployment constraint
+Templates requiring updates:
+  ✅ .specify/templates/plan-template.md (Constitution Check gates listed)
+  ✅ .specify/templates/tasks-template.md (tests no longer optional; docs/ADR tasks)
+  ✅ .specify/templates/spec-template.md (generic, compatible as-is)
+  ✅ README.md (stack/deploy section rewritten in feature 002)
+Follow-up TODOs: GitHub branch protection must be enabled by the repo owner (cannot be set from
+  code) for Principle VII's "blocks merge" to be enforced.
 -->
 
 # MusicStudio Constitution
@@ -16,90 +28,127 @@ Follow-up TODOs: none
 ## Core Principles
 
 ### I. Tenant Isolation & RBAC (NON-NEGOTIABLE)
-A parent account MUST NEVER be able to read, list, or mutate another family's data through
-any API endpoint, regardless of what the UI hides. Every DRF viewset/queryset MUST filter by
-the requesting user's role and ownership at the ORM query level (not just serializer field
-hiding). Role checks (teacher, studio_owner, parent) MUST be enforced via DRF permission
-classes, not ad-hoc view logic. Every new endpoint that touches Student, Lesson, Package, or
-Payment data MUST ship with a permission-boundary test proving cross-tenant access is denied
-(403/404), before it is considered done.
-Rationale: this is a multi-tenant system handling other people's children's data and payment
-records; a leaked query is not a bug to fix later, it is the one failure mode that ends trust
-in the product.
+A user MUST NEVER read, list, create, or mutate data belonging to another tenant (another
+teacher, studio, or family) through any API endpoint. Isolation is enforced at the ORM query
+level on BOTH paths:
+- **Reads**: every queryset touching Student, Lesson, Package, or Payment is filtered by the
+  requesting user's role and ownership.
+- **Writes**: every related field a client can set (e.g. `student`, `package`) MUST validate
+  against a queryset scoped to the requesting user, so a foreign id is rejected.
+Role checks (teacher, studio_owner, parent) MUST be DRF permission classes, not ad-hoc view
+logic. Out-of-tenant objects return 404, not 403. Every endpoint that touches tenant data MUST
+ship with a test proving cross-tenant reads AND writes are denied.
+Rationale: this system holds other people's children's data and payment records; a leaked
+query ends trust in the product. Feature 001 scoped reads but not writes — the gap is closed
+here and must not reopen.
 
 ### II. API-First Architecture
-The backend is a Django REST Framework API with no server-side rendering of application
-views (Django admin excluded). All product features MUST be reachable through the documented
-REST API — the React SPA is one client among future clients. Do not couple business logic to
-the SPA's shape; a future React Native app MUST be able to consume the same endpoints without
-backend changes beyond what any new feature would need anyway.
-Rationale: a native mobile app on the same API is explicitly planned next; retrofitting an
-API onto a template-coupled backend is far more expensive than building API-first now.
+The backend is a Django REST Framework API with no server-rendered application views (Django
+admin excluded). Every product feature MUST be reachable through the versioned, documented
+REST API (`/api/v1/`, OpenAPI via drf-spectacular kept accurate). Business logic MUST NOT be
+coupled to any client's shape: the web SPA and the mobile app are clients among others.
+Rationale: several clients (web, Expo app) consume the same API; retrofitting is costly.
 
-### III. Test-First on Core Business Logic
-The following MUST have automated tests before a feature is merged: package lesson-count
-decrement on lesson completion, payment status transitions, and every permission boundary
-described in Principle I. Tests assert behavior (inputs → outputs/state), not implementation
-details. Other CRUD-only surface area may be covered more lightly, but these three areas are
-never optional.
-Rationale: these are the flows where a silent bug either loses a teacher money (package
-count) or leaks another family's data (permissions) — both are unacceptable in a system
-people pay teachers through.
+### III. Tested Features & Query Budgets
+Every feature MUST ship with automated tests in the same change (pytest + factory_boy, against
+real PostgreSQL). Tests assert behaviour, not implementation. Mandatory coverage:
+- business-critical paths (package decrement, payment rules, scheduling rules);
+- every permission boundary from Principle I;
+- every main list and detail endpoint MUST assert its query count
+  (`django_assert_num_queries` / `assertNumQueries`) so N+1 regressions fail the build.
+Line coverage of `backend/apps` MUST stay at or above the threshold configured in CI (90%).
+Rationale: silent bugs here lose teachers money or leak data; query counts are the cheapest
+guard against the most common ORM performance bug.
 
-### IV. MVP Scope Discipline
-Payment gateway integration, native mobile app code, video lessons, file/sheet-music
-libraries, recital/event planning, and multi-language support beyond English/Italian are OUT
-OF SCOPE until explicitly re-opened by the user. Do not scaffold, stub, or design around
-features on this list "for later" — YAGNI applies; the architecture must not block them, but
-it must not pay their cost today either.
-Rationale: this is a portfolio MVP with a defined success criterion; scope creep is the
-primary risk to ever finishing it.
+### IV. Phased Scope Discipline
+Work follows the phase roadmap in the active plan (1 foundations, 2 domain, 3 Celery &
+payments, 4 production, 5 polish); a phase starts only when the previous one is complete.
+Payment gateway integration is allowed from phase 3 in **Stripe test mode only**. Native app
+code, video lessons, sheet-music libraries, and event planning remain OUT OF SCOPE until the
+user re-opens them. YAGNI: the architecture must not block future features, but must not pay
+their cost today.
+Rationale: a portfolio project dies of scope creep; phases keep it shippable at every step.
 
-### V. Production-Quality Codebase
-Code MUST read as something a team would deploy, not a tutorial: real serializers and
-viewsets (no fat views with inline SQL-equivalent logic), migrations committed for every
-model change, environment-based settings (no secrets committed, `.env.example` kept current),
-and OpenAPI schema generation (drf-spectacular) kept accurate as the API evolves.
-Rationale: this project exists in part to demonstrate professional-grade backend work; shortcuts
-that wouldn't survive a code review shouldn't survive here either.
+### V. Modular Monolith with an Explicit Service Layer
+One deployable Django project; one Django app per business domain (`accounts`, `studios`,
+`students`, `packages`, `lessons`, `payments`, `notifications`, plus `common` for
+cross-cutting code). Inside each app:
+- `services.py` holds write use-cases (transactions, invariants, side effects);
+- `selectors.py` holds non-trivial reads (scoping, prefetching, annotations);
+- views and serializers stay thin: HTTP/validation in, call a service/selector, data out;
+- models hold data, constraints, and trivial derived properties only.
+Apps import each other only through services/selectors or models, never through views.
+Migrations are committed for every model change; static types are checked with mypy.
+Rationale: business rules in one obvious place are testable without HTTP and reviewable at
+an interview; a monolith keeps operations simple for a 1–10 teacher product.
 
-### VI. Bilingual & Themeable UI
-The frontend MUST support English and Italian (IT is a first-class locale, not an
-afterthought — the approved product design is authored in Italian) with a runtime language
-toggle, and MUST support light/dark theme via a user-facing toggle. New UI strings MUST go
-through the i18n layer, not be hardcoded in components.
-Rationale: explicitly required by the product owner; retrofitting i18n and theming after
-components are built hardcoded is expensive and error-prone.
+### VI. Clients Are Out of Scope; Backend Stays Bilingual
+In the current roadmap only the backend is developed. Existing client code (`frontend/`, the
+`web` and `app` branches) MUST NOT be modified or deleted; it stays isolated. The backend
+keeps EN/IT support where it owns user-facing text (emails, admin, error messages via Django
+i18n).
+Rationale: the project's goal in this roadmap is backend depth; clients are re-opened later.
+
+### VII. Automated Quality Gate
+A GitHub Actions workflow MUST run on every push and pull request: ruff (lint + format
+check), mypy (django-stubs, djangorestframework-stubs), a migrations-in-sync check, and
+pytest with coverage against PostgreSQL and Redis service containers. A red pipeline blocks
+merge (enforced via branch protection on the default branch). The same checks run locally
+through pre-commit.
+Rationale: standards that are not enforced by a machine erode.
+
+### VIII. Decisions & Study Docs Ship With Code
+Every non-trivial architectural decision MUST produce an ADR in `docs/learning/adr/`
+(context, decision, rejected alternatives, consequences). Every feature MUST produce, in the
+same PR, Italian study documentation in `docs/learning/` (concept files, glossary entries,
+interview Q&A) following the format defined in `docs/learning/00-indice.md`, and update that
+index. Code, comments, identifiers, and commit messages are in English; study docs in Italian.
+Commit bodies explain *why*.
+Rationale: the project trains its developer; undocumented decisions cannot be defended.
+
+### IX. Security Verified Per Phase
+At the end of every phase the OWASP API Security Top 10 checklist MUST be walked against the
+API and the result recorded in `docs/learning/` (what is covered, what is open). No secrets
+in the repository; authentication endpoints are rate-limited; production settings fail fast
+when required configuration is missing.
+Rationale: security reviewed once at the end is security never reviewed.
 
 ## Additional Constraints
 
-- **Stack**: Django + DRF + PostgreSQL + Celery/Redis (backend); React + Vite + TypeScript SPA
-  (frontend); JWT auth (djangorestframework-simplejwt); Docker Compose for local dev; AWS
-  container deployment (ECS or documented EC2 + Docker Compose) as a deliverable, not an
-  afterthought.
-- **No payment gateway**: payments are recorded manually (cash/bank transfer/manual entry)
-  for MVP — see Principle IV.
-- **Secrets**: never committed; all environments configured via env vars, with a checked-in
-  `.env.example` documenting required keys.
+- **Stack**: Python 3.12, Django (current LTS), Django REST Framework (API-only), PostgreSQL,
+  Celery + Redis, simplejwt, drf-spectacular, pytest + pytest-django + factory_boy, ruff,
+  mypy with django-stubs; dependencies locked with `uv`.
+- **Configuration**: every setting that differs between environments comes from environment
+  variables, documented in a checked-in `.env.example`. Settings modules: `base`, `dev`,
+  `test`, `prod`.
+
+## Deployment & Operations
+
+- **Target**: Docker Compose on Coolify (self-hosted). NO AWS services, SDKs, or docs.
+- **Routing**: no host ports are published in the production Compose file; the Coolify proxy
+  routes by domain. Ports are configured through variables, never hardcoded on the proxy.
+- **Health**: every Compose service MUST define a healthcheck. The API exposes liveness and
+  readiness endpoints.
+- **Backups**: PostgreSQL is backed up on a schedule with retention, configured in the
+  production Compose file.
+- **Images**: multi-stage builds, non-root user, pinned base and tool versions.
 
 ## Development Workflow
 
 - Features flow through spec-kit: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` →
-  `/speckit-implement`. Direct ad-hoc feature work that skips a spec for anything beyond a
-  trivial fix is discouraged.
-- Every PR/change touching Student, Lesson, Package, or Payment data is self-reviewed against
-  Principle I and III before being considered complete.
-- Two long-lived branches exist for this product: `web` (this Django/DRF + React platform) and
-  a future `app` branch (React Native, same API). Work stays on the branch matching its
-  target client.
+  `/speckit-implement`. Ad-hoc work beyond trivial fixes is discouraged.
+- Work happens on a dedicated branch with small, descriptive commits; each completed phase
+  ends with a summary commit and an updated `docs/learning/00-indice.md`.
+- Ambiguous choices that significantly change the architecture: pick the simplest, most
+  conservative option, record it in an ADR, and continue.
 
 ## Governance
 
-This constitution supersedes ad-hoc practices when they conflict. Amendments are made via
+This constitution supersedes ad-hoc practices when they conflict. Amendments go through
 `/speckit-constitution`, require a stated rationale, and bump the version per semantic
-versioning (MAJOR: principle removed/redefined incompatibly; MINOR: principle added or
-materially expanded; PATCH: clarification/wording). Any change that touches Student, Lesson,
-Package, or Payment data must be checked against Principle I and III at review time; violations
-must be fixed or explicitly justified in the PR description before merge.
+versioning (MAJOR: principle removed or redefined incompatibly; MINOR: principle added or
+materially expanded; PATCH: wording). Every change is self-reviewed against Principles I, III,
+and V before it is considered done; violations are fixed or justified in the plan's
+Complexity Tracking table.
 
-**Version**: 1.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-09-17
+**Version**: 2.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-06

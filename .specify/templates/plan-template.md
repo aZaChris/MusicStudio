@@ -40,7 +40,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] I. Reads AND writes scoped per tenant; cross-tenant read/write tests planned
+- [ ] II. Feature reachable via `/api/v1/`, OpenAPI accurate
+- [ ] III. Tests in the same change; query-count assertions on main endpoints
+- [ ] IV. Within the current roadmap phase
+- [ ] V. Logic in `services.py` / `selectors.py`; thin views/serializers; mypy clean
+- [ ] VI. No client code modified
+- [ ] VII. CI (ruff, mypy, migrations check, pytest) green
+- [ ] VIII. ADRs for non-trivial decisions; Italian study docs + index update planned
+- [ ] IX. Security impact considered (OWASP API Top 10)
 
 ## Project Structure
 
