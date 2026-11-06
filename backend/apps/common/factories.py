@@ -40,7 +40,7 @@ class TeacherFactory(factory.django.DjangoModelFactory[Teacher]):
         model = Teacher
 
     user = factory.SubFactory(UserFactory, role=User.Role.TEACHER)
-    studio = None
+    studio = factory.SubFactory(StudioFactory)  # every teacher belongs to a studio (ADR-010)
     is_owner = False
 
 
@@ -52,6 +52,7 @@ class StudentFactory(factory.django.DjangoModelFactory[Student]):
     last_name = "Test"
     instrument = "Piano"
     teacher = factory.SubFactory(TeacherFactory)
+    studio = factory.LazyAttribute(lambda o: o.teacher.studio)
 
 
 class PackageFactory(factory.django.DjangoModelFactory[Package]):

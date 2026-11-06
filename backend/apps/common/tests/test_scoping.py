@@ -7,6 +7,7 @@ from apps.accounts.models import User
 from apps.common.exceptions import exception_handler
 from apps.common.factories import StudentFactory, UserFactory
 from apps.common.scoping import students_visible_to
+from apps.common.tenancy import resolve_tenant
 from apps.common.tests.helpers import client_for
 
 pytestmark = pytest.mark.django_db
@@ -24,7 +25,7 @@ pytestmark = pytest.mark.django_db
 def test_users_without_profile_see_nothing(user_factory):
     StudentFactory()
 
-    assert not students_visible_to(user_factory()).exists()
+    assert not students_visible_to(resolve_tenant(user_factory())).exists()
 
 
 def test_teacher_role_without_profile_cannot_create_student():

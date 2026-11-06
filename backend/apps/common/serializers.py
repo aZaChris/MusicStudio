@@ -7,8 +7,9 @@ from django.db.models import QuerySet
 from rest_framework import serializers
 
 from .scoping import packages_visible_to, students_visible_to
+from .tenancy import TenantContext, get_tenant
 
-ScopeFn = Callable[[Any], QuerySet[Any]]
+ScopeFn = Callable[[TenantContext], QuerySet[Any]]
 
 
 class ScopedRelatedFieldsMixin(serializers.Serializer[Any]):
@@ -28,11 +29,10 @@ class ScopedRelatedFieldsMixin(serializers.Serializer[Any]):
 
     def get_fields(self) -> dict[str, serializers.Field[Any, Any, Any, Any]]:
         fields = super().get_fields()
-        request = self.context.get("request")
-        user = getattr(request, "user", None)
+        ctx = get_tenant(self.context.get("request"))
         for name, scope in self.scoped_fields.items():
             field = fields.get(name)
             if isinstance(field, serializers.PrimaryKeyRelatedField) and not field.read_only:
                 # The DRF stubs type `queryset` as a manager descriptor; a QuerySet is valid.
-                field.queryset = scope(user)  # type: ignore[arg-type]
+                field.queryset = scope(ctx)  # type: ignore[arg-type]
         return fields

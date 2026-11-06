@@ -1,19 +1,12 @@
 """Read queries for payments."""
 
-from typing import Any
-
 from django.db.models import QuerySet
 
-from apps.common.scoping import role_scoped_queryset
+from apps.common.scoping import STUDENT_CHILD_PATHS, scope
+from apps.common.tenancy import TenantContext
 
 from .models import Payment
 
 
-def payments_for(user: Any) -> QuerySet[Payment]:
-    return role_scoped_queryset(
-        user,
-        Payment.objects.select_related("student"),
-        teacher_field="student__teacher",
-        studio_field="student__teacher__studio",
-        parent_field="student__parent_accounts",
-    )
+def payments_for(ctx: TenantContext) -> QuerySet[Payment]:
+    return scope(Payment.objects.select_related("student"), ctx, STUDENT_CHILD_PATHS)

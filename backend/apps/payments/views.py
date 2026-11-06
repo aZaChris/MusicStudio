@@ -4,6 +4,7 @@ from django.db.models import QuerySet
 from rest_framework import viewsets
 
 from apps.common.permissions import IsTeacherOrStudioOwner
+from apps.common.tenancy import get_tenant
 
 from .models import Payment
 from .selectors import payments_for
@@ -17,7 +18,7 @@ class PaymentViewSet(viewsets.ModelViewSet[Payment]):
     filterset_fields = ["status", "student"]
 
     def get_queryset(self) -> QuerySet[Payment]:
-        return payments_for(self.request.user)
+        return payments_for(get_tenant(self.request))
 
     def perform_create(self, serializer: PaymentSerializer) -> None:  # type: ignore[override]
         serializer.instance = create_payment(**serializer.validated_data)

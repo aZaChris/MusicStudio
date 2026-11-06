@@ -19,11 +19,12 @@ class StudentSerializer(serializers.ModelSerializer[Student]):
             "full_name",
             "instrument",
             "teacher",
+            "studio",
             "is_active",
             "active_package",
             "payment_status",
         ]
-        read_only_fields = ["teacher"]
+        read_only_fields = ["teacher", "studio"]
 
     def get_payment_status(self, obj: Student) -> str | None:
         # Annotated by students.selectors.students_for; one query only on single-object paths.

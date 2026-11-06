@@ -1,8 +1,10 @@
 import pytest
+from django.db import IntegrityError, transaction
 
 from apps.accounts.models import User
 from apps.common.factories import TeacherFactory, UserFactory
 from apps.common.tests.helpers import client_for, make_studio_owner
+from apps.studios.models import Teacher
 
 pytestmark = pytest.mark.django_db
 
@@ -35,16 +37,11 @@ def test_owner_without_teacher_profile_gets_404_not_500():
     assert client.get("/api/v1/studio/teachers/").data["results"] == []
 
 
-def test_owner_role_without_studio_does_not_list_solo_teachers():
-    """Regression: filter(studio=None) used to return every solo teacher of every tenant."""
-    lonely = TeacherFactory(studio=None)
-    lonely.user.role = User.Role.STUDIO_OWNER
-    lonely.user.save()
-    TeacherFactory(studio=None)
-
-    res = client_for(lonely.user).get("/api/v1/studio/teachers/")
-
-    assert res.data["results"] == []
+def test_teacher_without_studio_cannot_exist():
+    """Phase 1 found filter(studio=None) leaking every solo teacher; since phase 2 the
+    database makes a studio-less teacher impossible (ADR-010)."""
+    with pytest.raises(IntegrityError), transaction.atomic():
+        Teacher.objects.create(user=UserFactory(), studio=None)
 
 
 def test_teacher_cannot_access_studio_endpoints():

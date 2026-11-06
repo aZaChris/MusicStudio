@@ -10,6 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.common.permissions import IsTeacherOrStudioOwner
+from apps.common.tenancy import get_tenant
 
 from . import selectors, services
 from .models import Lesson
@@ -35,11 +36,11 @@ class LessonViewSet(viewsets.ModelViewSet[Lesson]):
     permission_classes = [IsTeacherOrStudioOwner]
 
     def get_queryset(self) -> QuerySet[Lesson]:
-        user = self.request.user
+        ctx = get_tenant(self.request)
         week_param = self.request.query_params.get("week")
         if self.action == "list" or week_param:
-            return selectors.lessons_in_week(user, selectors.parse_week(week_param))
-        return selectors.lessons_for(user)
+            return selectors.lessons_in_week(ctx, selectors.parse_week(week_param))
+        return selectors.lessons_for(ctx)
 
     def perform_create(self, serializer: LessonSerializer) -> None:  # type: ignore[override]
         serializer.instance = services.create_lesson(**serializer.validated_data)
@@ -50,7 +51,7 @@ class LessonViewSet(viewsets.ModelViewSet[Lesson]):
 
     @action(detail=False, methods=["get"])
     def upcoming(self, request: Request) -> Response:
-        lessons = selectors.upcoming_lessons_for(request.user)
+        lessons = selectors.upcoming_lessons_for(get_tenant(request))
         return Response(LessonSerializer(lessons, many=True).data)
 
     @extend_schema(request=LessonCompleteSerializer, responses=LessonSerializer)
@@ -77,4 +78,4 @@ class DashboardView(APIView):
 
     @extend_schema(responses=DashboardSerializer)
     def get(self, request: Request) -> Response:
-        return Response(DashboardSerializer(selectors.dashboard_for(request.user)).data)
+        return Response(DashboardSerializer(selectors.dashboard_for(get_tenant(request))).data)

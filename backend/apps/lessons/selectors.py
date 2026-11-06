@@ -8,7 +8,8 @@ from django.core.exceptions import ValidationError
 from django.db.models import OuterRef, QuerySet, Subquery
 from django.utils import timezone
 
-from apps.common.scoping import role_scoped_queryset, students_visible_to
+from apps.common.scoping import LESSON_PATHS, STUDENT_CHILD_PATHS, scope, students_visible_to
+from apps.common.tenancy import TenantContext
 from apps.packages.models import Package
 from apps.payments.models import Payment
 from apps.students.models import Student
@@ -37,24 +38,18 @@ def week_bounds(anchor: datetime.date) -> tuple[datetime.datetime, datetime.date
     return start, start + datetime.timedelta(days=7)
 
 
-def lessons_for(user: Any) -> QuerySet[Lesson]:
-    return role_scoped_queryset(
-        user,
-        Lesson.objects.select_related("student"),
-        teacher_field="teacher",
-        studio_field="teacher__studio",
-        parent_field="student__parent_accounts",
-    )
+def lessons_for(ctx: TenantContext) -> QuerySet[Lesson]:
+    return scope(Lesson.objects.select_related("student"), ctx, LESSON_PATHS)
 
 
-def lessons_in_week(user: Any, anchor: datetime.date) -> QuerySet[Lesson]:
+def lessons_in_week(ctx: TenantContext, anchor: datetime.date) -> QuerySet[Lesson]:
     start, end = week_bounds(anchor)
-    return lessons_for(user).filter(start_time__gte=start, start_time__lt=end)
+    return lessons_for(ctx).filter(start_time__gte=start, start_time__lt=end)
 
 
-def upcoming_lessons_for(user: Any, limit: int = 3) -> QuerySet[Lesson]:
+def upcoming_lessons_for(ctx: TenantContext, limit: int = 3) -> QuerySet[Lesson]:
     return (
-        lessons_for(user)
+        lessons_for(ctx)
         .filter(status=Lesson.Status.SCHEDULED, start_time__gte=timezone.now())
         .order_by("start_time")[:limit]
     )
@@ -64,7 +59,7 @@ def lessons_of_student(student: Student) -> QuerySet[Lesson]:
     return student.lessons.select_related("student").order_by("-start_time")
 
 
-def low_package_students_for(user: Any) -> QuerySet[Student]:
+def low_package_students_for(ctx: TenantContext) -> QuerySet[Student]:
     """Active students whose active package has 1..threshold lessons left — one query."""
     active_remaining = Subquery(
         Package.objects.filter(student=OuterRef("pk"), lessons_remaining__gt=0)
@@ -72,28 +67,24 @@ def low_package_students_for(user: Any) -> QuerySet[Student]:
         .values("lessons_remaining")[:1]
     )
     return (
-        students_visible_to(user)
+        students_visible_to(ctx)
         .filter(is_active=True)
         .annotate(active_remaining=active_remaining)
         .filter(active_remaining__gt=0, active_remaining__lte=settings.PACKAGE_LOW_THRESHOLD)
     )
 
 
-def dashboard_for(user: Any) -> dict[str, Any]:
+def dashboard_for(ctx: TenantContext) -> dict[str, Any]:
     """Five queries regardless of studio size (was 5 + one per student)."""
-    pending_payments = role_scoped_queryset(
-        user,
-        Payment.objects.filter(status=Payment.Status.PENDING),
-        teacher_field="student__teacher",
-        studio_field="student__teacher__studio",
-        parent_field="student__parent_accounts",
+    pending_payments = scope(
+        Payment.objects.filter(status=Payment.Status.PENDING), ctx, STUDENT_CHILD_PATHS
     )
     return {
-        "week": list(lessons_in_week(user, timezone.localdate()).order_by("start_time")),
-        "upcoming": list(upcoming_lessons_for(user)),
+        "week": list(lessons_in_week(ctx, timezone.localdate()).order_by("start_time")),
+        "upcoming": list(upcoming_lessons_for(ctx)),
         "pending_payments_count": pending_payments.count(),
-        "active_students_count": students_visible_to(user).filter(is_active=True).count(),
+        "active_students_count": students_visible_to(ctx).filter(is_active=True).count(),
         "low_package_students": [
-            {"id": s.pk, "full_name": s.full_name} for s in low_package_students_for(user)
+            {"id": s.pk, "full_name": s.full_name} for s in low_package_students_for(ctx)
         ],
     }

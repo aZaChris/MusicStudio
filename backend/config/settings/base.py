@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     # Before staticfiles so runserver serves static files the same way as production.
     "whitenoise.runserver_nostatic",
     "django.contrib.staticfiles",
+    "django.contrib.postgres",  # ExclusionConstraint, range types (ADR-009)
     # third-party
     "rest_framework",
     "rest_framework_simplejwt",

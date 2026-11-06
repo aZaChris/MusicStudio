@@ -5,11 +5,10 @@ The roster used to run 2 extra queries per student (active package + latest paym
 count stays constant (audit G2).
 """
 
-from typing import Any
-
 from django.db.models import OuterRef, Prefetch, QuerySet, Subquery
 
 from apps.common.scoping import students_visible_to
+from apps.common.tenancy import TenantContext
 from apps.packages.models import Package
 from apps.payments.models import Payment
 
@@ -30,10 +29,10 @@ def latest_payment_status_subquery() -> Subquery:
     )
 
 
-def students_for(user: Any) -> QuerySet[Student]:
+def students_for(ctx: TenantContext) -> QuerySet[Student]:
     """Roster: scoped students with active package and latest payment status preloaded."""
     return (
-        students_visible_to(user)
+        students_visible_to(ctx)
         .annotate(latest_payment_status=latest_payment_status_subquery())
         .prefetch_related(active_packages_prefetch())
     )

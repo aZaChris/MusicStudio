@@ -11,6 +11,7 @@ from apps.packages.models import Package
 from apps.payments.models import Payment
 from apps.students.models import ParentAccount, ParentStudentLink, Student
 from apps.studios.models import Studio, Teacher
+from apps.studios.services import create_solo_teacher
 
 
 class Command(BaseCommand):
@@ -36,7 +37,9 @@ class Command(BaseCommand):
 
         # Solo teacher
         solo_user = self._get_or_create_user("solo.teacher@example.com", User.Role.TEACHER)
-        solo_teacher, _ = Teacher.objects.get_or_create(user=solo_user, defaults={"studio": None})
+        solo_teacher = Teacher.objects.filter(user=solo_user).first() or create_solo_teacher(
+            solo_user
+        )
 
         # Studio owner + 2 teachers
         studio, _ = Studio.objects.get_or_create(name="Studio di Musica Bianchi")
@@ -120,7 +123,10 @@ class Command(BaseCommand):
         self, first: str, last: str, instrument: str, teacher: Teacher
     ) -> Student:
         student, _ = Student.objects.get_or_create(
-            first_name=first, last_name=last, teacher=teacher, defaults={"instrument": instrument}
+            first_name=first,
+            last_name=last,
+            teacher=teacher,
+            defaults={"instrument": instrument, "studio_id": teacher.studio_id},
         )
         return student
 

@@ -5,6 +5,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from apps.common.permissions import IsTeacherOrStudioOwner
+from apps.common.tenancy import get_tenant
 from apps.lessons.selectors import lessons_of_student
 from apps.lessons.serializers import LessonSerializer
 
@@ -20,10 +21,10 @@ class StudentViewSet(viewsets.ModelViewSet[Student]):
     filterset_fields = ["is_active"]
 
     def get_queryset(self) -> QuerySet[Student]:
-        return students_for(self.request.user)
+        return students_for(get_tenant(self.request))
 
     def perform_create(self, serializer: StudentSerializer) -> None:  # type: ignore[override]
-        serializer.instance = create_student(user=self.request.user, **serializer.validated_data)
+        serializer.instance = create_student(get_tenant(self.request), **serializer.validated_data)
 
     @action(detail=True, methods=["get"])
     def lessons(self, request: Request, pk: str | None = None) -> Response:

@@ -2,6 +2,7 @@ from django.db.models import QuerySet
 from rest_framework import viewsets
 
 from apps.common.permissions import IsTeacherOrStudioOwner
+from apps.common.tenancy import get_tenant
 
 from .models import Package
 from .selectors import packages_for
@@ -15,7 +16,7 @@ class PackageViewSet(viewsets.ModelViewSet[Package]):
     filterset_fields = ["student"]
 
     def get_queryset(self) -> QuerySet[Package]:
-        return packages_for(self.request.user)
+        return packages_for(get_tenant(self.request))
 
     def perform_create(self, serializer: PackageSerializer) -> None:  # type: ignore[override]
         serializer.instance = create_package(**serializer.validated_data)

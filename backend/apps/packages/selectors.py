@@ -1,13 +1,12 @@
 """Read queries for packages."""
 
-from typing import Any
-
 from django.db.models import QuerySet
 
 from apps.common.scoping import packages_visible_to
+from apps.common.tenancy import TenantContext
 
 from .models import Package
 
 
-def packages_for(user: Any) -> QuerySet[Package]:
-    return packages_visible_to(user)
+def packages_for(ctx: TenantContext) -> QuerySet[Package]:
+    return packages_visible_to(ctx).select_related("student")

@@ -6,20 +6,20 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Add `django.contrib.postgres` to `INSTALLED_APPS` in `backend/config/settings/base.py`
+- [X] T001 Add `django.contrib.postgres` to `INSTALLED_APPS` in `backend/config/settings/base.py`
 
 ## Phase 2: Foundational (blocks all stories)
 
-- [ ] T002 `DomainConflict` exception → 409 `{"detail","code"}` in `backend/apps/common/exceptions.py` (+ test)
-- [ ] T003 `TenantContext` + `get_tenant(request)` (one query, cached on the HttpRequest) in `backend/apps/common/tenancy.py`
+- [X] T002 `DomainConflict` exception → 409 `{"detail","code"}` in `backend/apps/common/exceptions.py` (+ test)
+- [X] T003 `TenantContext` + `get_tenant(request)` (one query, cached on the HttpRequest) in `backend/apps/common/tenancy.py`
 
 ## Phase 3: User Story 2 — Studio as tenant (P1) — done first: US1/US3 build on it
 
-- [ ] T004 [US2] Tests: migration result (every teacher/student has a studio), tenant resolution query count, studio invariant on create, in `backend/apps/common/tests/test_tenancy.py`
-- [ ] T005 [US2] Data migration: personal studios for solo teachers; `Teacher.studio` NOT NULL + PROTECT in `backend/apps/studios/migrations/`
-- [ ] T006 [US2] `Student.studio` FK + backfill migration in `backend/apps/students/`; `create_student` sets studio from teacher
-- [ ] T007 [US2] Rewrite `backend/apps/common/scoping.py` around `TenantContext` + per-model `TenantPaths`; selectors/serializer mixin/views take the context
-- [ ] T008 [US2] Factories: teachers always get a studio, students inherit it, in `backend/apps/common/factories.py`; keep all phase 1 tests green
+- [X] T004 [US2] Tests: migration result (every teacher/student has a studio), tenant resolution query count, studio invariant on create, in `backend/apps/common/tests/test_tenancy.py`
+- [X] T005 [US2] Data migration: personal studios for solo teachers; `Teacher.studio` NOT NULL + PROTECT in `backend/apps/studios/migrations/`
+- [X] T006 [US2] `Student.studio` FK + backfill migration in `backend/apps/students/`; `create_student` sets studio from teacher
+- [X] T007 [US2] Rewrite `backend/apps/common/scoping.py` around `TenantContext` + per-model `TenantPaths`; selectors/serializer mixin/views take the context
+- [X] T008 [US2] Factories: teachers always get a studio, students inherit it, in `backend/apps/common/factories.py`; keep all phase 1 tests green
 
 ## Phase 4: User Story 1 — No overlapping lessons (P1) 🎯 MVP
 

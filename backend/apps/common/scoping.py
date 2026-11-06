@@ -1,78 +1,67 @@
 """Tenant scoping — the single choke point for Constitution Principle I.
 
-Every queryset that returns or accepts Student/Lesson/Package/Payment data goes through
-`role_scoped_queryset`, both for reads (view querysets) and for writes (the querysets of
-related fields a client can set, see `apps/common/serializers.py`).
+The studio is the tenant (ADR-010). Every queryset that returns or accepts tenant data is
+filtered here from the request's `TenantContext`, for reads (view querysets) and for writes
+(related-field querysets, see `apps/common/serializers.py`):
+
+- studio owner: everything whose studio is the owner's studio;
+- teacher: everything attached to the teacher (a teacher belongs to exactly one studio);
+- parent: everything about their linked children (children may be in different studios);
+- anyone else: nothing.
+
+Each model declares, once, how to reach studio / teacher / parent from it (`TenantPaths`).
 """
 
-from typing import TYPE_CHECKING, Any
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
 from django.db.models import Model, QuerySet
 
-from apps.accounts.models import User
+from .tenancy import TenantContext
 
 if TYPE_CHECKING:
     from apps.packages.models import Package
     from apps.students.models import Student
 
 
-def role_scoped_queryset[M: Model](
-    user: Any,
-    base_qs: QuerySet[M],
-    *,
-    teacher_field: str,
-    studio_field: str,
-    parent_field: str,
-) -> QuerySet[M]:
-    """Filter `base_qs` to exactly what `user` may see, based on role.
+@dataclass(frozen=True)
+class TenantPaths:
+    """ORM lookup paths from a model to its studio, teacher and parent account."""
 
-    `teacher_field` / `studio_field` / `parent_field` are ORM lookup paths from the
-    queryset's model to a Teacher, a Studio and a ParentAccount respectively.
-    `user` is typed `Any` because DRF hands us `AnonymousUser` during schema generation.
-    """
-    role = getattr(user, "role", None)
+    studio: str
+    teacher: str
+    parent: str
 
-    if role == User.Role.STUDIO_OWNER:
-        teacher = getattr(user, "teacher", None)
-        if teacher is None or teacher.studio_id is None:
-            return base_qs.none()
-        return base_qs.filter(**{studio_field: teacher.studio_id})
 
-    if role == User.Role.TEACHER:
-        teacher = getattr(user, "teacher", None)
-        if teacher is None:
-            return base_qs.none()
-        return base_qs.filter(**{teacher_field: teacher})
+STUDENT_PATHS = TenantPaths(studio="studio", teacher="teacher", parent="parent_accounts")
+# A lesson belongs to the teacher who gives it (kept when the student is reassigned).
+LESSON_PATHS = TenantPaths(
+    studio="student__studio", teacher="teacher", parent="student__parent_accounts"
+)
+# Packages and payments follow the student's current teacher.
+STUDENT_CHILD_PATHS = TenantPaths(
+    studio="student__studio", teacher="student__teacher", parent="student__parent_accounts"
+)
 
-    if role == User.Role.PARENT:
-        parent_account = getattr(user, "parent_account", None)
-        if parent_account is None:
-            return base_qs.none()
+
+def scope[M: Model](qs: QuerySet[M], ctx: TenantContext, paths: TenantPaths) -> QuerySet[M]:
+    if ctx.is_owner:
+        return qs.filter(**{paths.studio: ctx.studio_id})
+    if ctx.is_teacher:
+        return qs.filter(**{paths.teacher: ctx.teacher_id})
+    if ctx.is_parent:
         # Only this path crosses a many-to-many, which can duplicate rows.
-        return base_qs.filter(**{parent_field: parent_account}).distinct()
+        return qs.filter(**{paths.parent: ctx.parent_id}).distinct()
+    return qs.none()
 
-    return base_qs.none()
 
-
-def students_visible_to(user: Any) -> "QuerySet[Student]":
+def students_visible_to(ctx: TenantContext) -> "QuerySet[Student]":
     from apps.students.models import Student
 
-    return role_scoped_queryset(
-        user,
-        Student.objects.all(),
-        teacher_field="teacher",
-        studio_field="teacher__studio",
-        parent_field="parent_accounts",
-    )
+    return scope(Student.objects.all(), ctx, STUDENT_PATHS)
 
 
-def packages_visible_to(user: Any) -> "QuerySet[Package]":
+def packages_visible_to(ctx: TenantContext) -> "QuerySet[Package]":
     from apps.packages.models import Package
 
-    return role_scoped_queryset(
-        user,
-        Package.objects.all(),
-        teacher_field="student__teacher",
-        studio_field="student__teacher__studio",
-        parent_field="student__parent_accounts",
-    )
+    return scope(Package.objects.all(), ctx, STUDENT_CHILD_PATHS)
