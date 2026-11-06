@@ -44,8 +44,8 @@
 
 ## Phase 9: Polish
 
-- [ ] T017 Pre-commit Stripe-key detector; regenerate `openapi.yaml`; full gate; README; phase 3 summary commit
-- [ ] T018 Copy docs to `doc_music_studio/Fase 3 - Celery e pagamenti` + refresh `00 Generale`
+- [X] T017 Pre-commit Stripe-key detector; regenerate `openapi.yaml`; full gate; README; phase 3 summary commit
+- [X] T018 Copy docs to `doc_music_studio/Fase 3 - Celery e pagamenti` + refresh `00 Generale`
 
 ## Dependencies
 Setup → Foundational → US1 → US2 → (US3, US4, US5) → US6 → Polish.
