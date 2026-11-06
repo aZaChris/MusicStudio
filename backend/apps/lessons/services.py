@@ -1,17 +1,72 @@
 """Write use-cases for lessons (Constitution III business-critical paths)."""
 
 import datetime
+from collections.abc import Callable
 from typing import Any
 
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, OperationalError, transaction
 from django.db.models import F
 from django.utils import timezone
+from psycopg.errors import DeadlockDetected
 
+from apps.common.exceptions import DomainConflict
 from apps.packages.models import Package
 from apps.students.models import Student
 
 from .models import Lesson
+
+
+class LessonOverlapError(DomainConflict):
+    """The time slot is already taken by an active lesson (HTTP 409)."""
+
+    code = "lesson_overlap"
+
+
+# Constraint name → message. The database enforces the rule (ADR-009); we only translate.
+OVERLAP_MESSAGES = {
+    "lesson_no_teacher_overlap": "The teacher already has a lesson in this time slot.",
+    "lesson_no_student_overlap": "The student already has a lesson in this time slot.",
+}
+
+
+# Concurrent inserts into the same slot can deadlock on the exclusion constraint: each
+# transaction inserts its row, then waits for the other's uncommitted row while checking.
+# PostgreSQL aborts one of them (SQLSTATE 40P01). Retrying the loser once is enough: the
+# retry sees the winner's row and gets a normal constraint violation → 409.
+MAX_DEADLOCK_RETRIES = 2
+
+
+def _guarded_write[T](write: Callable[[], T]) -> T:
+    """Run a lesson write in a savepoint; translate overlap violations into a 409.
+
+    The savepoint keeps the surrounding transaction usable after the error.
+    """
+    for attempt in range(MAX_DEADLOCK_RETRIES + 1):
+        try:
+            with transaction.atomic():
+                return write()
+        except IntegrityError as exc:
+            diag = getattr(exc.__cause__, "diag", None)
+            constraint = getattr(diag, "constraint_name", None)
+            if constraint in OVERLAP_MESSAGES:
+                raise LessonOverlapError(OVERLAP_MESSAGES[constraint]) from exc
+            raise
+        except OperationalError as exc:
+            if isinstance(exc.__cause__, DeadlockDetected) and attempt < MAX_DEADLOCK_RETRIES:
+                continue
+            raise
+    raise AssertionError("unreachable")  # pragma: no cover
+
+
+def end_of(start: datetime.datetime, minutes: int) -> datetime.datetime:
+    """Real-time end of a lesson.
+
+    Python adds a timedelta to an aware datetime on the *wall clock* of its time zone. DRF
+    hands us Europe/Rome datetimes, so on the night clocks go back 02:30 CEST + 60 min
+    would give 03:30 CET — two real hours later. Doing the arithmetic in UTC avoids it.
+    """
+    return start.astimezone(datetime.UTC) + datetime.timedelta(minutes=minutes)
 
 
 def _ensure_package_matches_student(student: Student, package: Package | None) -> None:
@@ -33,23 +88,27 @@ def create_lesson(
     if package is None:
         package = student.active_package
     _ensure_package_matches_student(student, package)
-    return Lesson.objects.create(
-        student=student,
-        teacher=student.teacher,
-        package=package,
-        start_time=start_time,
-        duration_minutes=duration_minutes,
-        notes=notes,
+    return _guarded_write(
+        lambda: Lesson.objects.create(
+            student=student,
+            teacher=student.teacher,
+            package=package,
+            start_time=start_time,
+            end_time=end_of(start_time, duration_minutes),
+            notes=notes,
+        )
     )
 
 
 def update_lesson(lesson: Lesson, **changes: Any) -> Lesson:
+    duration = changes.pop("duration_minutes", lesson.duration_minutes)
     for field, value in changes.items():
         setattr(lesson, field, value)
+    lesson.end_time = end_of(lesson.start_time, duration)
     if "student" in changes:
         lesson.teacher = lesson.student.teacher
     _ensure_package_matches_student(lesson.student, lesson.package)
-    lesson.save()
+    _guarded_write(lesson.save)
     return lesson
 
 
@@ -68,7 +127,8 @@ def complete_lesson(lesson: Lesson, *, note: str = "") -> Lesson:
     locked.status = Lesson.Status.COMPLETED
     if note:
         locked.notes = note
-    locked.save(update_fields=["status", "notes", "updated_at"])
+    # A cancelled lesson re-enters the agenda when completed: its slot may be taken.
+    _guarded_write(lambda: locked.save(update_fields=["status", "notes", "updated_at"]))
 
     if locked.package_id is not None:
         Package.objects.filter(pk=locked.package_id, lessons_remaining__gt=0).update(

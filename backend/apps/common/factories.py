@@ -73,9 +73,14 @@ class LessonFactory(factory.django.DjangoModelFactory[Lesson]):
     student = factory.SubFactory(StudentFactory)
     teacher = factory.LazyAttribute(lambda o: o.student.teacher)
     package = None
-    start_time = factory.LazyFunction(
-        lambda: datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1)
+    # 31 minutes apart (cycling within ~20h) so factory lessons of the same teacher or
+    # student never trip the overlap constraints, yet stay in the near future.
+    start_time = factory.Sequence(
+        lambda n: (
+            datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1, minutes=31 * (n % 40))
+        )
     )
+    end_time = factory.LazyAttribute(lambda o: o.start_time + datetime.timedelta(minutes=30))
 
 
 class ParentAccountFactory(factory.django.DjangoModelFactory[ParentAccount]):

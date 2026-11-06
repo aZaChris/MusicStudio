@@ -23,10 +23,10 @@
 
 ## Phase 4: User Story 1 — No overlapping lessons (P1) 🎯 MVP
 
-- [ ] T009 [P] [US1] Overlap tests (teacher, student, back-to-back, cancelled frees slot, move onto occupied slot, complete a cancelled lesson whose slot was taken, DST-independent) in `backend/apps/lessons/tests/test_overlap.py`
-- [ ] T010 [P] [US1] Concurrency test: two threads book the same slot, exactly one succeeds, in `backend/apps/lessons/tests/test_overlap_concurrency.py`
-- [ ] T011 [US1] `Lesson.end_time`, `duration_minutes` property, check + exclusion constraints, `BtreeGistExtension` migration with backfill in `backend/apps/lessons/`
-- [ ] T012 [US1] Services translate the constraint violation to `LessonOverlapError`; serializer keeps `duration_minutes` and exposes `end_time` in `backend/apps/lessons/{services,serializers}.py`; update reminders/seed/factories
+- [X] T009 [P] [US1] Overlap tests (teacher, student, back-to-back, cancelled frees slot, move onto occupied slot, complete a cancelled lesson whose slot was taken, DST-independent) in `backend/apps/lessons/tests/test_overlap.py`
+- [X] T010 [P] [US1] Concurrency test: two threads book the same slot, exactly one succeeds, in `backend/apps/lessons/tests/test_overlap_concurrency.py`
+- [X] T011 [US1] `Lesson.end_time`, `duration_minutes` property, check + exclusion constraints, `BtreeGistExtension` migration with backfill in `backend/apps/lessons/`
+- [X] T012 [US1] Services translate the constraint violation to `LessonOverlapError`; serializer keeps `duration_minutes` and exposes `end_time` in `backend/apps/lessons/{services,serializers}.py`; update reminders/seed/factories
 
 ## Phase 5: User Story 3 — Per-object permissions (P2)
 

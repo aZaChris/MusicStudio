@@ -10,6 +10,8 @@ from .services import CANCEL_STATUSES
 
 class LessonSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Lesson]):
     student_name = serializers.CharField(source="student.full_name", read_only=True)
+    # Kept for API compatibility; the database stores end_time (ADR-009).
+    duration_minutes = serializers.IntegerField(min_value=5, max_value=480, default=30)
 
     class Meta:
         model = Lesson
@@ -21,10 +23,11 @@ class LessonSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Les
             "package",
             "start_time",
             "duration_minutes",
+            "end_time",
             "status",
             "notes",
         ]
-        read_only_fields = ["teacher", "status"]
+        read_only_fields = ["teacher", "status", "end_time"]
 
 
 class LessonCompleteSerializer(serializers.Serializer[None]):

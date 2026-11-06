@@ -67,11 +67,15 @@ class Command(BaseCommand):
         solo_package = self._get_or_create_package(solo_student, total=10, remaining=9)
 
         # A lesson today (US1 completion demo) and one ~24h out (US4 reminder demo)
+        today_15 = timezone.now().replace(hour=15, minute=0, second=0, microsecond=0)
         Lesson.objects.get_or_create(
             student=solo_student,
             teacher=solo_teacher,
-            start_time=timezone.now().replace(hour=15, minute=0, second=0, microsecond=0),
-            defaults={"package": solo_package, "duration_minutes": 45},
+            start_time=today_15,
+            defaults={
+                "package": solo_package,
+                "end_time": today_15 + datetime.timedelta(minutes=45),
+            },
         )
         # Keyed on the date (not the exact instant) so re-running the seed stays idempotent.
         reminder_time = (timezone.now() + datetime.timedelta(hours=24)).replace(
@@ -84,7 +88,7 @@ class Command(BaseCommand):
                 student=low_student,
                 teacher=owner_teacher,
                 start_time=reminder_time,
-                duration_minutes=30,
+                end_time=reminder_time + datetime.timedelta(minutes=30),
             )
 
         # A pending payment
