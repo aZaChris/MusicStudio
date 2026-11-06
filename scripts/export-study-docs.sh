@@ -45,6 +45,12 @@ PHASES=(
   "Fase 3 - Celery e pagamenti|task-celery-idempotenti webhook-idempotenti pagamenti-online-stripe caching|13|17"
 )
 
+# Knowledge-base cases (real problems solved): cross-phase, refreshed every run
+for f in "$SRC"/../knowledge-base/*.md; do
+  [ "$(basename "$f")" = README.md ] && continue
+  copy "$f" "$DEST/00 Generale/Knowledge base/$(basename "$f")"
+done
+
 copy "$SRC/audit-iniziale.md" "$DEST/Fase 1 - Fondamenta/audit-iniziale.md"
 
 for phase in "${PHASES[@]}"; do
