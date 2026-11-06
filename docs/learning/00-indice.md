@@ -72,3 +72,13 @@ Ogni documento in `concetti/` ha da 800 a 1500 parole e sempre le stesse sezioni
 - **Fase 5, rifinitura**.
 
 Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap".
+
+## Riepilogo della fase 1
+
+- **Sicurezza:** chiuse le scritture cross-tenant (BOLA) e la fuga degli insegnanti solisti; rate limiting sul login; produzione che non parte senza segreti; checklist OWASP registrata.
+- **Codice:** logica spostata in `services.py` e `selectors.py`; Django 5.2 LTS; mypy rigoroso sul codice di produzione.
+- **Performance:** query costanti sugli endpoint principali (allievi da 2+2N a 4, dashboard da 5+N a 6); indici composti e parziali misurati con EXPLAIN.
+- **Correttezza:** creazione dei pacchetti, settimana non valida (400), doppia scalatura concorrente, pacchetto di un altro allievo, promemoria at-most-once, `seed_demo` idempotente.
+- **Operazioni:** settings per ambiente, health live e ready, Dockerfile multi-stage non root, Compose di sviluppo e per Coolify con healthcheck ovunque e backup giornaliero, AWS rimosso.
+- **Qualità:** da 26 a 92 test, copertura 96%, CI su GitHub Actions, pre-commit.
+- **Aperto:** primo `docker compose up` reale, branch protection su GitHub, copia off-site e prova di ripristino dei backup, revoca dei token.

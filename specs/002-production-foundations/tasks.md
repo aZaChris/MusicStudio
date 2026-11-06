@@ -91,7 +91,7 @@ tasks (Principle VIII).
 ## Phase 11: Polish & Cross-Cutting
 
 - [X] T040 OWASP API Security Top 10 walk for phase 1 in `docs/learning/concetti/sicurezza-api-owasp.md`
-- [ ] T041 Full gate run (ruff, mypy, migrations check, pytest ≥ 90%); update `README.md`; phase 1 summary commit
+- [X] T041 Full gate run (ruff, mypy, migrations check, pytest ≥ 90%); update `README.md`; phase 1 summary commit
 
 ## Dependencies
 
