@@ -4,23 +4,23 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Add `stripe` dependency (done at specify time) and Stripe settings (`STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CURRENCY`, `CHECKOUT_SUCCESS_URL`, `CHECKOUT_CANCEL_URL`) with test-mode-only validation in `backend/config/settings/base.py`; document in `.env.example` and both Compose files
-- [ ] T002 Celery reliability settings and beat schedule in `backend/config/settings/base.py` and `backend/config/celery.py`
+- [X] T001 Add `stripe` dependency (done at specify time) and Stripe settings (`STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_CURRENCY`, `CHECKOUT_SUCCESS_URL`, `CHECKOUT_CANCEL_URL`) with test-mode-only validation in `backend/config/settings/base.py`; document in `.env.example` and both Compose files
+- [X] T002 Celery reliability settings and beat schedule in `backend/config/settings/base.py` and `backend/config/celery.py`
 
 ## Phase 2: Foundational
 
-- [ ] T003 `backend/apps/payments/gateway.py`: the only Stripe-importing module (`create_checkout_session`, `retrieve_checkout_session`, `verify_event`, `PaymentsUnavailable`); fake gateway fixture in `backend/apps/payments/tests/fakes.py`
-- [ ] T004 Models `CheckoutSession`, `WebhookEvent`, `Payment.Method.CARD`, `Payment.checkout` + migration in `backend/apps/payments/`
+- [X] T003 `backend/apps/payments/gateway.py`: the only Stripe-importing module (`create_checkout_session`, `retrieve_checkout_session`, `verify_event`, `PaymentsUnavailable`); fake gateway fixture in `backend/apps/payments/tests/fakes.py`
+- [X] T004 Models `CheckoutSession`, `WebhookEvent`, `Payment.Method.CARD`, `Payment.checkout` + migration in `backend/apps/payments/`
 
 ## Phase 3: US1 — Checkout (P1) 🎯
 
-- [ ] T005 [P] [US1] Tests: link returned, reuse open attempt, expired attempt → new one, already paid 409, outside tenant 404, unavailable 503, idempotency key passed, live key refused, in `backend/apps/payments/tests/test_checkout.py`
-- [ ] T006 [US1] `start_checkout` service + `POST /packages/{id}/checkout/` action
+- [X] T005 [P] [US1] Tests: link returned, reuse open attempt, expired attempt → new one, already paid 409, outside tenant 404, unavailable 503, idempotency key passed, live key refused, in `backend/apps/payments/tests/test_checkout.py`
+- [X] T006 [US1] `start_checkout` service + `POST /packages/{id}/checkout/` action
 
 ## Phase 4: US2 — Webhook + reconciliation (P1)
 
-- [ ] T007 [P] [US2] Tests: valid signed event → one payment; same event ×3 → one payment; bad/missing signature 400 and nothing stored; async unpaid then async_payment_succeeded; async_payment_failed; expired; unknown checkout; unhandled type; amount from Stripe; reconciliation of missed completion and expiry, in `backend/apps/payments/tests/test_webhooks.py`
-- [ ] T008 [US2] `StripeWebhookView`, `record_webhook_event`, `process_webhook_event` task, `apply_session_state`/`fulfil`, `reconcile_open_checkouts` task
+- [X] T007 [P] [US2] Tests: valid signed event → one payment; same event ×3 → one payment; bad/missing signature 400 and nothing stored; async unpaid then async_payment_succeeded; async_payment_failed; expired; unknown checkout; unhandled type; amount from Stripe; reconciliation of missed completion and expiry, in `backend/apps/payments/tests/test_webhooks.py`
+- [X] T008 [US2] `StripeWebhookView`, `record_webhook_event`, `process_webhook_event` task, `apply_session_state`/`fulfil`, `reconcile_open_checkouts` task
 
 ## Phase 5: US3 — Reminder outbox (P2)
 

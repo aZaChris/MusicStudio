@@ -185,6 +185,42 @@ CELERY_BROKER_URL: str = env("CELERY_BROKER_URL", default=REDIS_URL)
 CELERY_RESULT_BACKEND: str = env("CELERY_RESULT_BACKEND", default=CELERY_BROKER_URL)
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
+# Reliability (ADR-016): a task is acknowledged only after it finishes, so a worker that
+# dies mid-task gets it redelivered. That means a task can run twice: every task must be
+# idempotent. Prefetch 1 keeps long tasks from hoarding messages.
+CELERY_TASK_ACKS_LATE = True
+CELERY_TASK_REJECT_ON_WORKER_LOST = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_SOFT_TIME_LIMIT = env.int("CELERY_TASK_SOFT_TIME_LIMIT", default=60)
+CELERY_TASK_TIME_LIMIT = env.int("CELERY_TASK_TIME_LIMIT", default=90)
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_ACCEPT_CONTENT = ["json"]
+# Redis redelivers unacknowledged tasks after this many seconds; must exceed the longest
+# task (including retries' countdown) or tasks run twice while still in progress.
+CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
+
+# Stripe — online payments, TEST MODE ONLY (constitution IV, ADR-013).
+# A restricted key (rk_test_...) with "Checkout Sessions: write" is recommended over sk_test_.
+STRIPE_API_KEY: str = env("STRIPE_API_KEY", default="")
+STRIPE_WEBHOOK_SECRET: str = env("STRIPE_WEBHOOK_SECRET", default="")
+STRIPE_CURRENCY: str = env("STRIPE_CURRENCY", default="eur")
+CHECKOUT_SUCCESS_URL: str = env(
+    "CHECKOUT_SUCCESS_URL", default="http://localhost:5173/payments/success"
+)
+CHECKOUT_CANCEL_URL: str = env(
+    "CHECKOUT_CANCEL_URL", default="http://localhost:5173/payments/cancel"
+)
+CHECKOUT_TTL_MINUTES: int = env.int("CHECKOUT_TTL_MINUTES", default=30)
+
+if STRIPE_API_KEY and not STRIPE_API_KEY.startswith(("sk_test_", "rk_test_")):
+    # Fail fast: this project must never move real money (live keys are sk_live_/rk_live_).
+    from django.core.exceptions import ImproperlyConfigured
+
+    raise ImproperlyConfigured("STRIPE_API_KEY must be a test-mode key (sk_test_ or rk_test_).")
+
+# Dashboard cache lifetime (ADR-017); data changes invalidate immediately.
+DASHBOARD_CACHE_SECONDS: int = env.int("DASHBOARD_CACHE_SECONDS", default=300)
 
 # Email (reminders) — console backend by default, SMTP in prod.py
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

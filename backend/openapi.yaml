@@ -990,6 +990,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/v1/packages/{id}/checkout/:
+    post:
+      operationId: v1_packages_checkout_create
+      description: |-
+        Online payment link (Stripe Checkout, test mode) for this package.
+
+        Anyone who can see the package may ask — typically the parent who pays.
+        Repeated calls return the same open attempt.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this package.
+        required: true
+      tags:
+      - packages
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/payments/:
     get:
       operationId: v1_payments_list
@@ -1783,8 +1839,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/v1/webhooks/stripe/:
+    post:
+      operationId: v1_webhooks_stripe_create
+      description: Stripe events, verified with the Stripe-Signature header.
+      tags:
+      - payments
+      security:
+      - {}
+      responses:
+        '200':
+          description: Event received (or duplicate)
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
+    Checkout:
+      type: object
+      description: 'Response of POST /packages/{id}/checkout/: where to send the payer.'
+      properties:
+        checkout_id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - checkout_id
+      - expires_at
+      - url
     Dashboard:
       type: object
       properties:
@@ -1966,11 +2062,13 @@ components:
       - cash
       - bank_transfer
       - manual_entry
+      - card
       type: string
       description: |-
         * `cash` - Cash
         * `bank_transfer` - Bank transfer
         * `manual_entry` - Manual entry
+        * `card` - Online (Stripe)
     Package:
       type: object
       description: |-
@@ -2307,8 +2405,14 @@ components:
           $ref: '#/components/schemas/MethodEnum'
         status:
           $ref: '#/components/schemas/PaymentStatusEnum'
+        checkout:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
       required:
       - amount
+      - checkout
       - date
       - id
       - method

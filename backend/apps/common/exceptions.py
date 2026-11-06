@@ -15,19 +15,34 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler as drf_exception_handler
 
 
-class DomainConflict(Exception):
-    """The request is valid but conflicts with the current state of the data (HTTP 409)."""
+class DomainError(Exception):
+    """A domain-level refusal with an HTTP status and a machine-readable code."""
 
-    code = "conflict"
+    status_code: int = status.HTTP_400_BAD_REQUEST
+    code = "error"
 
     def __init__(self, detail: str) -> None:
         super().__init__(detail)
         self.detail = detail
 
 
+class DomainConflict(DomainError):
+    """The request is valid but conflicts with the current state of the data (HTTP 409)."""
+
+    status_code = status.HTTP_409_CONFLICT
+    code = "conflict"
+
+
+class ServiceUnavailable(DomainError):
+    """A dependency (e.g. the payment provider) is not configured or not reachable (503)."""
+
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    code = "unavailable"
+
+
 def exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
-    if isinstance(exc, DomainConflict):
-        return Response({"detail": exc.detail, "code": exc.code}, status=status.HTTP_409_CONFLICT)
+    if isinstance(exc, DomainError):
+        return Response({"detail": exc.detail, "code": exc.code}, status=exc.status_code)
     if isinstance(exc, DjangoValidationError):
         detail = exc.message_dict if hasattr(exc, "error_dict") else exc.messages
         exc = DRFValidationError(detail=detail)
