@@ -219,3 +219,35 @@ Non c'è quindi nessun ADR di riscrittura. L'unica scelta "grossa" è il punto d
 ## 7. Cosa resta fuori dalla fase 1
 
 ExclusionConstraint contro le sovrapposizioni delle lezioni, multi-tenancy esplicita, OpenAPI rifinito (fase 2). Stripe, webhook, caching (fase 3). Sentry, log strutturati, Locust, checklist OWASP completa (fase 4). Sono nel piano della feature 002 come roadmap.
+
+## 8. Aggiornamento: problemi emersi durante l'implementazione
+
+Correggendo i gap sono venuti fuori altri difetti. Li elenco qui, perché fanno parte del quadro di partenza.
+
+### G19. Modulo di settings di default vuoto. Gravità: alta
+
+`config/wsgi.py`, `config/asgi.py` usavano `config.settings` come default, e `config/celery.py` usava `config.settings.dev`. Ma `config/settings/` è un package con `__init__.py` vuoto. Se la variabile `DJANGO_SETTINGS_MODULE` mancava, gunicorn partiva con impostazioni inesistenti. Funzionava solo perché il file `.env` la impostava. Celery in produzione sarebbe partito con le impostazioni di sviluppo. **Correzione:** i tre entrypoint di produzione usano `config.settings.prod`. `manage.py` resta su `dev`.
+
+### G20. Il virtualenv nascosto dal bind mount. Gravità: alta
+
+Il vecchio Compose montava `../backend` su `/app`. Il Dockerfile creava il virtualenv in `/app/.venv`. Il mount copriva la cartella dell'immagine, quindi il virtualenv spariva e il container non poteva partire. Non era mai stato verificato (il task T055 della feature 001 era rimasto aperto). **Correzione:** il virtualenv vive in `/opt/venv`.
+
+### G21. Doppia scalatura del pacchetto in concorrenza. Gravità: media
+
+`Lesson.mark_completed` controllava lo stato sull'oggetto in memoria. Due richieste quasi simultanee, ognuna con la propria copia della lezione, potevano scalare il pacchetto due volte. **Correzione:** `complete_lesson` blocca la riga della lezione con `select_for_update` e scala il pacchetto con un solo `UPDATE` condizionato. Un test riproduce il caso con una copia "vecchia" dell'oggetto.
+
+### G22. Lezione collegata al pacchetto di un altro allievo. Gravità: media
+
+Anche con lo scoping, un insegnante poteva collegare la lezione dell'allievo A al pacchetto dell'allievo B (entrambi suoi). Completando la lezione si scalava il pacchetto della famiglia sbagliata. **Correzione:** regola nel service `lessons.services`.
+
+### G15 (esteso). Fuga di insegnanti tra tenant. Gravità: alta
+
+Oltre all'errore 500, `StudioTeachersView` faceva `Teacher.objects.filter(studio=teacher.studio)`. Se il titolare non aveva uno studio, il filtro diventava `studio IS NULL` e restituiva **tutti gli insegnanti solisti di tutti i tenant**, con la loro email. **Correzione:** queryset vuoto. Test di regressione in `backend/apps/studios/tests/test_studio.py`.
+
+### G23. `seed_demo` non idempotente. Gravità: bassa
+
+Il comando dichiarava di poter essere rieseguito, ma creava una nuova lezione "tra 24 ore" a ogni esecuzione, perché la chiave di `get_or_create` era l'istante preciso. **Correzione:** chiave sulla data.
+
+### Verifiche non eseguibili in questo ambiente
+
+Docker non è disponibile nella WSL dove ho lavorato. Ho verificato le impostazioni di produzione avviando gunicorn senza Docker (liveness, readiness, redirect HTTPS, proxy TLS, file statici, host non ammessi), ma i due file Compose sono validati solo nella sintassi, non con un `docker compose up` reale. È il primo controllo da fare su una macchina con Docker (`specs/002-production-foundations/quickstart.md`, punti 4-6).
