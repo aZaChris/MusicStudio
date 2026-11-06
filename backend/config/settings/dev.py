@@ -1,4 +1,8 @@
-from .base import *  # noqa: F403
+"""Local development: verbose errors, permissive hosts, console email."""
 
-DEBUG = True
-ALLOWED_HOSTS = ["*"]
+from .base import *  # noqa: F403
+from .base import env
+
+DEBUG = env.bool("DJANGO_DEBUG", default=True)
+ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS", default=["*"])
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:5173"])

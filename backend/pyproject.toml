@@ -1,11 +1,11 @@
 [project]
 name = "musicstudio-backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "MusicStudio REST API: lessons, packages, payments and parent portal for music teachers"
 requires-python = ">=3.12"
 dependencies = [
     "celery>=5.6.3",
-    "django>=5.1,<5.2",
+    "django>=5.2,<5.3",
     "django-cors-headers>=4.9.0",
     "django-environ>=0.14.0",
     "django-filter>=25.1",
@@ -15,12 +15,18 @@ dependencies = [
     "gunicorn>=26.2.0",
     "psycopg[binary]>=3",
     "redis>=5",
+    "whitenoise>=6.9",
 ]
 
 [dependency-groups]
 dev = [
+    "django-stubs[compatible-mypy]>=6.1.2",
+    "djangorestframework-stubs[compatible-mypy]>=3.18.2",
     "factory-boy>=3.3.3",
+    "mypy>=2.4.1",
+    "pre-commit>=4.7.0",
     "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
     "pytest-django>=4.14.0",
     "ruff>=0.16.8",
 ]
@@ -31,8 +37,41 @@ target-version = "py312"
 extend-exclude = ["*/migrations/*"]
 
 [tool.ruff.lint]
-select = ["E", "F", "I"]
+# E/F pyflakes+pycodestyle, I isort, B bugbear, UP pyupgrade, DJ django, S bandit (security),
+# SIM simplify, RUF ruff-specific.
+select = ["E", "F", "I", "B", "UP", "DJ", "S", "SIM", "RUF"]
+ignore = ["RUF012"]  # DRF/Django class attributes (Meta.fields etc.) are idiomatic mutable lists
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S105", "S106"]  # asserts and fixture passwords are fine in tests
+"apps/common/factories.py" = ["S106"]
+"apps/common/management/commands/seed_demo.py" = ["S106"]
+
+[tool.mypy]
+python_version = "3.12"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+check_untyped_defs = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+# Tests are verified by running them; factory_boy calls are not typable (mypy ignores
+# Factory.__new__), so type-checking tests would only add noise. Production code is strict.
+exclude = ["/migrations/", "/tests/", "^conftest\\.py$", "^apps/common/factories\\.py$"]
+
+[[tool.mypy.overrides]]
+module = ["environ.*", "factory.*", "celery.*", "kombu.*", "django_filters.*", "corsheaders.*", "drf_spectacular.*", "rest_framework_simplejwt.*"]
+ignore_missing_imports = true
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
 
 [tool.pytest.ini_options]
-DJANGO_SETTINGS_MODULE = "config.settings.dev"
+DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["tests.py", "test_*.py"]
+filterwarnings = ["ignore:No directory at:UserWarning"]
+addopts = "--cov=apps --cov=config --cov-report=term-missing:skip-covered --cov-fail-under=90"
+
+[tool.coverage.run]
+branch = true
+omit = ["*/migrations/*", "*/tests/*", "config/asgi.py", "config/wsgi.py", "manage.py"]

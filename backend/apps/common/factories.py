@@ -1,4 +1,5 @@
 """Shared test factories — used across apps' test suites, not itself a test module."""
+
 import datetime
 
 import factory
@@ -10,7 +11,7 @@ from apps.students.models import ParentAccount, ParentStudentLink, Student
 from apps.studios.models import Studio, Teacher
 
 
-class UserFactory(factory.django.DjangoModelFactory):
+class UserFactory(factory.django.DjangoModelFactory[User]):
     class Meta:
         model = User
 
@@ -27,14 +28,14 @@ class UserFactory(factory.django.DjangoModelFactory):
         return user
 
 
-class StudioFactory(factory.django.DjangoModelFactory):
+class StudioFactory(factory.django.DjangoModelFactory[Studio]):
     class Meta:
         model = Studio
 
     name = factory.Sequence(lambda n: f"Studio {n}")
 
 
-class TeacherFactory(factory.django.DjangoModelFactory):
+class TeacherFactory(factory.django.DjangoModelFactory[Teacher]):
     class Meta:
         model = Teacher
 
@@ -43,7 +44,7 @@ class TeacherFactory(factory.django.DjangoModelFactory):
     is_owner = False
 
 
-class StudentFactory(factory.django.DjangoModelFactory):
+class StudentFactory(factory.django.DjangoModelFactory[Student]):
     class Meta:
         model = Student
 
@@ -53,7 +54,7 @@ class StudentFactory(factory.django.DjangoModelFactory):
     teacher = factory.SubFactory(TeacherFactory)
 
 
-class PackageFactory(factory.django.DjangoModelFactory):
+class PackageFactory(factory.django.DjangoModelFactory[Package]):
     class Meta:
         model = Package
 
@@ -64,7 +65,7 @@ class PackageFactory(factory.django.DjangoModelFactory):
     price = "120.00"
 
 
-class LessonFactory(factory.django.DjangoModelFactory):
+class LessonFactory(factory.django.DjangoModelFactory[Lesson]):
     class Meta:
         model = Lesson
 
@@ -72,11 +73,11 @@ class LessonFactory(factory.django.DjangoModelFactory):
     teacher = factory.LazyAttribute(lambda o: o.student.teacher)
     package = None
     start_time = factory.LazyFunction(
-        lambda: datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(hours=1)
+        lambda: datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1)
     )
 
 
-class ParentAccountFactory(factory.django.DjangoModelFactory):
+class ParentAccountFactory(factory.django.DjangoModelFactory[ParentAccount]):
     class Meta:
         model = ParentAccount
 
