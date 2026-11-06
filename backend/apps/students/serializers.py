@@ -1,6 +1,11 @@
+from typing import Any
+
 from rest_framework import serializers
 
+from apps.common.tenancy import get_tenant
 from apps.packages.serializers import PackageSerializer
+from apps.studios.models import Teacher
+from apps.studios.selectors import teachers_for_owner
 
 from .models import ParentAccount, ParentStudentLink, Student
 
@@ -45,3 +50,17 @@ class ParentStudentLinkSerializer(serializers.ModelSerializer[ParentStudentLink]
     class Meta:
         model = ParentStudentLink
         fields = ["id", "parent", "student"]
+
+
+class ReassignStudentSerializer(serializers.Serializer[None]):
+    """Target teacher, validated against the owner's own studio only."""
+
+    teacher = serializers.PrimaryKeyRelatedField(queryset=Teacher.objects.none())
+
+    def get_fields(self) -> dict[str, serializers.Field[Any, Any, Any, Any]]:
+        fields = super().get_fields()
+        teacher_field = fields["teacher"]
+        if isinstance(teacher_field, serializers.PrimaryKeyRelatedField):
+            ctx = get_tenant(self.context.get("request"))
+            teacher_field.queryset = teachers_for_owner(ctx)  # type: ignore[arg-type]
+        return fields

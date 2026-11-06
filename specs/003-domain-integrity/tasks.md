@@ -30,15 +30,15 @@
 
 ## Phase 5: User Story 3 — Per-object permissions (P2)
 
-- [ ] T013 [P] [US3] Tests: reassign (owner same studio OK, other studio 400, teacher 403, parent 403, outside studio 404), teacher cap 10, object permission, in `backend/apps/students/tests/test_reassign.py` and `backend/apps/studios/tests/test_teacher_cap.py`
-- [ ] T014 [US3] `CanWriteTenantObject` in `backend/apps/common/permissions.py`, applied to student/lesson/package/payment viewsets
-- [ ] T015 [US3] `reassign_student` service + `POST /students/{id}/reassign/` action
-- [ ] T016 [US3] `add_teacher_to_studio` (row lock + cap) in `backend/apps/studios/services.py`; `Teacher.clean()` reuses it
+- [X] T013 [P] [US3] Tests: reassign (owner same studio OK, other studio 400, teacher 403, parent 403, outside studio 404), teacher cap 10, object permission, in `backend/apps/students/tests/test_reassign.py` and `backend/apps/studios/tests/test_teacher_cap.py`
+- [X] T014 [US3] `CanWriteTenantObject` in `backend/apps/common/permissions.py`, applied to student/lesson/package/payment viewsets
+- [X] T015 [US3] `reassign_student` service + `POST /students/{id}/reassign/` action
+- [X] T016 [US3] `add_teacher_to_studio` (row lock + cap) in `backend/apps/studios/services.py`; `Teacher.clean()` reuses it
 
 ## Phase 6: User Story 4 — Payment state machine (P2)
 
-- [ ] T017 [P] [US4] Parametrised test over all 9 status pairs in `backend/apps/payments/tests/test_transitions.py`
-- [ ] T018 [US4] `ALLOWED_TRANSITIONS` in `backend/apps/payments/services.py`
+- [X] T017 [P] [US4] Parametrised test over all 9 status pairs in `backend/apps/payments/tests/test_transitions.py`
+- [X] T018 [US4] `ALLOWED_TRANSITIONS` in `backend/apps/payments/services.py`
 
 ## Phase 7: User Story 5 — API contract (P2)
 

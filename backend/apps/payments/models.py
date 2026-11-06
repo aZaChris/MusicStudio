@@ -38,6 +38,9 @@ class Payment(models.Model):
     def __str__(self) -> str:
         return f"{self.student} — {self.amount} ({self.status})"
 
+    def tenant_keys(self) -> tuple[int, int]:
+        return self.student.studio_id, self.student.teacher_id
+
     def clean(self) -> None:
         # Same rule as the API, for the Django admin (which calls full_clean()).
         from .services import ensure_package_matches_student

@@ -43,6 +43,9 @@ class Package(models.Model):
     def __str__(self) -> str:
         return f"{self.student} — {self.lessons_remaining}/{self.total_lessons}"
 
+    def tenant_keys(self) -> tuple[int, int]:
+        return self.student.studio_id, self.student.teacher_id
+
     @property
     def status(self) -> str:
         if self.expiry_date and self.expiry_date < timezone.localdate():

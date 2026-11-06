@@ -84,6 +84,9 @@ class Lesson(models.Model):
     def __str__(self) -> str:
         return f"{self.student} @ {self.start_time:%Y-%m-%d %H:%M}"
 
+    def tenant_keys(self) -> tuple[int, int]:
+        return self.student.studio_id, self.teacher_id
+
     @property
     def duration_minutes(self) -> int:
         # Compare in UTC: subtracting two datetimes that share a tzinfo is wall-clock math.

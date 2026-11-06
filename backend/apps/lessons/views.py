@@ -9,7 +9,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.common.permissions import IsTeacherOrStudioOwner
+from apps.common.permissions import CanWriteTenantObject, IsTeacherOrStudioOwner
 from apps.common.tenancy import get_tenant
 
 from . import selectors, services
@@ -33,7 +33,7 @@ from .serializers import (
 )
 class LessonViewSet(viewsets.ModelViewSet[Lesson]):
     serializer_class = LessonSerializer
-    permission_classes = [IsTeacherOrStudioOwner]
+    permission_classes = [IsTeacherOrStudioOwner, CanWriteTenantObject]
 
     def get_queryset(self) -> QuerySet[Lesson]:
         ctx = get_tenant(self.request)
@@ -74,7 +74,7 @@ class LessonViewSet(viewsets.ModelViewSet[Lesson]):
 
 
 class DashboardView(APIView):
-    permission_classes = [IsTeacherOrStudioOwner]
+    permission_classes = [IsTeacherOrStudioOwner, CanWriteTenantObject]
 
     @extend_schema(responses=DashboardSerializer)
     def get(self, request: Request) -> Response:

@@ -1,7 +1,7 @@
 from django.db.models import QuerySet
 from rest_framework import viewsets
 
-from apps.common.permissions import IsTeacherOrStudioOwner
+from apps.common.permissions import CanWriteTenantObject, IsTeacherOrStudioOwner
 from apps.common.tenancy import get_tenant
 
 from .models import Package
@@ -12,7 +12,7 @@ from .services import create_package
 
 class PackageViewSet(viewsets.ModelViewSet[Package]):
     serializer_class = PackageSerializer
-    permission_classes = [IsTeacherOrStudioOwner]
+    permission_classes = [IsTeacherOrStudioOwner, CanWriteTenantObject]
     filterset_fields = ["student"]
 
     def get_queryset(self) -> QuerySet[Package]:

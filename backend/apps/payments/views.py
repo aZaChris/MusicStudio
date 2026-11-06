@@ -3,7 +3,7 @@ from typing import cast
 from django.db.models import QuerySet
 from rest_framework import viewsets
 
-from apps.common.permissions import IsTeacherOrStudioOwner
+from apps.common.permissions import CanWriteTenantObject, IsTeacherOrStudioOwner
 from apps.common.tenancy import get_tenant
 
 from .models import Payment
@@ -14,7 +14,7 @@ from .services import create_payment, update_payment
 
 class PaymentViewSet(viewsets.ModelViewSet[Payment]):
     serializer_class = PaymentSerializer
-    permission_classes = [IsTeacherOrStudioOwner]
+    permission_classes = [IsTeacherOrStudioOwner, CanWriteTenantObject]
     filterset_fields = ["status", "student"]
 
     def get_queryset(self) -> QuerySet[Payment]:

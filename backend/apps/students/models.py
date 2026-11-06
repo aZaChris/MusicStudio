@@ -30,6 +30,10 @@ class Student(models.Model):
     def __str__(self) -> str:
         return f"{self.first_name} {self.last_name}"
 
+    def tenant_keys(self) -> tuple[int, int]:
+        """(studio id, responsible teacher id) — used by object-level permissions."""
+        return self.studio_id, self.teacher_id
+
     @property
     def full_name(self) -> str:
         return f"{self.first_name} {self.last_name}"
