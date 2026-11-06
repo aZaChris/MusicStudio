@@ -1,3 +1,5 @@
+> **Historical note (2026-11-06):** this document describes feature 001 as built. The AWS deployment target was replaced by Coolify (self-hosted) in feature 002 — see `specs/002-production-foundations/` and `docs/learning/adr/ADR-003-coolify-al-posto-di-aws.md`. AWS references below are kept only as history.
+
 # Phase 0 Research: MusicStudio MVP
 
 No `NEEDS CLARIFICATION` markers remained in the Technical Context — this consolidates the

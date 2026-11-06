@@ -1,82 +1,93 @@
 # MusicStudio
 
-A web platform for private music teachers and small studios (1-10 teachers) to manage
-students, recurring lessons, lesson packages, payments, and parent communication —
-replacing a patchwork of Calendly + spreadsheets + WhatsApp.
+REST API for private music teachers and small studios (1–10 teachers): students, recurring
+lessons, prepaid lesson packages, payments, and a read-only parent portal.
 
-Built spec-first with [spec-kit](https://github.com/github/spec-kit); the full spec, plan,
-research, data model, API contracts, and task breakdown live in
-[`specs/001-musicstudio-mvp/`](specs/001-musicstudio-mvp/).
+Built spec-first with [spec-kit](https://github.com/github/spec-kit). Principles are in
+[`.specify/memory/constitution.md`](.specify/memory/constitution.md) (v2.0.0); features in
+[`specs/`](specs/). Study documentation (Italian) lives in
+[`docs/learning/`](docs/learning/00-indice.md).
 
 ## Stack
 
-- **Backend**: Django 5 + Django REST Framework (API-only), PostgreSQL, JWT auth
-  (`djangorestframework-simplejwt`), Celery + Redis for background reminders,
-  `drf-spectacular` for OpenAPI docs.
-- **Frontend**: React 19 + Vite + TypeScript SPA, TanStack Query, `react-i18next`
-  (English/Italian), CSS-custom-property light/dark theming.
-- **Infra**: Docker Compose for local dev; AWS (ECS Fargate primary, EC2 + Compose
-  fallback) for deployment — see [`infra/aws/README.md`](infra/aws/README.md).
+- **API**: Python 3.12, Django 5.2 LTS, Django REST Framework (API-only), JWT (simplejwt),
+  OpenAPI with drf-spectacular (`/api/schema/`, `/api/docs/`).
+- **Data**: PostgreSQL 16. **Background jobs**: Celery + Redis (lesson reminders).
+- **Quality**: pytest + factory_boy (real PostgreSQL), coverage gate 90%, query-count budgets,
+  ruff, mypy (django-stubs), pre-commit, GitHub Actions.
+- **Deploy**: Docker Compose on [Coolify](https://coolify.io) (self-hosted). No AWS.
+
+## Architecture in one paragraph
+
+A modular monolith: one Django app per domain (`accounts`, `studios`, `students`,
+`packages`, `lessons`, `payments`, `notifications`, plus `common`). Inside each app,
+`services.py` holds write use-cases and `selectors.py` holds reads; views and serializers
+stay thin. Tenant isolation is enforced at the ORM level for reads **and** writes through
+`apps/common/scoping.py`. See
+[`docs/learning/01-panoramica-architettura.md`](docs/learning/01-panoramica-architettura.md).
 
 ## Repository layout
 
 ```text
-backend/    Django project (apps/accounts, studios, students, packages, lessons,
-            payments, notifications, common)
-frontend/   React SPA (src/features/{teacher,parent}, auth, theme, i18n, api)
-infra/      docker-compose.yml, Dockerfiles, .env.example, AWS deployment docs
-design/     Reference design artboards + extracted design tokens
-specs/      spec-kit artifacts: spec, plan, research, data model, contracts, tasks
+backend/                   Django project (uv). Dockerfile, docker/ (entrypoint, probes)
+  config/                  settings (base/dev/test/prod), urls, health, celery
+  apps/<domain>/           models, services, selectors, serializers, views, tests
+docker-compose.yml         dev stack (db, redis, backend, worker, beat [+ frontend profile])
+docker-compose.coolify.yml production stack for Coolify (healthchecks, backups, no ports)
+.env.example               every configuration variable, documented
+.github/workflows/ci.yml   ruff, mypy, migrations check, pytest + coverage
+docs/learning/             study docs: audit, architecture, ADRs, concepts, glossary, Q&A
+specs/                     spec-kit artifacts per feature
+frontend/                  React SPA from feature 001 — out of scope, kept isolated
+infra/frontend.Dockerfile  image for the isolated SPA (dev profile only)
 ```
-
-Two long-lived branches: `web` (this Django/DRF + React platform) and a future `app`
-branch (React Native, same API — out of scope for this MVP, see the constitution).
 
 ## Local development
 
-```bash
-cd infra
-cp .env.example .env   # fill in real values (see comments in the file)
-docker compose up --build
-```
-
-This starts Postgres, Redis, the Django API (`:8000`), Celery worker + beat, and the
-Vite dev server (`:5173`). First run:
+With Docker:
 
 ```bash
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py seed_demo   # optional demo data + logins
+cp .env.example .env
+docker compose up --build            # API on http://localhost:8000
+docker compose exec backend python manage.py seed_demo   # demo data (DEBUG only)
+docker compose --profile frontend up # optional: the isolated SPA on :5173
 ```
 
-Full validation walkthrough (what to click through, what each user story should do):
-[`specs/001-musicstudio-mvp/quickstart.md`](specs/001-musicstudio-mvp/quickstart.md).
-
-API docs once the backend is running: `http://localhost:8000/api/docs/`.
-
-### Running without Docker (backend)
+Without Docker (PostgreSQL reachable via `DATABASE_URL`):
 
 ```bash
 cd backend
 uv sync
-DATABASE_URL=sqlite:///dev.sqlite3 DJANGO_SECRET_KEY=dev uv run python manage.py migrate
-DATABASE_URL=sqlite:///dev.sqlite3 DJANGO_SECRET_KEY=dev uv run python manage.py runserver
+uv run python manage.py migrate
+uv run python manage.py runserver
 ```
 
-### Tests
+## Quality gate (same as CI)
 
 ```bash
-cd backend && uv run pytest apps      # backend: models, permission boundaries, business logic
-cd frontend && npm test               # frontend: component/flow tests
+cd backend
+uv run ruff check . && uv run ruff format --check .
+uv run mypy .
+uv run python manage.py makemigrations --check --dry-run
+uv run pytest                        # needs PostgreSQL; fails under 90% coverage
+pre-commit install                   # once, from the repo root
 ```
 
-## Architecture notes
+## Deploy on Coolify
 
-- **Tenant isolation is enforced at the ORM layer**, not just hidden in the UI: every
-  viewset scopes its queryset by role through
-  `backend/apps/common/permissions.py::role_scoped_queryset` — a parent account cannot
-  retrieve another family's data through the API, full stop. See the project
-  [constitution](.specify/memory/constitution.md), Principle I.
-- **API-first**: the Django backend has no server-rendered app views; the React SPA is
-  one client of a REST API a future React Native app can reuse unchanged.
-- Package lesson-count decrement, payment status transitions, and every permission
-  boundary have explicit automated test coverage (Constitution Principle III).
+1. New resource → Docker Compose → this repository; compose file
+   `docker-compose.coolify.yml`.
+2. On the `backend` service set the domain, e.g. `https://api.example.com:8000` (the port
+   suffix is the container port, `PORT`).
+3. Fill the required variables (SMTP_*, DEFAULT_FROM_EMAIL); database and secret keys are
+   generated by Coolify.
+4. Deploy. Check `https://<domain>/health/ready/`.
+
+Backups: daily `pg_dump` with 7/4/6 daily/weekly/monthly retention in the `db-backups`
+volume (`backup` service). Details and restore procedure:
+[`docs/learning/concetti/health-check-e-backup.md`](docs/learning/concetti/health-check-e-backup.md).
+
+## Health endpoints
+
+- `GET /health/live/` — process is up (no dependencies).
+- `GET /health/ready/` — PostgreSQL and Redis reachable; 503 otherwise.

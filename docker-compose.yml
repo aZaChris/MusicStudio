@@ -1,0 +1,130 @@
+# Local development stack.  Usage:  cp .env.example .env && docker compose up --build
+# Production on Coolify uses docker-compose.coolify.yml instead (ADR-003).
+#
+# Host ports are published here on purpose (developer access) and are configurable.
+# The isolated React SPA (frontend/, out of scope) starts only with:  --profile frontend
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-musicstudio}
+      POSTGRES_USER: ${POSTGRES_USER:-musicstudio}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-musicstudio}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - "${DB_HOST_PORT:-5432}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+      target: runtime
+    command: ["dev"]
+    env_file:
+      - path: .env
+        required: false
+    environment: &backend-env
+      DJANGO_SETTINGS_MODULE: config.settings.dev
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-dev-only-insecure-key-change-me-0123456789abcdef}
+      DATABASE_URL: postgres://${POSTGRES_USER:-musicstudio}:${POSTGRES_PASSWORD:-musicstudio}@db:5432/${POSTGRES_DB:-musicstudio}
+      REDIS_URL: redis://redis:6379/0
+      PORT: ${BACKEND_PORT:-8000}
+    volumes:
+      - ./backend:/app # live reload; the venv lives in /opt/venv so it is not hidden
+    ports:
+      - "${BACKEND_HOST_PORT:-8000}:${BACKEND_PORT:-8000}"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "docker/healthcheck.py", "http", "/health/live/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  worker:
+    build:
+      context: ./backend
+      target: runtime
+    command: ["worker"]
+    env_file:
+      - path: .env
+        required: false
+    environment: *backend-env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME --timeout 10"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+
+  beat:
+    build:
+      context: ./backend
+      target: runtime
+    command: ["beat"]
+    env_file:
+      - path: .env
+        required: false
+    environment: *backend-env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      # Beat rewrites its schedule file after each dispatch (every 15 min here).
+      test: ["CMD", "python", "docker/healthcheck.py", "beat", "/tmp/celerybeat-schedule", "1200"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  frontend:
+    profiles: ["frontend"]
+    build:
+      context: ./frontend
+      dockerfile: ../infra/frontend.Dockerfile
+      target: dev
+    environment:
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "${FRONTEND_HOST_PORT:-5173}:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:5173/ || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db-data:
