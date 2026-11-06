@@ -1,0 +1,75 @@
+# Quality gate (Constitution VII). A red run must block merge: enable branch protection
+# on the default branch with "ci / backend" as a required status check.
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: musicstudio
+          POSTGRES_USER: musicstudio
+          POSTGRES_PASSWORD: musicstudio
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U musicstudio"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://musicstudio:musicstudio@localhost:5432/musicstudio
+      REDIS_URL: redis://localhost:6379/0
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.12.7"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies (locked)
+        run: uv sync --frozen --python 3.12
+
+      - name: Lint (ruff)
+        run: uv run ruff check --output-format=github .
+
+      - name: Format check (ruff)
+        run: uv run ruff format --check .
+
+      - name: Type check (mypy)
+        run: uv run mypy .
+
+      - name: Migrations in sync
+        run: uv run python manage.py makemigrations --check --dry-run --settings=config.settings.test
+
+      - name: Tests + coverage (fails under 90%)
+        run: uv run pytest --cov-report=xml
+
+      - name: OpenAPI schema generates without warnings
+        run: uv run python manage.py spectacular --settings=config.settings.test --fail-on-warn --file /tmp/schema.yml

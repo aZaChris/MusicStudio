@@ -3,7 +3,9 @@
 import os
 
 # Tests must not depend on a developer's secrets; set a throwaway key before base reads it.
-os.environ.setdefault("DJANGO_SECRET_KEY", "test-only-insecure-key-padded-to-a-safe-hmac-length-0123456789")
+os.environ.setdefault(
+    "DJANGO_SECRET_KEY", "test-only-insecure-key-padded-to-a-safe-hmac-length-0123456789"
+)
 
 from .base import *  # noqa: F403
 from .base import REST_FRAMEWORK

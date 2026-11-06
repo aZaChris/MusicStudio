@@ -1,0 +1,45 @@
+# Install once: `cd backend && uv run pre-commit install` (hooks live at the repo root).
+# Fast checks only; the full test suite runs in CI.
+# frontend/ is out of scope and must not be modified (Constitution VI); design/ and
+# .specify/ hold generated or reference files.
+exclude: ^(frontend/|design/|\.specify/)
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: [--allow-multiple-documents]
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff (lint)
+        entry: bash -c 'cd backend && uv run ruff check --fix .'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff (format)
+        entry: bash -c 'cd backend && uv run ruff format .'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+      - id: mypy
+        name: mypy
+        entry: bash -c 'cd backend && uv run mypy .'
+        language: system
+        files: ^backend/.*\.py$
+        pass_filenames: false
+      - id: migrations
+        name: migrations in sync
+        entry: bash -c 'cd backend && DJANGO_SETTINGS_MODULE=config.settings.test uv run python manage.py makemigrations --check --dry-run'
+        language: system
+        files: ^backend/apps/.*/models\.py$
+        pass_filenames: false
