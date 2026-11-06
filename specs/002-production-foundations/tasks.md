@@ -82,15 +82,15 @@ tasks (Principle VIII).
 
 ## Phase 10: User Story 8 — Study documentation (P2)
 
-- [ ] T035 [P] [US8] ADR-002…ADR-008 in `docs/learning/adr/`
-- [ ] T036 [P] [US8] `docs/learning/01-panoramica-architettura.md`
-- [ ] T037 [P] [US8] Concept docs in `docs/learning/concetti/` (service layer, N+1, indici/EXPLAIN, BOLA/isolamento, configurazione per ambienti, strategia di test, CI, Docker/Coolify, health check e backup, rate limiting)
-- [ ] T038 [P] [US8] `docs/learning/glossario.md`, `docs/learning/colloquio/domande-e-risposte.md`
-- [ ] T039 [US8] `docs/learning/00-indice.md` with reading order
+- [X] T035 [P] [US8] ADR-002…ADR-008 in `docs/learning/adr/`
+- [X] T036 [P] [US8] `docs/learning/01-panoramica-architettura.md`
+- [X] T037 [P] [US8] Concept docs in `docs/learning/concetti/` (service layer, N+1, indici/EXPLAIN, BOLA/isolamento, configurazione per ambienti, strategia di test, CI, Docker/Coolify, health check e backup, rate limiting)
+- [X] T038 [P] [US8] `docs/learning/glossario.md`, `docs/learning/colloquio/domande-e-risposte.md`
+- [X] T039 [US8] `docs/learning/00-indice.md` with reading order
 
 ## Phase 11: Polish & Cross-Cutting
 
-- [ ] T040 OWASP API Security Top 10 walk for phase 1 in `docs/learning/concetti/sicurezza-api-owasp.md`
+- [X] T040 OWASP API Security Top 10 walk for phase 1 in `docs/learning/concetti/sicurezza-api-owasp.md`
 - [ ] T041 Full gate run (ruff, mypy, migrations check, pytest ≥ 90%); update `README.md`; phase 1 summary commit
 
 ## Dependencies
