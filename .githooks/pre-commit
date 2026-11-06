@@ -1,0 +1,4 @@
+#!/bin/sh
+# Runs the pre-commit framework. Enabled with:  git config core.hooksPath .githooks
+# (needed because a global core.hooksPath makes `pre-commit install` refuse to run).
+exec backend/.venv/bin/pre-commit run --hook-stage pre-commit

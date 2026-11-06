@@ -1,0 +1,6 @@
+#!/bin/sh
+# Keep the developer's global post-commit hook (e.g. vault sync) working when this
+# repository overrides core.hooksPath.
+global="$HOME/.config/git/hooks/post-commit"
+[ -x "$global" ] && exec "$global"
+exit 0

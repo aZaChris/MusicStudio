@@ -1,4 +1,5 @@
-# Install once: `cd backend && uv run pre-commit install` (hooks live at the repo root).
+# Enable once: `git config core.hooksPath .githooks` (see .githooks/; `pre-commit install`
+# refuses when a global core.hooksPath is set). Manual run: `pre-commit run --all-files`.
 # Fast checks only; the full test suite runs in CI.
 # frontend/ is out of scope and must not be modified (Constitution VI); design/ and
 # .specify/ hold generated or reference files.
