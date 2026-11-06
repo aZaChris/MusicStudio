@@ -30,13 +30,19 @@ class Teacher(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def clean(self):
-        if self.is_owner and self.studio_id is None:
-            raise ValidationError("A studio owner must belong to a studio.")
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
+    class Meta:
+        constraints = [
+            # Was a save() override calling clean(); the database now guarantees it for
+            # every write path (bulk updates and raw SQL included).
+            models.CheckConstraint(
+                condition=models.Q(is_owner=False) | models.Q(studio__isnull=False),
+                name="teacher_owner_has_studio",
+            )
+        ]
 
     def __str__(self) -> str:
         return self.user.email
+
+    def clean(self) -> None:
+        if self.is_owner and self.studio_id is None:
+            raise ValidationError("A studio owner must belong to a studio.")

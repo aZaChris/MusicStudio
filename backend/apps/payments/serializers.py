@@ -1,9 +1,11 @@
 from rest_framework import serializers
 
+from apps.common.serializers import ScopedRelatedFieldsMixin
+
 from .models import Payment
 
 
-class PaymentSerializer(serializers.ModelSerializer):
+class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Payment]):
     student_name = serializers.CharField(source="student.full_name", read_only=True)
 
     class Meta:
@@ -18,12 +20,3 @@ class PaymentSerializer(serializers.ModelSerializer):
             "method",
             "status",
         ]
-
-    def validate(self, attrs):
-        student = attrs.get("student", getattr(self.instance, "student", None))
-        package = attrs.get("package", getattr(self.instance, "package", None))
-        if package is not None and package.student_id != student.id:
-            raise serializers.ValidationError(
-                {"package": "Package must belong to the same student as the payment."}
-            )
-        return attrs

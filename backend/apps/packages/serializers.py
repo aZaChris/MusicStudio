@@ -1,9 +1,11 @@
 from rest_framework import serializers
 
+from apps.common.serializers import ScopedRelatedFieldsMixin
+
 from .models import Package
 
 
-class PackageSerializer(serializers.ModelSerializer):
+class PackageSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Package]):
     status = serializers.CharField(read_only=True)
     is_low = serializers.BooleanField(read_only=True)
 
@@ -20,7 +22,4 @@ class PackageSerializer(serializers.ModelSerializer):
             "status",
             "is_low",
         ]
-
-    def create(self, validated_data):
-        validated_data.setdefault("lessons_remaining", validated_data["total_lessons"])
-        return super().create(validated_data)
+        read_only_fields = ["lessons_remaining"]

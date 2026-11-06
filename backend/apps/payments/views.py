@@ -1,21 +1,27 @@
+from typing import cast
+
+from django.db.models import QuerySet
 from rest_framework import viewsets
 
-from apps.common.permissions import IsTeacherOrStudioOwner, role_scoped_queryset
+from apps.common.permissions import IsTeacherOrStudioOwner
 
 from .models import Payment
+from .selectors import payments_for
 from .serializers import PaymentSerializer
+from .services import create_payment, update_payment
 
 
-class PaymentViewSet(viewsets.ModelViewSet):
+class PaymentViewSet(viewsets.ModelViewSet[Payment]):
     serializer_class = PaymentSerializer
     permission_classes = [IsTeacherOrStudioOwner]
     filterset_fields = ["status", "student"]
 
-    def get_queryset(self):
-        return role_scoped_queryset(
-            self.request.user,
-            Payment.objects.select_related("student"),
-            teacher_field="student__teacher",
-            studio_field="student__teacher__studio",
-            parent_field="student__parent_accounts",
-        )
+    def get_queryset(self) -> QuerySet[Payment]:
+        return payments_for(self.request.user)
+
+    def perform_create(self, serializer: PaymentSerializer) -> None:  # type: ignore[override]
+        serializer.instance = create_payment(**serializer.validated_data)
+
+    def perform_update(self, serializer: PaymentSerializer) -> None:  # type: ignore[override]
+        instance = cast(Payment, serializer.instance)  # always set on update
+        serializer.instance = update_payment(instance, **serializer.validated_data)

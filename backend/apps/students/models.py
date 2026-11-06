@@ -1,7 +1,15 @@
+from typing import TYPE_CHECKING
+
 from django.conf import settings
 from django.db import models
 
 from apps.studios.models import Teacher
+
+if TYPE_CHECKING:
+    from apps.packages.models import Package
+
+# Name of the attribute filled by students.selectors.active_packages_prefetch().
+ACTIVE_PACKAGES_ATTR = "active_packages"
 
 
 class Student(models.Model):
@@ -24,8 +32,18 @@ class Student(models.Model):
         return f"{self.first_name} {self.last_name}"
 
     @property
-    def active_package(self):
-        return self.packages.filter(lessons_remaining__gt=0).order_by("-purchase_date").first()
+    def active_package(self) -> "Package | None":
+        """Newest package with lessons left.
+
+        Uses the prefetched list when the queryset came from a selector (no query);
+        falls back to one query otherwise (single-object paths such as create).
+        """
+        prefetched: list[Package] | None = getattr(self, ACTIVE_PACKAGES_ATTR, None)
+        if prefetched is not None:
+            return prefetched[0] if prefetched else None
+        return (
+            self.packages.filter(lessons_remaining__gt=0).order_by("-purchase_date", "-id").first()
+        )
 
 
 class ParentAccount(models.Model):

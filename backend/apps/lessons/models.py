@@ -1,4 +1,4 @@
-from django.db import models, transaction
+from django.db import models
 
 from apps.packages.models import Package
 from apps.students.models import Student
@@ -6,6 +6,8 @@ from apps.studios.models import Teacher
 
 
 class Lesson(models.Model):
+    """A lesson slot. State transitions live in lessons.services (ADR-002)."""
+
     class Status(models.TextChoices):
         SCHEDULED = "scheduled", "Scheduled"
         COMPLETED = "completed", "Completed"
@@ -27,32 +29,16 @@ class Lesson(models.Model):
 
     class Meta:
         ordering = ["start_time"]
+        indexes = [
+            # Weekly agenda / upcoming / dashboard: WHERE teacher_id = ? AND start_time range.
+            models.Index(fields=["teacher", "start_time"], name="lesson_teacher_start_idx"),
+            # Reminder sweep: only the small set of scheduled, not-yet-reminded lessons.
+            models.Index(
+                fields=["start_time"],
+                name="lesson_reminder_due_idx",
+                condition=models.Q(status="scheduled", reminder_sent_at__isnull=True),
+            ),
+        ]
 
     def __str__(self) -> str:
         return f"{self.student} @ {self.start_time:%Y-%m-%d %H:%M}"
-
-    @transaction.atomic
-    def mark_completed(self, note: str = "") -> None:
-        """Idempotent: only the first transition into COMPLETED decrements the
-        linked package. Constitution Principle III business-critical path."""
-        if self.status == self.Status.COMPLETED:
-            return
-
-        self.status = self.Status.COMPLETED
-        if note:
-            self.notes = note
-        self.save(update_fields=["status", "notes", "updated_at"])
-
-        if self.package_id is not None:
-            locked_package = Package.objects.select_for_update().get(pk=self.package_id)
-            if locked_package.lessons_remaining > 0:
-                locked_package.lessons_remaining -= 1
-                locked_package.save(update_fields=["lessons_remaining", "updated_at"])
-
-    def cancel(self, status: str) -> None:
-        if status not in (self.Status.CANCELLED, self.Status.NO_SHOW):
-            raise ValueError("status must be 'cancelled' or 'no_show'")
-        if self.status == self.Status.COMPLETED:
-            return
-        self.status = status
-        self.save(update_fields=["status", "updated_at"])

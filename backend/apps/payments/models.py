@@ -1,4 +1,3 @@
-from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.packages.models import Package
@@ -28,15 +27,20 @@ class Payment(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-date"]
-
-    def clean(self):
-        if self.package_id and self.package.student_id != self.student_id:
-            raise ValidationError("Payment's package must belong to the same student.")
-
-    def save(self, *args, **kwargs):
-        self.clean()
-        super().save(*args, **kwargs)
+        ordering = ["-date", "-id"]
+        indexes = [
+            # Latest payment of a student (roster subquery) and the student's history.
+            models.Index(fields=["student", "-date"], name="payment_student_date_idx"),
+            # Dashboard "pending payments" count and the ?status= filter.
+            models.Index(fields=["status"], name="payment_status_idx"),
+        ]
 
     def __str__(self) -> str:
         return f"{self.student} — {self.amount} ({self.status})"
+
+    def clean(self) -> None:
+        # Same rule as the API, for the Django admin (which calls full_clean()).
+        from .services import ensure_package_matches_student
+
+        if self.student_id is not None:
+            ensure_package_matches_student(self.student, self.package)

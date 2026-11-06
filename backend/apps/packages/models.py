@@ -13,6 +13,8 @@ class Package(models.Model):
 
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="packages")
     total_lessons = models.PositiveSmallIntegerField()
+    # System-managed: set by packages.services.create_package, decremented only by
+    # lessons.services.complete_lesson. Read-only through the API.
     lessons_remaining = models.PositiveSmallIntegerField()
     purchase_date = models.DateField()
     expiry_date = models.DateField(null=True, blank=True)
@@ -21,13 +23,21 @@ class Package(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ["-purchase_date"]
+        ordering = ["-purchase_date", "-id"]
         constraints = [
             models.CheckConstraint(
-                check=models.Q(lessons_remaining__gte=0)
+                condition=models.Q(lessons_remaining__gte=0)
                 & models.Q(lessons_remaining__lte=models.F("total_lessons")),
                 name="package_remaining_within_total",
             )
+        ]
+        indexes = [
+            # "Active package of a student": newest package that still has lessons left.
+            models.Index(
+                fields=["student", "-purchase_date"],
+                name="package_active_by_student_idx",
+                condition=models.Q(lessons_remaining__gt=0),
+            ),
         ]
 
     def __str__(self) -> str:
@@ -43,5 +53,5 @@ class Package(models.Model):
 
     @property
     def is_low(self) -> bool:
-        threshold = getattr(settings, "PACKAGE_LOW_THRESHOLD", 2)
+        threshold: int = getattr(settings, "PACKAGE_LOW_THRESHOLD", 2)
         return 0 < self.lessons_remaining <= threshold

@@ -1,6 +1,8 @@
 import datetime
+from typing import Any
 
-from django.core.management.base import BaseCommand
+from django.conf import settings
+from django.core.management.base import BaseCommand, CommandError, CommandParser
 from django.utils import timezone
 
 from apps.accounts.models import User
@@ -17,7 +19,19 @@ class Command(BaseCommand):
         "(see specs/001-musicstudio-mvp/quickstart.md)"
     )
 
-    def handle(self, *args, **options):
+    def add_arguments(self, parser: CommandParser) -> None:
+        parser.add_argument(
+            "--force",
+            action="store_true",
+            help="Allow running with DEBUG=False (creates users with a well-known password).",
+        )
+
+    def handle(self, *args: Any, **options: Any) -> None:
+        if not settings.DEBUG and not options["force"]:
+            raise CommandError(
+                "seed_demo creates accounts with the password 'password123'. "
+                "Refusing to run with DEBUG=False; pass --force for a throwaway demo."
+            )
         self.stdout.write("Seeding demo data…")
 
         # Solo teacher
@@ -56,12 +70,19 @@ class Command(BaseCommand):
             start_time=timezone.now().replace(hour=15, minute=0, second=0, microsecond=0),
             defaults={"package": solo_package, "duration_minutes": 45},
         )
-        Lesson.objects.get_or_create(
-            student=low_student,
-            teacher=owner_teacher,
-            start_time=timezone.now() + datetime.timedelta(hours=24),
-            defaults={"duration_minutes": 30},
+        # Keyed on the date (not the exact instant) so re-running the seed stays idempotent.
+        reminder_time = (timezone.now() + datetime.timedelta(hours=24)).replace(
+            second=0, microsecond=0
         )
+        if not Lesson.objects.filter(
+            student=low_student, start_time__date=reminder_time.date()
+        ).exists():
+            Lesson.objects.create(
+                student=low_student,
+                teacher=owner_teacher,
+                start_time=reminder_time,
+                duration_minutes=30,
+            )
 
         # A pending payment
         Payment.objects.get_or_create(

@@ -1,9 +1,14 @@
+from typing import Any
+
 from rest_framework import serializers
 
+from apps.common.serializers import ScopedRelatedFieldsMixin
+
 from .models import Lesson
+from .services import CANCEL_STATUSES
 
 
-class LessonSerializer(serializers.ModelSerializer):
+class LessonSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Lesson]):
     student_name = serializers.CharField(source="student.full_name", read_only=True)
 
     class Meta:
@@ -21,27 +26,21 @@ class LessonSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["teacher", "status"]
 
-    def create(self, validated_data):
-        student = validated_data["student"]
-        validated_data.setdefault("teacher", student.teacher)
-        validated_data.setdefault("package", student.active_package)
-        return super().create(validated_data)
 
-
-class LessonCompleteSerializer(serializers.Serializer):
+class LessonCompleteSerializer(serializers.Serializer[None]):
     note = serializers.CharField(required=False, allow_blank=True, default="")
 
 
-class LessonCancelSerializer(serializers.Serializer):
-    status = serializers.ChoiceField(choices=[Lesson.Status.CANCELLED, Lesson.Status.NO_SHOW])
+class LessonCancelSerializer(serializers.Serializer[None]):
+    status = serializers.ChoiceField(choices=list(CANCEL_STATUSES))
 
 
-class LowPackageStudentSerializer(serializers.Serializer):
+class LowPackageStudentSerializer(serializers.Serializer[None]):
     id = serializers.IntegerField()
     full_name = serializers.CharField()
 
 
-class DashboardSerializer(serializers.Serializer):
+class DashboardSerializer(serializers.Serializer[dict[str, Any]]):
     week = LessonSerializer(many=True)
     upcoming = LessonSerializer(many=True)
     pending_payments_count = serializers.IntegerField()

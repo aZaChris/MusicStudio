@@ -2,16 +2,17 @@ import pytest
 
 from apps.common.factories import LessonFactory, PackageFactory, StudentFactory
 from apps.lessons.models import Lesson
+from apps.lessons.services import cancel_lesson, complete_lesson
 
 pytestmark = pytest.mark.django_db
 
 
-def test_mark_completed_decrements_package_once():
+def test_complete_lesson_decrements_package_once():
     student = StudentFactory()
     package = PackageFactory(student=student, total_lessons=8, lessons_remaining=8)
     lesson = LessonFactory(student=student, package=package)
 
-    lesson.mark_completed(note="Great progress")
+    complete_lesson(lesson, note="Great progress")
 
     lesson.refresh_from_db()
     package.refresh_from_db()
@@ -20,25 +21,25 @@ def test_mark_completed_decrements_package_once():
     assert package.lessons_remaining == 7
 
 
-def test_mark_completed_is_idempotent():
+def test_complete_lesson_is_idempotent():
     student = StudentFactory()
     package = PackageFactory(student=student, total_lessons=8, lessons_remaining=8)
     lesson = LessonFactory(student=student, package=package)
 
-    lesson.mark_completed()
-    lesson.mark_completed()  # retry / double submit
-    lesson.mark_completed()
+    complete_lesson(lesson)
+    complete_lesson(lesson)  # retry / double submit
+    complete_lesson(lesson)
 
     package.refresh_from_db()
     assert package.lessons_remaining == 7
 
 
-def test_mark_completed_never_goes_negative():
+def test_complete_lesson_never_goes_negative():
     student = StudentFactory()
     package = PackageFactory(student=student, total_lessons=8, lessons_remaining=0)
     lesson = LessonFactory(student=student, package=package)
 
-    lesson.mark_completed()
+    complete_lesson(lesson)
 
     package.refresh_from_db()
     assert package.lessons_remaining == 0
@@ -50,7 +51,7 @@ def test_cancel_does_not_decrement_package(target_status):
     package = PackageFactory(student=student, total_lessons=8, lessons_remaining=8)
     lesson = LessonFactory(student=student, package=package)
 
-    lesson.cancel(target_status)
+    cancel_lesson(lesson, status=target_status)
 
     lesson.refresh_from_db()
     package.refresh_from_db()
@@ -61,7 +62,7 @@ def test_cancel_does_not_decrement_package(target_status):
 def test_completed_lesson_with_no_package_does_not_error():
     lesson = LessonFactory(package=None)
 
-    lesson.mark_completed()
+    complete_lesson(lesson)
 
     lesson.refresh_from_db()
     assert lesson.status == Lesson.Status.COMPLETED
