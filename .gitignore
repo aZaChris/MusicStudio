@@ -21,3 +21,12 @@ frontend/dist/
 
 # Claude Code local settings (may hold local overrides)
 .claude/settings.local.json
+
+# Local leftovers from the Expo `app` branch (never commit: .env.local holds real credentials)
+.env.local
+.env.*.local
+.expo/
+expo-env.d.ts
+.coverage
+coverage.xml
+.mypy_cache/
