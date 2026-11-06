@@ -54,8 +54,8 @@
 
 ## Phase 9: Polish
 
-- [ ] T025 Full gate (ruff, mypy, migrations, pytest ≥ 90%, schema diff); README; phase 2 summary commit
-- [ ] T026 Copy study docs to `C:\Users\Christian\Documents\doc_music_studio`
+- [X] T025 Full gate (ruff, mypy, migrations, pytest ≥ 90%, schema diff); README; phase 2 summary commit
+- [X] T026 Copy study docs to `C:\Users\Christian\Documents\doc_music_studio`
 
 ## Dependencies
 
