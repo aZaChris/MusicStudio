@@ -51,8 +51,8 @@
 ## Phase 8: US5 — Load test (P3)
 
 - [X] T025 [P] [US5] `seed_loadtest` command + test (refuses with `DEBUG=False` without flag) in `backend/apps/common/management/commands/seed_loadtest.py`
-- [ ] T026 [US5] `backend/loadtest/locustfile.py` (token, lessons, calendar, dashboard, packages)
-- [ ] T027 [US5] Run 50 users against local gunicorn with prod-like settings; commit results in `docs/loadtest/2026-11-09/`; document misses; ADR-022 `docs/learning/adr/ADR-022-load-test-con-locust.md`
+- [X] T026 [US5] `backend/loadtest/locustfile.py` (token, lessons, calendar, dashboard, packages)
+- [X] T027 [US5] Run 50 users against local gunicorn with prod-like settings; commit results in `docs/loadtest/2026-11-09/`; document misses; ADR-022 `docs/learning/adr/ADR-022-load-test-con-locust.md`
 
 ## Phase 9: US7 — OWASP walk and study docs (P2)
 
