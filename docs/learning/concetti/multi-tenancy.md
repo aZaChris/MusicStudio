@@ -74,7 +74,7 @@ La funzione `scope(queryset, ctx, paths)` applica la regola: il titolare vede il
 
 **django-tenants**, uno schema per tenant. Isolamento migliore, ma ogni migrazione moltiplicata per il numero di studi. Per studi da uno a dieci insegnanti è eccessivo.
 
-**Row Level Security di PostgreSQL.** Il database stesso filtra le righe in base al tenant della sessione. È la garanzia più forte, perché protegge anche da una query scritta male. Ma richiede di impostare il tenant sulla connessione a ogni richiesta. La valuteremo nella fase 4.
+**Row Level Security di PostgreSQL.** Il database stesso filtra le righe in base al tenant della sessione. È la garanzia più forte, perché protegge anche da una query scritta male. Ma richiede di impostare il tenant sulla connessione a ogni richiesta. Non è ancora stata adottata: resta un'idea aperta per il futuro.
 
 **Contesto in una variabile globale** (thread-local). Comodo, ma implicito e pericoloso se non viene azzerato tra una richiesta e l'altra.
 

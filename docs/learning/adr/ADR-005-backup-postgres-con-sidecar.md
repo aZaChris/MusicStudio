@@ -29,3 +29,7 @@ Un servizio `backup` con l'immagine `prodrigestivill/postgres-backup-local:16`:
 - Nel caso peggiore perdiamo fino a 24 ore di dati.
 - Un backup che non è mai stato ripristinato non è un backup: la prova di restore è nel piano della fase 4.
 - Il tag `:16` dell'immagine è "mobile" (segue le patch). Fissarlo a un digest è un miglioramento della fase 4.
+
+## Aggiornamento (fase 4)
+
+La copia off-site cifrata e la prova di ripristino sono state aggiunte: vedi ADR-020. Il point-in-time recovery è stato scartato di nuovo. Il tag dell'immagine non è ancora fissato a un digest.

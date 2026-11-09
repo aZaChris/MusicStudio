@@ -30,3 +30,7 @@ La feature 001 documentava un deploy su AWS ECS Fargate con RDS, ElastiCache ed 
 - Database e Redis sono raggiungibili solo dalla rete interna. Redis non ha password per questo motivo.
 - Il file di Coolify si può provare anche in locale, impostando a mano le variabili magiche.
 - In questo ambiente il Compose non è stato eseguito (manca Docker). La prima verifica reale va fatta prima del deploy.
+
+## Aggiornamento (fase 4)
+
+Il servizio di migrazione one-shot non è stato introdotto: senza un deploy reale su cui verificare il comportamento di Coolify, restano le migrazioni all'avvio del web. Il runbook (`docs/operations/runbook.md`) descrive deploy e rollback.

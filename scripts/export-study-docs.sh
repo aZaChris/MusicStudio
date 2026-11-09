@@ -43,6 +43,7 @@ PHASES=(
   "Fase 1 - Fondamenta|service-layer-e-modular-monolith orm-e-problema-n-piu-1 indici-ed-explain isolamento-tenant-e-bola configurazione-per-ambienti strategia-di-test ci-e-quality-gate docker-e-deploy-con-coolify health-check-e-backup|1|8"
   "Fase 2 - Dominio|exclusion-constraint multi-tenancy permessi-drf openapi-e-contratti|9|12"
   "Fase 3 - Celery e pagamenti|task-celery-idempotenti webhook-idempotenti pagamenti-online-stripe caching|13|17"
+  "Fase 4 - Produzione|revoca-token-jwt ip-reale-dietro-proxy log-strutturati-e-sentry backup-off-site-e-restore-drill load-testing|18|22"
 )
 
 # Knowledge-base cases (real problems solved): cross-phase, refreshed every run
@@ -50,6 +51,11 @@ for f in "$SRC"/../knowledge-base/*.md; do
   [ "$(basename "$f")" = README.md ] && continue
   copy "$f" "$DEST/00 Generale/Knowledge base/$(basename "$f")"
 done
+
+# Operations docs born in phase 4 (runbook, restore drill record, load-test baseline)
+copy "$SRC/../operations/runbook.md" "$DEST/Fase 4 - Produzione/Operazioni/runbook.md"
+copy "$SRC/../operations/restore-drill.md" "$DEST/Fase 4 - Produzione/Operazioni/restore-drill.md"
+copy "$SRC/../loadtest/2026-11-09/README.md" "$DEST/Fase 4 - Produzione/Operazioni/load-test-2026-11-09.md"
 
 copy "$SRC/audit-iniziale.md" "$DEST/Fase 1 - Fondamenta/audit-iniziale.md"
 

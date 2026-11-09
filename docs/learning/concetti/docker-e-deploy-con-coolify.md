@@ -67,7 +67,7 @@ esac
 
 **Il build pack "Dockerfile" di Coolify.** Gestisce un solo container: niente worker, beat o backup.
 
-**Un servizio separato per le migrazioni.** Più pulito, ma il comportamento di Coolify con i servizi "one-shot" non è documentato chiaramente. Lo rivedremo nella fase 4.
+**Un servizio separato per le migrazioni.** Più pulito, ma il comportamento di Coolify con i servizi "one-shot" non è documentato chiaramente. Nella fase 4 non l'abbiamo cambiato: senza un deploy reale su cui provarlo, restano le migrazioni all'avvio del web.
 
 **Ancore YAML** per non ripetere l'ambiente di worker e beat. Le uso nel Compose di sviluppo. Nel file di Coolify no, perché il suo parser ha avuto problemi con le ancore. È una scelta prudente, che costa un po' di duplicazione.
 

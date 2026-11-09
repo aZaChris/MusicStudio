@@ -65,7 +65,7 @@ return Response({"received": True})
 
 **Deduplicare solo controllando se il pagamento esiste.** Funziona per questo evento, ma non è una regola generale per gli eventi futuri.
 
-**Allowlist degli IP di Stripe.** È una buona difesa in profondità, ma va configurata sul proxy. È nel piano della fase 4.
+**Allowlist degli IP di Stripe.** È una buona difesa in profondità. Nella fase 4 l'abbiamo aggiunta, nel codice invece che sul proxy, così è coperta dai test: vedi `concetti/ip-reale-dietro-proxy.md`.
 
 **Polling senza webhook.** Chiedere a Stripe ogni minuto. Lento e costoso. Lo usiamo solo come rete di sicurezza, ogni ora.
 

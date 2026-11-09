@@ -28,7 +28,7 @@ Immagina cinque scatole.
 4. **Redis**: la coda dei task di Celery e la cache (rate limiting e dashboard).
 5. **Celery**: un worker che esegue i task e un processo beat che li programma. Ogni 15 minuti registra e invia i promemoria delle lezioni di domani; elabora i webhook di Stripe; ogni ora riconcilia con Stripe i pagamenti rimasti aperti.
 
-In più c'è un sesto servizio di supporto, il **backup**, che ogni notte salva il database. E c'è un servizio esterno: **Stripe**, che gestisce i pagamenti online in modalità test, con una pagina di pagamento ospitata e notifiche via webhook.
+In più ci sono due servizi di supporto. Il **backup** ogni notte salva il database in un volume. L'**offsite** copia quei dump, cifrati, su un bucket fuori dal server, così sopravvivono anche alla perdita della macchina. E c'è un servizio esterno: **Stripe**, che gestisce i pagamenti online in modalità test, con una pagina di pagamento ospitata e notifiche via webhook.
 
 Backend, worker e beat usano la stessa immagine Docker. Cambia solo il comando di avvio.
 
@@ -59,7 +59,7 @@ Una richiesta tipica, per esempio "crea una lezione", passa così: la view ricev
 
 **Monolite modulare.** Un solo deploy è semplice da gestire. I moduli per dominio tengono il codice ordinato. Per uno studio da dieci insegnanti, i microservizi aggiungerebbero solo costi. Dettagli in `docs/learning/adr/ADR-002-modular-monolith-e-service-layer.md`.
 
-**JWT.** L'API ha più client: una SPA web e, in futuro, un'app mobile. Un token nell'intestazione funziona allo stesso modo per entrambi, senza cookie e senza CSRF.
+**JWT.** L'API ha più client: una SPA web e, in futuro, un'app mobile. Un token nell'intestazione funziona allo stesso modo per entrambi, senza cookie e senza CSRF. Dalla fase 4 i refresh token sono revocabili con una lista nera, e il token di accesso dura 15 minuti (ADR-018).
 
 **Coolify invece di AWS.** Le linee guida escludono AWS. Coolify dà dominio, HTTPS e deploy da Git su un server qualsiasi, con un costo fisso e basso. Dettagli in `docs/learning/adr/ADR-003-coolify-al-posto-di-aws.md`.
 
@@ -71,17 +71,22 @@ Una richiesta tipica, per esempio "crea una lezione", passa così: la view ricev
 
 La regola più importante del progetto è l'isolamento tra tenant: un utente non deve mai leggere o scrivere i dati di un altro studio o di un'altra famiglia. Il tenant è lo **studio**: ogni insegnante e ogni allievo ne ha uno, e un insegnante solista ha uno studio personale. A ogni richiesta un contesto (ruolo, studio, profilo) viene calcolato una volta, e tutti i queryset passano da un unico modulo: `backend/apps/common/scoping.py`. Sopra la visibilità, un permesso per oggetto decide chi può modificare cosa. Ogni endpoint di scrittura ha un test che prova a violarla. Il resto della sicurezza (rate limiting, configurazione di produzione, OWASP) è in `docs/learning/concetti/sicurezza-api-owasp.md`.
 
+## Come si osserva in produzione
+
+Ogni richiesta ha un request id, che torna al client nell'header `X-Request-ID` e finisce in ogni riga di log, anche dei task Celery che la richiesta avvia. In produzione i log sono JSON, una riga per evento, con una riga di accesso per richiesta. Gli errori vanno a Sentry, se configurato, ripuliti da token, cookie ed email. Il runbook in `docs/operations/runbook.md` spiega deploy, rollback, rotazione dei segreti e ripristino.
+
 ## Come si verifica la qualità
 
-A ogni push GitHub Actions esegue lint, formattazione, tipi, controllo delle migrazioni, i test con copertura minima del 90% su PostgreSQL e Redis veri, e il confronto tra lo schema OpenAPI generato e quello salvato nel repository (`backend/openapi.yaml`), che è il contratto con i client. In locale gli stessi controlli veloci girano prima di ogni commit.
+A ogni push GitHub Actions esegue lint, formattazione, tipi, controllo delle migrazioni, i test con copertura minima del 90% su PostgreSQL e Redis veri, e il confronto tra lo schema OpenAPI generato e quello salvato nel repository (`backend/openapi.yaml`), che è il contratto con i client. Dalla fase 4 gira anche `manage.py check --deploy` con i settings di produzione. Un load test con Locust (`backend/loadtest/`) misura quanto regge l'API, con i risultati in `docs/loadtest/`. In locale gli stessi controlli veloci girano prima di ogni commit.
 
 ## Cosa è discutibile, detto onestamente
 
-- **Un solo server.** Se cade, cade tutto, backup compresi. È accettabile per la scala del prodotto, ma è un limite reale.
+- **Un solo server.** Se cade, l'app è ferma finché non si ripristina altrove. I backup ora sono anche fuori dal server, ma il ripristino dal bucket vero è ancora da provare.
 - **Migrazioni all'avvio del web.** Semplici e sicure con una replica, non con più repliche.
 - **La coerenza dello studio** tra un allievo e il suo insegnante è garantita dai service, non da un vincolo del database.
 - **Il frontend esistente** (`frontend/`, una SPA React) e l'app Expo del branch `app` parlano con API diverse: la SPA con queste, l'app con quelle Next.js del branch `web`. Riallinearli è un lavoro futuro.
-- **Docker non è stato eseguito** nell'ambiente in cui è stata scritta la fase 1. Le impostazioni di produzione sono state provate con gunicorn, ma il primo `docker compose up` reale è ancora da fare.
+- **Docker non è stato eseguito** nell'ambiente di sviluppo. Le impostazioni di produzione sono state provate con gunicorn, anche sotto carico, ma il primo deploy reale su Coolify è ancora da fare.
+- **I numeri del load test** vengono da un portatile, con client e server sulla stessa CPU. Servono a trovare problemi, non a promettere prestazioni.
 
 ## Dove andare dopo
 
@@ -89,3 +94,4 @@ A ogni push GitHub Actions esegue lint, formattazione, tipi, controllo delle mig
 - Per le decisioni: la cartella `docs/learning/adr/`.
 - Per i concetti, uno per file: la cartella `docs/learning/concetti/`.
 - Per prepararti al colloquio: `docs/learning/colloquio/domande-e-risposte.md`.
+- Per mettere in produzione e gestire l'app: `docs/operations/runbook.md`.

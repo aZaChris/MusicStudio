@@ -29,3 +29,7 @@ Stripe comunica l'esito dei pagamenti con i webhook. Le notifiche possono arriva
 - Il webhook non ha autenticazione utente né rate limiting: la sua sicurezza è la firma.
 - Gli eventi restano nel database come traccia di controllo (audit).
 - Se l'importo addebitato è diverso dal prezzo attuale del pacchetto, registriamo quello addebitato.
+
+## Aggiornamento (fase 4)
+
+L'allowlist degli IP di Stripe è stata aggiunta nel codice, non sul proxy, così è coperta dai test: vedi ADR-021.

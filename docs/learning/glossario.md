@@ -219,3 +219,37 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **Visibility timeout.** In Redis come broker di Celery: dopo questo tempo un task non confermato viene riconsegnato.
 
 **Webhook.** Una richiesta HTTP che un servizio esterno manda al nostro server quando succede qualcosa.
+
+**Allowlist.** Un elenco di valori ammessi: tutto il resto è rifiutato. In MusicStudio il webhook di Stripe accetta solo gli indirizzi IP pubblicati da Stripe.
+
+**ContextVar.** Una variabile Python che ha un valore diverso per ogni thread o coroutine. La usiamo per il request id, così due richieste contemporanee non si sovrascrivono.
+
+**Dead man's switch.** Un allarme che scatta quando un segnale atteso **non** arriva. Il backup off-site chiama un URL a ogni copia riuscita: se un giorno la chiamata manca, arriva un'email.
+
+**Load test (test di carico).** Un test che simula molti utenti insieme e misura tempi di risposta ed errori, per capire quanto regge il sistema e cosa cede per primo.
+
+**Locust.** Uno strumento di load test in Python. Gli scenari sono classi Python con un metodo per ogni azione dell'utente.
+
+**NUM_PROXIES.** L'impostazione di DRF che dice quanti proxy fidati ci sono davanti all'app. Senza, i throttle usano tutto `X-Forwarded-For` come identità del client, e il limite si aggira.
+
+**Off-site backup.** Una copia dei backup in un luogo diverso dal server dei dati, così sopravvive se il server va perso.
+
+**PBKDF2.** L'algoritmo con cui Django salva le password: ripete un hash un milione di volte, apposta lento, per rendere costoso indovinarle. Per questo il login consuma molta CPU.
+
+**Percentile (p95, p99).** Il p95 è il tempo entro cui arriva il 95% delle risposte. Mostra quanto aspettano gli utenti più sfortunati, che la media nasconde.
+
+**rclone crypt.** Un "remote" di rclone che cifra contenuto e nomi dei file prima di inviarli allo storage. Il provider vede solo dati cifrati.
+
+**Refresh token rotation (rotazione).** A ogni rinnovo il client riceve un refresh token nuovo. Con la lista nera, quello vecchio diventa subito inutilizzabile.
+
+**Request id.** Un identificativo assegnato a ogni richiesta e scritto in ogni riga di log, anche dei task che la richiesta avvia. Serve a ricostruire cosa è successo a una richiesta precisa.
+
+**Restore drill (prova di ripristino).** Ripristinare davvero un backup in un database nuovo e controllare che i dati siano completi. Un backup mai ripristinato non è una garanzia.
+
+**Sentry.** Un servizio che raccoglie gli errori di un'applicazione, raggruppa quelli uguali e manda avvisi.
+
+**Structured logging (log strutturati).** Log in cui ogni riga è un oggetto con campi fissi, di solito JSON, invece di testo libero. Si possono filtrare per campo.
+
+**Token blacklist (lista nera dei token).** L'elenco dei refresh token revocati, consultato a ogni rinnovo. In MusicStudio è l'app `token_blacklist` di simplejwt.
+
+**X-Forwarded-For.** L'header HTTP in cui ogni proxy aggiunge in fondo l'indirizzo da cui ha ricevuto la connessione. I valori a sinistra li può scrivere il client, quindi si legge contando da destra.

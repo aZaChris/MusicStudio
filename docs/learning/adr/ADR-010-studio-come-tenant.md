@@ -30,3 +30,7 @@ Nella fase 1 un insegnante solista non aveva uno studio, e la visibilità era de
 - La coerenza `allievo.studio == insegnante.studio` è garantita dai service, non dal database. È un punto debole dichiarato.
 - Un genitore non appartiene a uno studio: vede i figli tramite i collegamenti, anche se sono in studi diversi.
 - I budget di query sono rimasti uguali.
+
+## Aggiornamento (fase 4)
+
+La Row Level Security non è stata adottata nella fase 4, dedicata alla produzione. Resta un'idea aperta.

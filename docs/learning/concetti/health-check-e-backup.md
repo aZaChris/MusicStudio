@@ -63,7 +63,7 @@ Gli endpoint non richiedono autenticazione, non hanno limiti di frequenza e sono
 
 **Il backup** è il servizio `backup` con l'immagine `prodrigestivill/postgres-backup-local:16`. Scrive nel volume `db-backups`, nelle cartelle `daily`, `weekly` e `monthly`.
 
-**Ripristino**, in breve: si sceglie un file in `/backups/daily`, si ferma il backend, poi si ricarica il dump nel database con `gunzip -c file.sql.gz | psql`, e si riavvia. La procedura completa, con una prova reale, è un compito della fase 4.
+**Ripristino**, in breve: si sceglie un file in `/backups/daily`, si ferma il backend, poi si ricarica il dump nel database con `gunzip -c file.sql.gz | psql`, e si riavvia. Dalla fase 4 la procedura completa è nello script `scripts/restore-drill.sh`, provato su un dump reale: vedi `concetti/backup-off-site-e-restore-drill.md`.
 
 ## Alternative considerate
 
@@ -75,7 +75,7 @@ Gli endpoint non richiedono autenticazione, non hanno limiti di frequenza e sono
 
 **Cron sull'host del server.** Funziona, ma non è versionato con l'applicazione e non si vede in Coolify.
 
-**WAL archiving per il point-in-time recovery.** Permette di tornare a qualsiasi secondo, non solo all'ultimo dump. È molto più complesso. Lo valuteremo nella fase 4 se il prodotto ne avrà bisogno.
+**WAL archiving per il point-in-time recovery.** Permette di tornare a qualsiasi secondo, non solo all'ultimo dump. È molto più complesso. Nella fase 4 l'abbiamo scartato di nuovo: per questo prodotto un giorno di dati come perdita massima è accettabile (ADR-020).
 
 ## Errori comuni e trade-off
 
@@ -83,12 +83,12 @@ Gli endpoint non richiedono autenticazione, non hanno limiti di frequenza e sono
 - **Health check troppo pesanti.** Se fanno query costose ogni 10 secondi, diventano loro stessi un carico.
 - **Endpoint di salute che rivelano versioni o stack trace.** Sono pubblici: devono dire solo "ok" o "errore".
 - **Backup mai ripristinati.** Un backup non provato è una speranza, non un backup.
-- **Backup sullo stesso server dei dati.** È il nostro punto debole attuale: protegge da errori umani e corruzione, non dalla perdita del server. Serve una copia off-site, nella fase 4.
+- **Backup sullo stesso server dei dati.** Protegge da errori umani e corruzione, non dalla perdita del server. Era il nostro punto debole fino alla fase 4, che ha aggiunto una copia cifrata fuori dal server.
 - **Trade-off:** Docker da solo non riavvia un container "unhealthy". Lo segnala. Il riavvio dipende dalla politica dell'orchestratore.
 
 ## Come lo spiegheresti a un colloquio
 
-Ho separato liveness e readiness. La liveness dice solo che il processo risponde, quindi un guasto del database non fa riavviare container web sani. La readiness controlla PostgreSQL e Redis e restituisce 503 se uno manca, così il traffico non arriva a un'istanza che non può servirlo. Ogni servizio del Compose ha il suo controllo, anche worker e beat. Per i dati c'è un servizio di backup con `pg_dump` giornaliero e rotazione 7, 4 e 6. So che i backup sono sullo stesso server, e la copia off-site e la prova di ripristino sono nel piano della fase successiva.
+Ho separato liveness e readiness. La liveness dice solo che il processo risponde, quindi un guasto del database non fa riavviare container web sani. La readiness controlla PostgreSQL e Redis e restituisce 503 se uno manca, così il traffico non arriva a un'istanza che non può servirlo. Ogni servizio del Compose ha il suo controllo, anche worker e beat. Per i dati c'è un servizio di backup con `pg_dump` giornaliero e rotazione 7, 4 e 6. Nella fase successiva ho aggiunto la copia cifrata fuori dal server e una prova di ripristino reale.
 
 ## Domande di autoverifica
 

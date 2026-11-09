@@ -2,7 +2,7 @@
 
 Questa cartella è materiale di studio, in italiano. Ogni file si capisce da solo e si può caricare singolarmente in NotebookLM. Il codice, i commenti e i commit sono in inglese.
 
-Stato: **fine della fase 3** (Celery e pagamenti), 6 novembre 2026.
+Stato: **fine della fase 4** (produzione), 9 novembre 2026.
 
 ## Ordine di lettura consigliato
 
@@ -25,10 +25,16 @@ Stato: **fine della fase 3** (Celery e pagamenti), 6 novembre 2026.
 17. `concetti/webhook-idempotenti.md` — notifiche verificate, salvate una volta, elaborate in background (fase 3).
 18. `concetti/task-celery-idempotenti.md` — acks late, idempotenza, outbox dei promemoria (fase 3).
 19. `concetti/caching.md` — chiavi versionate e il guasto di Redis (fase 3).
-20. `concetti/sicurezza-api-owasp.md` — la checklist OWASP, aggiornata a ogni fase.
-21. Gli ADR, in ordine di numero.
-22. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
-23. `glossario.md` — da consultare quando serve.
+20. `concetti/revoca-token-jwt.md` — logout vero, rotazione e lista nera (fase 4).
+21. `concetti/ip-reale-dietro-proxy.md` — X-Forwarded-For e il bug del limite sul login (fase 4).
+22. `concetti/log-strutturati-e-sentry.md` — request id, log JSON, Sentry senza dati personali (fase 4).
+23. `concetti/backup-off-site-e-restore-drill.md` — copie cifrate fuori dal server e prova di ripristino (fase 4).
+24. `concetti/load-testing.md` — Locust, percentili e il costo del login (fase 4).
+25. `concetti/sicurezza-api-owasp.md` — la checklist OWASP, aggiornata a ogni fase.
+26. Gli ADR, in ordine di numero.
+27. `../operations/runbook.md` — deploy, rollback, segreti, ripristino.
+28. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
+29. `glossario.md` — da consultare quando serve.
 
 Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA, quello sull'ExclusionConstraint e le domande da colloquio.
 
@@ -58,6 +64,11 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-015-outbox-per-i-promemoria.md` — promemoria affidabili con una outbox.
 - `adr/ADR-016-affidabilita-celery.md` — acks late e task idempotenti.
 - `adr/ADR-017-cache-dashboard-con-versioni.md` — cache con chiavi versionate e throttling fail open.
+- `adr/ADR-018-revoca-dei-token.md` — lista nera dei refresh token, logout, token di accesso da 15 minuti.
+- `adr/ADR-019-osservabilita-log-e-sentry.md` — request id, log JSON, Sentry ripulito.
+- `adr/ADR-020-backup-off-site.md` — rclone crypt con `copy`, prova di ripristino.
+- `adr/ADR-021-allowlist-webhook-e-ip-reale.md` — IP di Stripe e IP reale dietro il proxy.
+- `adr/ADR-022-load-test-con-locust.md` — Locust in un gruppo separato, baseline documentato.
 
 ### Concetti (fase 1)
 
@@ -70,7 +81,7 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/ci-e-quality-gate.md` — GitHub Actions, pre-commit, branch protection.
 - `concetti/docker-e-deploy-con-coolify.md` — multi-stage, entrypoint, Compose per Coolify.
 - `concetti/health-check-e-backup.md` — probe, RPO, rotazione dei backup.
-- `concetti/sicurezza-api-owasp.md` — OWASP API Top 10, stato alla fine della fase 2, rate limiting.
+- `concetti/sicurezza-api-owasp.md` — OWASP API Top 10, stato aggiornato alla fine della fase 4.
 
 ### Concetti (fase 2)
 
@@ -86,10 +97,24 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/task-celery-idempotenti.md` — acks late, retry con backoff, outbox e lease.
 - `concetti/caching.md` — cache-aside, chiavi versionate, invalidazione con i segnali, fail open.
 
+### Concetti (fase 4)
+
+- `concetti/revoca-token-jwt.md` — rotazione, lista nera, logout, revoca di tutte le sessioni.
+- `concetti/ip-reale-dietro-proxy.md` — contare da destra in X-Forwarded-For, `NUM_PROXIES` di DRF.
+- `concetti/log-strutturati-e-sentry.md` — ContextVar, log JSON, propagazione a Celery, `before_send`.
+- `concetti/backup-off-site-e-restore-drill.md` — off-site cifrato, `copy` contro `sync`, RPO e RTO.
+- `concetti/load-testing.md` — utenti virtuali, percentili, PBKDF2, errori di misura.
+
+### Operazioni
+
+- `../operations/runbook.md` — primo deploy, verifiche, rollback, rotazione dei segreti, Sentry, backup off-site, ripristino.
+- `../operations/restore-drill.md` — registro delle prove di ripristino.
+- `../loadtest/2026-11-09/README.md` — il primo baseline del load test.
+
 ### Ripasso
 
 - `glossario.md` — ogni termine tecnico in italiano semplice.
-- `colloquio/domande-e-risposte.md` — 29 domande con risposta modello e punto debole.
+- `colloquio/domande-e-risposte.md` — 34 domande con risposta modello e punto debole.
 
 ## Formato dei documenti di concetto
 
@@ -97,8 +122,7 @@ Ogni documento in `concetti/` ha da 800 a 1500 parole e sempre le stesse sezioni
 
 ## Prossime fasi (concetti previsti)
 
-- **Fase 4, produzione**: osservabilità con Sentry e log strutturati, test di carico con Locust, deploy reale su Coolify, prova di ripristino dei backup.
-- **Fase 5, rifinitura**.
+- **Fase 5, rifinitura**: versioning e deprecazione delle API, rafforzamento dell'admin, export dei dati (GDPR), presentazione del progetto per il portfolio.
 
 Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap".
 
@@ -131,3 +155,15 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Cache:** dashboard in cache con chiavi versionate per studio, invalidate dai segnali; da 6 query a 1.
 - **Bug trovato dai test:** con Redis giù il rate limiting faceva cadere tutta l'API; ora fallisce aperto.
 - **Aperto:** prova end-to-end con una sandbox Stripe reale; allowlist IP di Stripe; tutto ciò che era aperto prima (Docker reale, branch protection, backup off-site, revoca dei token).
+
+## Riepilogo della fase 4
+
+- **Autenticazione:** logout vero con la lista nera dei refresh token, rotazione che spegne il token usato, revoca di tutte le sessioni di un account da comando o admin, token di accesso da 15 minuti, pulizia giornaliera.
+- **Bug trovato nel giro OWASP:** il limite sui tentativi di login si aggirava cambiando `X-Forwarded-For`, perché DRF senza `NUM_PROXIES` usava tutto l'header. Corretto, con un test che prova l'attacco.
+- **Osservabilità:** request id in ogni riga di log e nei task Celery, log JSON in produzione, Sentry opzionale e ripulito da credenziali ed email. Provando con gunicorn vero è emerso che la riga di errore di Django perdeva l'id: corretto.
+- **Deploy:** `check --deploy` in CI, variabili nuove nel Compose di Coolify, runbook in italiano.
+- **Webhook Stripe:** allowlist degli IP con l'IP reale calcolato dietro il proxy.
+- **Backup:** copia giornaliera cifrata fuori dal server con rclone (`copy`, non `sync`); prova di ripristino eseguita su 78.000 lezioni: 87.254 righe identiche, 20 secondi.
+- **Load test:** Locust con 50 utenti, zero errori, p95 delle letture tra 62 e 560 ms su un portatile; il login è limitato dalla CPU (PBKDF2).
+- **Qualità:** da 171 a 219 test, copertura 96%.
+- **Aperto (serve il proprietario):** deploy reale su Coolify e misura del rollback; DSN di Sentry; bucket e prova di ripristino dal bucket vero; load test sul server; branch protection su GitHub. Restano anche la prova end-to-end con una sandbox Stripe reale e la coerenza dello studio garantita solo dai service.

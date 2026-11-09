@@ -22,7 +22,7 @@ experience, English B1, and studies everything that is built here.
 | 1 Foundations | `specs/002-production-foundations` | done |
 | 2 Domain | `specs/003-domain-integrity` | done |
 | 3 Celery & payments | `specs/004-celery-payments` | done |
-| 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | in progress (spec + plan done, next: tasks) |
+| 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (owner tasks open: real Coolify deploy T018, bucket drill T024) |
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
 
 Open items carried over are listed at the end of `docs/learning/00-indice.md`.
@@ -106,5 +106,9 @@ whenever serializers/views change.
   before measuring.
 - Redis down must not take the API down: throttles fail open (`apps/common/throttling.py`).
 - Never `pkill -f <pattern>` in a shell whose own command line contains the pattern.
+- rtk's pytest filter can hide errors (it showed "22 passed" with 1 error): run pytest
+  through `rtk proxy` when the exact result matters.
+- Seed load-test data with the SAME settings as the server: test settings hash passwords
+  with MD5, which production settings reject (every login 401).
 - Never print or read credential files (`.env.local`, `.pgpass`); `.env.local` on the main
   machine holds real Neon credentials from the `app` branch and is git-ignored.

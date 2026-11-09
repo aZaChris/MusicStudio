@@ -56,14 +56,14 @@
 
 ## Phase 9: US7 — OWASP walk and study docs (P2)
 
-- [ ] T028 [US7] Full OWASP API Top 10 walk in `docs/learning/concetti/sicurezza-api-owasp.md` (verdict + evidence ×10, gaps fixed with tests)
-- [ ] T029 [P] [US7] Concept docs (800–1500 words): `revoca-token-jwt.md`, `log-strutturati-e-sentry.md`, `backup-off-site-e-restore-drill.md`, `load-testing.md`, `ip-reale-dietro-proxy.md` in `docs/learning/concetti/`
-- [ ] T030 [US7] Glossary, interview Q&A, overview, `00-indice.md` (reading order + "Riepilogo della fase 4"); KB entries for non-trivial problems in `docs/knowledge-base/`
+- [X] T028 [US7] Full OWASP API Top 10 walk in `docs/learning/concetti/sicurezza-api-owasp.md` (verdict + evidence ×10, gaps fixed with tests)
+- [X] T029 [P] [US7] Concept docs (800–1500 words): `revoca-token-jwt.md`, `log-strutturati-e-sentry.md`, `backup-off-site-e-restore-drill.md`, `load-testing.md`, `ip-reale-dietro-proxy.md` in `docs/learning/concetti/`
+- [X] T030 [US7] Glossary, interview Q&A, overview, `00-indice.md` (reading order + "Riepilogo della fase 4"); KB entries for non-trivial problems in `docs/knowledge-base/`
 
 ## Phase 10: Polish
 
-- [ ] T031 Full quality gate green; tasks marked; CLAUDE.md status
-- [ ] T032 Add "Fase 4 - Produzione" to `scripts/export-study-docs.sh` and run it; vault decisions; phase summary commit
+- [X] T031 Full quality gate green; tasks marked; CLAUDE.md status
+- [X] T032 Add "Fase 4 - Produzione" to `scripts/export-study-docs.sh` and run it; vault decisions; phase summary commit
 
 ## Dependencies
 

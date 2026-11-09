@@ -40,13 +40,13 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Risposta modello.** Con un throttle DRF dedicato: 5 tentativi al minuto per client, configurabile da variabile d'ambiente. I contatori stanno in Redis, così sono condivisi tra tutti i processi gunicorn.
 
-**Punto debole.** Il client è identificato per IP. Dietro un proxy va verificato che l'IP reale arrivi correttamente, altrimenti tutti condividono lo stesso contatore. Non è ancora verificato su Coolify.
+**Punto debole.** Il client è identificato per IP, e fino alla fase 4 questo era un buco vero: DRF, senza l'impostazione `NUM_PROXIES`, usava come identità tutto l'header `X-Forwarded-For`, che scrive il client. Cambiandolo a ogni tentativo si aggirava il limite. Ora `NUM_PROXIES` segue il numero di proxy fidati, e un test prova proprio l'attacco. Durante un guasto di Redis il limite non c'è, per scelta.
 
 ### 7. Cosa manca alla sicurezza dell'autenticazione?
 
-**Risposta modello.** Il refresh token ruota, ma i vecchi token non vengono messi in blacklist, quindi restano validi fino alla scadenza. Non c'è logout lato server né MFA. Sono nella lista OWASP come rischi parziali.
+**Risposta modello.** Dalla fase 4, poco: il refresh token ruota e quello vecchio va nella lista nera, il logout spegne il token del dispositivo, e un operatore può chiudere tutte le sessioni di un account. Manca l'autenticazione a due fattori.
 
-**Punto debole.** È una domanda di onestà: non fingere che sia tutto coperto.
+**Punto debole.** I token di accesso non sono nella lista nera: dopo il logout funzionano ancora per al massimo 15 minuti. È un compromesso voluto, per non fare una query a ogni richiesta. Dillo tu, prima che te lo chiedano.
 
 ## Database e performance
 
@@ -100,7 +100,7 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Risposta modello.** Un servizio sidecar fa un `pg_dump` compresso ogni giorno e tiene 7 copie giornaliere, 4 settimanali e 6 mensili in un volume dedicato. Il RPO è di 24 ore.
 
-**Punto debole.** No, il ripristino non è ancora stato provato, e i backup stanno sullo stesso server del database. Entrambe le cose sono nel piano della fase 4. Dillo subito: è meglio che farselo scoprire.
+**Punto debole.** Dalla fase 4 una copia cifrata va ogni giorno su un bucket fuori dal server, e il ripristino l'ho provato: 78.000 lezioni in 20 secondi, con il conteggio delle righe di ogni tabella. Ma la prova è stata fatta in locale: il download dal bucket vero va ancora provato dopo il primo deploy.
 
 ## Qualità
 
@@ -186,10 +186,42 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Punto debole.** `update()` e `bulk_create()` non inviano segnali. E testando Redis spento ho scoperto che il rate limiting di DRF faceva cadere tutta l'API: ora fallisce aperto, quindi durante un guasto di Redis non c'è rate limiting.
 
+## Fase 4: produzione
+
+### 30. Come fai il logout con i JWT, che non si possono revocare?
+
+**Risposta modello.** Rendo revocabili i refresh token con la lista nera di simplejwt. Ogni refresh usato per rinnovare muore subito, e il logout mette nella lista quello del dispositivo, dopo aver controllato che appartenga all'utente. Un token altrui riceve lo stesso errore di uno malformato, così l'endpoint non fa da oracolo. Un task giornaliero cancella i token scaduti.
+
+**Punto debole.** Il token di accesso resta valido fino alla scadenza, 15 minuti. Abbassarne la durata è il prezzo per non controllarlo a ogni richiesta.
+
+### 31. Come colleghi i log di una richiesta a quelli dei task Celery che ha avviato?
+
+**Risposta modello.** Con un request id. Un middleware lo crea, o lo riusa dal proxy se è sicuro, lo mette in una ContextVar e lo restituisce nella risposta. Un filtro lo aggiunge a ogni riga di log, e un segnale di Celery lo copia negli header del messaggio del task. In produzione i log sono JSON, una riga per evento.
+
+**Punto debole.** All'inizio la riga di errore di Django perdeva l'id, perché viene scritta dopo la fine dei middleware. L'ho scoperto solo provando con gunicorn vero, e ora l'id si azzera alla chiusura della risposta.
+
+### 32. Come eviti che Sentry riceva dati personali?
+
+**Risposta modello.** `send_default_pii=False` e un hook `before_send` che toglie gli header con credenziali, i cookie, i corpi degli endpoint di login e webhook, e sostituisce le email nei messaggi. Restano solo request id, studio e utente come identificativi. Sentry è attivo solo se c'è il DSN: senza, l'API funziona uguale.
+
+**Punto debole.** La pulizia si basa su regole: un dato personale in un campo che non ho previsto passerebbe. Va rivisto quando cambiano i dati.
+
+### 33. Quanto regge la tua API?
+
+**Risposta modello.** Con Locust, 50 insegnanti simulati su 78.000 lezioni: zero errori e un p95 delle letture tra 62 e 560 millisecondi, su due run. La scoperta è stata il login: l'hash PBKDF2 costa circa 2 secondi di CPU su quella macchina, quindi una raffica di login satura i 3 worker.
+
+**Punto debole.** Misurato su un portatile, con client e server sulla stessa CPU e senza Redis, e con una grande differenza tra i due run. Sono numeri per trovare problemi, non promesse: vanno rifatti sul server.
+
+### 34. Come leggi l'IP del client dietro un proxy?
+
+**Risposta modello.** Da `X-Forwarded-For`, contando da destra quanti proxy fidati ci sono, perché ogni proxy aggiunge in fondo. Il primo valore lo scrive il client e non va mai usato. Una sola impostazione, `TRUSTED_PROXY_COUNT`, guida sia l'allowlist del webhook di Stripe sia i limiti di rate di DRF.
+
+**Punto debole.** Se l'infrastruttura cambia, per esempio aggiungendo Cloudflare, il numero va cambiato. Sbagliarlo per eccesso ridà al client il controllo del suo IP.
+
 ## Domanda finale tipica
 
 ### 19. Cosa faresti diversamente o cosa miglioreresti per primo?
 
-**Risposta modello.** Per prima cosa proverei davvero il deploy con Docker e il ripristino di un backup, perché sono le due cose non ancora verificate. Poi aggiungerei la revoca dei token. E valuterei la Row Level Security di PostgreSQL, per avere l'isolamento tra studi garantito anche dal database e non solo dal codice.
+**Risposta modello.** Per prima cosa farei il deploy reale su Coolify e il ripristino dal bucket vero, perché sono le due cose provate solo in locale. Poi rifarei il load test sul server, per avere numeri credibili. E valuterei la Row Level Security di PostgreSQL, per avere l'isolamento tra studi garantito anche dal database e non solo dal codice.
 
 **Punto debole.** Nessuno: è una domanda che premia l'onestà. Mostra che conosci i limiti di quello che hai costruito.
