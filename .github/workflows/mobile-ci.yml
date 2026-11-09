@@ -1,0 +1,39 @@
+# Quality gate for the mobile app (constitution VII): types, lint, tests, contract drift.
+name: mobile-ci
+
+on:
+  push:
+    branches: [refactor/mobile]
+  pull_request:
+    branches: [refactor/mobile]
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history and all branches: the contract check reads backend/openapi.yaml
+          # from origin/refactor/production-standards.
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies (locked)
+        run: npm ci
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Lint
+        run: npx expo lint
+
+      - name: Tests
+        run: npm test -- --ci
+
+      - name: Contract and generated types match the backend
+        run: npm run contract:check

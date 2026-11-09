@@ -46,3 +46,7 @@ yarn-error.*
 # Next.js/Vercel artifacts (shouldn't appear here, but just in case)
 .next/
 .vercel
+
+# local env files
+.env
+.env.local

@@ -51,10 +51,10 @@
 ## Phase 8: US6 — Quality gate and study docs (P3)
 
 - [X] T025 [US6] Fix the lint error in `src/hooks/use-color-scheme.web.ts`; `npx expo lint` clean
-- [ ] T026 [US6] `.github/workflows/mobile-ci.yml` (npm ci, tsc, lint, jest --ci, contract:check with full history)
+- [X] T026 [US6] `.github/workflows/mobile-ci.yml` (npm ci, tsc, lint, jest --ci, contract:check with full history)
 - [ ] T027 [US6] `scripts/verify-django.mjs`: Playwright against the exported web build and the local Django backend (login owner, home counts, complete lesson, payment, logout + old refresh refused, parent portal); run it and record the output in `docs/learning/verifica-end-to-end.md`
 - [ ] T028 [US6] ADRs `docs/learning/adr/ADR-M001…M005`, concept docs (800–1500 words): `client-api-generato-dal-contratto.md`, `sessione-jwt-nel-client.md`, `stato-del-server-con-react-query.md`, `test-di-un-app-react-native.md`; glossary, interview Q&A, `00-indice.md`, OWASP Mobile Top 10 walk `concetti/sicurezza-mobile-owasp.md`
-- [ ] T029 [US6] Rewrite `README.md` for the mobile app; `.env.example` with `EXPO_PUBLIC_API_BASE_URL`
+- [X] T029 [US6] Rewrite `README.md` for the mobile app; `.env.example` with `EXPO_PUBLIC_API_BASE_URL`
 
 ## Phase 9: Polish
 

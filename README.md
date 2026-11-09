@@ -1,87 +1,65 @@
-# MusicStudio
+# MusicStudio — mobile app
 
-A web platform for private music teachers and small studios (1-10 teachers) to manage
-students, recurring lessons, lesson packages, payments, and parent communication —
-replacing a patchwork of Calendly + spreadsheets + WhatsApp.
+The Expo (React Native) client of MusicStudio, a platform for private music teachers and small
+studios: lessons, lesson packages, payments, and a read-only portal for parents.
 
-Built spec-first with [spec-kit](https://github.com/github/spec-kit); the full spec, plan,
-research, data model, API contracts, and task history live in
-[`specs/001-musicstudio-mvp/`](specs/001-musicstudio-mvp/). Project principles (tenant
-isolation, API-first, test-first on business logic, MVP scope discipline) are in
-[`.specify/memory/constitution.md`](.specify/memory/constitution.md).
+This branch, `refactor/mobile`, is a refactor case study: it starts from branch `app` (an Expo
+app written for a Next.js API) and rewires it onto the **Django REST API** of branch
+`refactor/production-standards`, with production standards (generated API types, real session
+handling, tests, CI). The starting point and its problems are in
+[`docs/learning/audit-iniziale.md`](docs/learning/audit-iniziale.md); principles in
+[`.specify/memory/constitution.md`](.specify/memory/constitution.md); the current feature in
+[`specs/002-django-api-parity/`](specs/002-django-api-parity/).
 
 ## Stack
 
-Everything runs on Vercel as one Next.js (App Router, TypeScript) app:
+- Expo SDK 57, Expo Router (typed routes), React Native 0.86, TypeScript strict
+- TanStack Query for server state; `expo-secure-store` for the refresh token
+- Types generated from the backend OpenAPI contract (`contract/openapi.yaml`)
+- Jest (`jest-expo`) + React Native Testing Library; GitHub Actions
 
-- **UI**: Server Components (reads) + Server Actions (mutations), role-scoped
-  (teacher/studio_owner vs. parent), bilingual (EN/IT) with a light/dark theme toggle matching
-  the design reference in `design/`.
-- **API**: `/api/v1/*` Route Handlers exposing the same business logic as a documented REST
-  surface, for a future React Native app (see the constitution's Principle II).
-- **Data**: Drizzle ORM + Neon Postgres (Vercel Marketplace).
-- **Auth**: Auth.js (Credentials provider, JWT sessions) against our own `users` table —
-  accounts are invite-only, not public self-signup, so a custom-role credentials flow fit
-  better than a social-login-oriented SaaS auth vendor (see `research.md`).
-- **Reminders**: a Vercel Cron Job hits `/api/cron/reminders` every 15 minutes (replaces a
-  Celery-style worker — the only background job here is a stateless periodic sweep).
+## What the app does
 
-## Repository layout
+- **Teachers and studio owners**: home with active students, pending payments, upcoming lessons
+  and low-package warnings; complete a lesson with a note; roster and student detail; payments
+  list and manual payment registration.
+- **Parents**: read-only portal per child — lessons, attendance, payments.
+- **Everyone**: sign in, silent session renewal, sign out that ends the session on the server.
+
+## Layout
 
 ```text
-app/         Next.js App Router: pages, Server Actions (app/actions/), REST API (app/api/)
-lib/         Drizzle schema/client, Auth.js config, RBAC scoping, i18n, business logic
-             (lib/services/*) — the framework-agnostic core both the UI and the API call into
-components/  Shared UI (Sidebar, theme/language toggles, week grid, lesson-complete modal)
-tests/       Vitest suite against a real Postgres DB (package decrement, permission
-             boundaries, payment validation, reminder sweep)
-scripts/     scripts/seed.ts — demo data for local validation
-design/      Reference design artboards + extracted design tokens
-specs/       spec-kit artifacts: spec, plan, research, data model, contracts, task history
+src/app/          screens (Expo Router): login, (teacher)/…, (parent)/portal
+src/lib/api/      client.ts (fetch, ApiError, single-flight refresh, pagination),
+                  schema.d.ts (generated — do not edit), types.ts (short names)
+src/lib/          auth-context, queries (React Query hooks), errors, dates, i18n
+src/components/   Button, Card, TextField, QueryState, LessonCompleteModal, LogoutButton
+src/test/         fake API at the fetch boundary, fixtures, render helpers
+contract/         vendored backend contract
+scripts/          contract.mjs (sync/check), verify-django.mjs (end-to-end on the web build)
+docs/learning/    Italian study docs (audit, ADR, concepts, Q&A)
 ```
 
-Two long-lived branches: `web` (this platform) and a future `app` branch (React Native,
-same `/api/v1/` surface — out of scope for this MVP, see the constitution).
-
-## Local development
+## Run it
 
 ```bash
-npm install
-vercel link                          # first time only
-vercel integration add neon          # provisions Neon Postgres (accept terms in the browser)
-vercel env pull .env.local --yes     # pulls DATABASE_URL etc. locally
-npm run db:push                      # applies lib/db/schema.ts
-npm run seed                         # optional demo data + logins (see quickstart.md)
-npm run dev                          # http://localhost:3000
+npm ci
+cp .env.example .env            # set EXPO_PUBLIC_API_BASE_URL to your backend
+npx expo start                  # Expo Go on a phone, or press w for the web
 ```
 
-Full validation walkthrough: [`specs/001-musicstudio-mvp/quickstart.md`](specs/001-musicstudio-mvp/quickstart.md).
+The backend runs from branch `refactor/production-standards` (see its `CLAUDE.md`); for the web
+build allow the origin with `CORS_ALLOWED_ORIGINS=http://localhost:8081`. Demo accounts come
+from its `manage.py seed_demo` (password `password123`).
 
-### Tests
+## Quality gate
 
 ```bash
-npm run test    # tests/*.test.ts, against a real Postgres DB (local or a Neon branch)
+npx tsc --noEmit
+npx expo lint
+npm test
+npm run contract:check      # contract == backend branch, types == generator output
 ```
 
-## Deploy
-
-```bash
-vercel deploy           # preview
-vercel deploy --prod    # production
-```
-
-Set the `vercel.json` cron job's target (`/api/cron/reminders`) and `CRON_SECRET` env var once
-in the Vercel dashboard; Neon's `DATABASE_URL` and `AUTH_SECRET` are provisioned/set the same
-way as local dev above.
-
-## Architecture notes
-
-- **Tenant isolation is enforced at the SQL layer**, not just hidden in the UI: every
-  service-layer query is scoped by role through `lib/rbac.ts`'s `*Scope()` helpers — a parent
-  account cannot retrieve another family's data through any code path. See the constitution,
-  Principle I.
-- **API-first**: business logic lives in `lib/services/*`, called from both the web UI and
-  `/api/v1/*`; nothing is coupled to the web UI's shape.
-- Package lesson-count decrement (via a single guarded, idempotent `UPDATE ... WHERE ...`),
-  payment validation, and every permission boundary have automated test coverage (Constitution
-  Principle III).
+When the backend contract changes: `npm run contract:sync`, fix what the compiler reports,
+commit both files.
