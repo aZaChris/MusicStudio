@@ -12,7 +12,8 @@ from .models import ParentAccount, ParentStudentLink, Student
 
 class StudentSerializer(serializers.ModelSerializer[Student]):
     full_name = serializers.CharField(read_only=True)
-    active_package = PackageSerializer(read_only=True)
+    # A student may have no active package: the contract must say nullable (typed clients).
+    active_package = PackageSerializer(read_only=True, allow_null=True)
     payment_status = serializers.SerializerMethodField()
 
     class Meta:

@@ -2573,6 +2573,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/Package'
           readOnly: true
+          nullable: true
         payment_status:
           type: string
           nullable: true
