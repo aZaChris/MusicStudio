@@ -1708,7 +1708,7 @@ paths:
                 $ref: '#/components/schemas/Error'
   /api/v1/students/{id}/lessons/:
     get:
-      operationId: v1_students_lessons_retrieve
+      operationId: v1_students_lessons_list
       parameters:
       - in: path
         name: id
@@ -1725,7 +1725,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Student'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lesson'
           description: ''
         '401':
           description: Missing or invalid token.

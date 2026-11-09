@@ -31,7 +31,9 @@ class StudentViewSet(viewsets.ModelViewSet[Student]):
     def perform_create(self, serializer: StudentSerializer) -> None:  # type: ignore[override]
         serializer.instance = create_student(get_tenant(self.request), **serializer.validated_data)
 
-    @action(detail=True, methods=["get"])
+    # Without this the schema claimed a Student; typed clients (the mobile app) need the truth.
+    @extend_schema(responses=LessonSerializer(many=True))
+    @action(detail=True, methods=["get"], pagination_class=None, filter_backends=[])
     def lessons(self, request: Request, pk: str | None = None) -> Response:
         student = self.get_object()
         return Response(LessonSerializer(lessons_of_student(student), many=True).data)
