@@ -10,4 +10,4 @@ class CommonConfig(AppConfig):
         from . import logging, signals
 
         signals.connect()
-        logging.connect_celery_signals()
+        logging.connect_signals()

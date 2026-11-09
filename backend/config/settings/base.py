@@ -128,6 +128,10 @@ STORAGES = {
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Reverse proxies in front of gunicorn that append to X-Forwarded-For (ADR-021). Used by
+# client_ip() and by DRF throttles (NUM_PROXIES) to find the real client address.
+TRUSTED_PROXY_COUNT: int = env.int("TRUSTED_PROXY_COUNT", default=0)
+
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
@@ -146,6 +150,9 @@ REST_FRAMEWORK = {
         "apps.common.throttling.AnonRateThrottle",
         "apps.common.throttling.UserRateThrottle",
     ),
+    # Without NUM_PROXIES, DRF keys throttles on the *whole* X-Forwarded-For header, which
+    # the client writes: a new fake value per request = a fresh counter = no rate limit.
+    "NUM_PROXIES": TRUSTED_PROXY_COUNT,
     "DEFAULT_THROTTLE_RATES": {
         "anon": env("THROTTLE_ANON", default="100/hour"),
         "user": env("THROTTLE_USER", default="1000/hour"),
@@ -261,9 +268,6 @@ LOGGING = {
         "musicstudio.access": {"level": env("ACCESS_LOG_LEVEL", default="INFO")},
     },
 }
-
-# Reverse proxies in front of gunicorn that append to X-Forwarded-For (ADR-021).
-TRUSTED_PROXY_COUNT: int = env.int("TRUSTED_PROXY_COUNT", default=0)
 
 # Studio sizing guardrail from the product spec (1-10 teachers per studio)
 STUDIO_MAX_TEACHERS = 10

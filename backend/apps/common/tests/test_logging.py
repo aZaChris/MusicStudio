@@ -40,6 +40,17 @@ def test_access_line_has_route_status_duration_and_tenant(caplog):
     assert rlog.request_id_var.get() == "-"  # reset after the request
 
 
+def test_django_error_log_line_keeps_the_request_id(caplog):
+    # django.request logs 4xx/5xx after the middleware chain: the id must still be set.
+    caplog.handler.addFilter(rlog.RequestIdFilter())  # like the console handler: at emit time
+    with caplog.at_level(logging.WARNING, logger="django.request"):
+        APIClient().get("/api/v1/lessons/", HTTP_X_REQUEST_ID="req-401")
+
+    record = next(r for r in caplog.records if r.name == "django.request")
+    assert record.request_id == "req-401"
+    assert rlog.request_id_var.get() == "-"  # cleared once the response is closed
+
+
 def _format(record: logging.LogRecord) -> dict:
     rlog.RequestIdFilter().filter(record)
     return json.loads(rlog.JsonFormatter().format(record))

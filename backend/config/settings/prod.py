@@ -53,6 +53,7 @@ LOGGING["handlers"]["console"]["formatter"] = env("LOG_FORMAT", default="json") 
 
 # Number of proxies that append to X-Forwarded-For: Coolify's Traefik (ADR-021).
 TRUSTED_PROXY_COUNT = env.int("TRUSTED_PROXY_COUNT", default=1)
+REST_FRAMEWORK = {**REST_FRAMEWORK, "NUM_PROXIES": TRUSTED_PROXY_COUNT}  # noqa: F405
 
 SENTRY_DSN: str = env("SENTRY_DSN", default="")
 if SENTRY_DSN:

@@ -65,7 +65,7 @@ warn_redundant_casts = true
 exclude = ["/migrations/", "/tests/", "^conftest\\.py$", "^apps/common/factories\\.py$"]
 
 [[tool.mypy.overrides]]
-module = ["environ.*", "factory.*", "celery.*", "kombu.*", "django_filters.*", "corsheaders.*", "drf_spectacular.*", "rest_framework_simplejwt.*"]
+module = ["environ.*", "factory.*", "celery.*", "kombu.*", "django_filters.*", "corsheaders.*", "drf_spectacular.*", "rest_framework_simplejwt.*", "locust.*"]
 ignore_missing_imports = true
 
 [tool.django-stubs]

@@ -38,15 +38,14 @@ class RequestIdMiddleware:
         self.get_response = get_response
 
     def __call__(self, request: HttpRequest) -> HttpResponse:
-        token = request_id_var.set(_incoming_id(request))
+        # Not reset here: Django logs 4xx/5xx ("django.request") *after* the middleware
+        # chain returns. `clear_request_id` runs on request_finished, after that log line.
+        request_id_var.set(_incoming_id(request))
         started = time.monotonic()
-        try:
-            response = self.get_response(request)
-            response[HEADER] = request_id_var.get()
-            self._log(request, response.status_code, started)
-            return response
-        finally:
-            request_id_var.reset(token)
+        response = self.get_response(request)
+        response[HEADER] = request_id_var.get()
+        self._log(request, response.status_code, started)
+        return response
 
     @staticmethod
     def _log(request: HttpRequest, status: int, started: float) -> None:
@@ -68,6 +67,11 @@ class RequestIdMiddleware:
                 "studio_id": getattr(tenant, "studio_id", None),
             },
         )
+
+
+def clear_request_id(**_: Any) -> None:
+    """request_finished: the response is closed; nothing else belongs to this request."""
+    request_id_var.set("-")
 
 
 class RequestIdFilter(logging.Filter):
@@ -124,9 +128,11 @@ def unbind_task_request_id(task: Any = None, **_: Any) -> None:
         request_id_var.reset(token)
 
 
-def connect_celery_signals() -> None:
+def connect_signals() -> None:
     from celery.signals import before_task_publish, task_postrun, task_prerun
+    from django.core.signals import request_finished
 
+    request_finished.connect(clear_request_id, weak=False)
     before_task_publish.connect(stamp_task_headers, weak=False)
     task_prerun.connect(bind_task_request_id, weak=False)
     task_postrun.connect(unbind_task_request_id, weak=False)
