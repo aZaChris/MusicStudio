@@ -54,21 +54,25 @@ locally must run with uv + local PostgreSQL 16 + Redis.
 
 ## Off-site backups and restore drill (US4) — ADR-020
 - **Decision**: keep the `postgres-backup-local` sidecar (ADR-005) and add an `offsite`
-  sidecar running `rclone` on a schedule: `rclone sync /backups remote-crypt:musicstudio`
-  where `remote-crypt` is an rclone **crypt** remote over any S3-compatible bucket (e.g.
-  Backblaze B2, Cloudflare R2, Hetzner Object Storage; never AWS). Client-side encryption,
-  retention mirrors the local rotation (7 daily / 4 weekly / 6 monthly). On failure it pings
+  sidecar running `rclone` on a schedule: `rclone copy /backups offsite:` where `offsite`
+  is an rclone **crypt** remote over any S3-compatible bucket (e.g. Backblaze B2,
+  Cloudflare R2, Hetzner Object Storage; never AWS). Client-side encryption. `copy` never
+  deletes remotely; `rclone delete --min-age` removes copies older than the longest local
+  retention (6 months). Changed during implementation from `sync`: with `sync`, a wiped or
+  compromised local volume would empty the bucket on the next run. On failure it pings
   an optional `BACKUP_ALERT_URL` (healthchecks.io-style dead-man switch) and the container
   healthcheck turns unhealthy when the last success is older than 26 h.
 - **Restore drill**: `scripts/restore-drill.sh <dump-file|--from-remote>` restores into a
-  brand-new database, runs migrations check, compares row counts of the main tables with a
-  manifest saved next to each dump, prints the elapsed time. Executed locally without Docker
+  brand-new database, checks migrations, compares the row count of every table with the
+  rows contained in the dump itself (counted from its COPY blocks: the dump is the snapshot,
+  so no separate manifest is needed), prints the elapsed time. Dumps are taken with
+  `--no-owner --no-privileges` so they restore into any role. Executed locally without Docker
   (PostgreSQL 16) on a real dump; the record goes to `docs/operations/restore-drill.md`.
   Running it against the real bucket needs the owner's credentials: owner task.
 - **Alternatives**: Coolify's built-in S3 backups (only for databases created as separate
-  Coolify resources, ADR-005); `sync` vs `copy` + bucket lifecycle (copy is safer against
-  accidental local deletion but retention must then be configured per provider; `sync` keeps
-  one rule set, trade-off recorded); pgBackRest/WAL archiving (point-in-time recovery is
+  Coolify resources, ADR-005); `rclone sync` (mirrors local deletions, so a wiped
+  volume empties the bucket); provider lifecycle rules (differ per provider, outside the
+  repo); pgBackRest/WAL archiving (point-in-time recovery is
   more than a 1–10 teacher product needs today).
 
 ## Stripe webhook allowlist (US6) — ADR-021

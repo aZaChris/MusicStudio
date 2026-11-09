@@ -18,9 +18,8 @@ Third-party models, migrations shipped by simplejwt; no custom model.
 
 ## Backup artefacts (outside the database)
 - **Dump**: `/backups/{daily,weekly,monthly}/musicstudio-<date>.sql.gz` (existing sidecar).
-- **Manifest**: `<dump>.counts.json` with row counts of `accounts_user`, `studios_studio`,
-  `students_student`, `packages_package`, `lessons_lesson`, `payments_payment`, written at
-  backup time by a pre-backup hook; used by the restore drill to verify completeness.
+- **Expected row counts**: read from the dump's own COPY blocks at restore time (no
+  manifest file; the dump is the snapshot).
 - **Off-site copy**: same tree, encrypted by rclone crypt in the bucket.
 
 ## Restore drill record (`docs/operations/restore-drill.md`)

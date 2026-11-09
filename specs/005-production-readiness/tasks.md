@@ -43,14 +43,14 @@
 
 ## Phase 7: US4 — Off-site backups and restore drill (P2)
 
-- [ ] T021 [US4] Row-count manifest written next to each dump (backup hook script) and `offsite` rclone-crypt service with healthcheck/alert in `docker-compose.coolify.yml` + `docker/offsite/`
-- [ ] T022 [US4] `scripts/restore-drill.sh` (dump or `--from-remote`, fresh DB, migrate check, row counts vs manifest, elapsed time)
-- [ ] T023 [US4] Execute the drill locally on a real dump of a seeded database; record in `docs/operations/restore-drill.md`; ADR-020 `docs/learning/adr/ADR-020-backup-off-site.md`
+- [X] T021 [US4] Dumps with `--no-owner --no-privileges`; `offsite` rclone-crypt service (copy + age-based delete, healthcheck, alert) in `docker-compose.coolify.yml`
+- [X] T022 [US4] `scripts/restore-drill.sh` (dump or `--from-remote`, fresh DB, migrate check, row counts vs the dump's COPY blocks, elapsed time)
+- [X] T023 [US4] Execute the drill locally on a real dump of a seeded database; record in `docs/operations/restore-drill.md`; ADR-020 `docs/learning/adr/ADR-020-backup-off-site.md`
 - [ ] T024 [US4] 👤 Create bucket + rclone crypt credentials in Coolify; run the drill with `--from-remote`
 
 ## Phase 8: US5 — Load test (P3)
 
-- [ ] T025 [P] [US5] `seed_loadtest` command + test (refuses with `DEBUG=False` without flag) in `backend/apps/common/management/commands/seed_loadtest.py`
+- [X] T025 [P] [US5] `seed_loadtest` command + test (refuses with `DEBUG=False` without flag) in `backend/apps/common/management/commands/seed_loadtest.py`
 - [ ] T026 [US5] `backend/loadtest/locustfile.py` (token, lessons, calendar, dashboard, packages)
 - [ ] T027 [US5] Run 50 users against local gunicorn with prod-like settings; commit results in `docs/loadtest/2026-11-09/`; document misses; ADR-022 `docs/learning/adr/ADR-022-load-test-con-locust.md`
 
