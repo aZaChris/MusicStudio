@@ -11,11 +11,11 @@ case "$role" in
     if [ "${RUN_MIGRATIONS:-1}" = "1" ]; then
       python manage.py migrate --noinput
     fi
+    # No gunicorn access log: RequestIdMiddleware writes one JSON line per request (ADR-019).
     exec gunicorn config.wsgi:application \
       --bind "0.0.0.0:${PORT:-8000}" \
       --workers "${WEB_CONCURRENCY:-3}" \
-      --timeout "${GUNICORN_TIMEOUT:-30}" \
-      --access-logfile -
+      --timeout "${GUNICORN_TIMEOUT:-30}"
     ;;
   dev)
     python manage.py migrate --noinput

@@ -35,6 +35,8 @@ def test_ready_503_when_a_dependency_is_down(monkeypatch, failing):
 
     assert res.status_code == 503
     assert res.json()["checks"][failing] == "error"
+    # Unauthenticated endpoint: the failure reason stays in the logs, never in the body.
+    assert "down" not in res.content.decode()
 
 
 def test_redis_check_uses_configured_url(monkeypatch):

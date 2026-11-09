@@ -62,5 +62,5 @@ if SENTRY_DSN:
         dsn=SENTRY_DSN,
         environment=env("SENTRY_ENVIRONMENT", default="production"),
         traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
-        release=env("SENTRY_RELEASE", default=None),
+        release=env("SENTRY_RELEASE", default="") or None,
     )

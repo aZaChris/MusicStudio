@@ -71,6 +71,20 @@ jobs:
       - name: Tests + coverage (fails under 90%)
         run: uv run pytest --cov-report=xml
 
+      - name: Production settings pass Django's deploy checks (OWASP API8)
+        # Dummy values: only the settings are checked, nothing connects anywhere.
+        run: |
+          export DJANGO_SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))')"
+          export JWT_SIGNING_KEY="$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))')"
+          uv run python manage.py check --deploy --fail-level WARNING --settings=config.settings.prod
+        env:
+          DJANGO_ALLOWED_HOSTS: api.example.com
+          DJANGO_CSRF_TRUSTED_ORIGINS: https://api.example.com
+          SMTP_HOST: smtp.example.com
+          SMTP_USER: ci
+          SMTP_PASSWORD: ci
+          DEFAULT_FROM_EMAIL: ci@example.com
+
       - name: OpenAPI contract is committed and up to date
         run: |
           uv run python manage.py spectacular --settings=config.settings.test --fail-on-warn --file /tmp/schema.yml

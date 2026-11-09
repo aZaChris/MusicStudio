@@ -203,6 +203,8 @@ CELERY_TASK_TIME_LIMIT = env.int("CELERY_TASK_TIME_LIMIT", default=90)
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
+# Keep Django's LOGGING (JSON + request id) in workers instead of Celery's own handlers.
+CELERY_WORKER_HIJACK_ROOT_LOGGER = False
 # Redis redelivers unacknowledged tasks after this many seconds; must exceed the longest
 # task (including retries' countdown) or tasks run twice while still in progress.
 CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}

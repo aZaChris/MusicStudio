@@ -31,9 +31,9 @@
 
 ## Phase 5: US2 — Deploy hardening and runbook (P1)
 
-- [ ] T015 [US2] New env vars on backend/worker/beat in `docker-compose.coolify.yml`; `TRUSTED_PROXY_COUNT=1` default in prod
-- [ ] T016 [US2] `manage.py check --deploy` with prod settings and dummy env in `.github/workflows/ci.yml`; fix any warning it raises; test that `/health/ready/` never returns exception text in `backend/apps/common/tests/` (or existing health tests)
-- [ ] T017 [US2] Italian runbook `docs/operations/runbook.md`: first deploy, secrets, rollback, secret rotation, restore, owner checklist
+- [X] T015 [US2] New env vars on backend/worker/beat in `docker-compose.coolify.yml`; `TRUSTED_PROXY_COUNT=1` default in prod
+- [X] T016 [US2] `manage.py check --deploy` with prod settings and dummy env in `.github/workflows/ci.yml`; fix any warning it raises; test that `/health/ready/` never returns exception text in `backend/apps/common/tests/` (or existing health tests)
+- [X] T017 [US2] Italian runbook `docs/operations/runbook.md`: first deploy, secrets, rollback, secret rotation, restore, owner checklist
 - [ ] T018 [US2] 👤 Deploy on Coolify following the runbook; verify HTTPS + `/health/ready/` + rollback time
 
 ## Phase 6: US6 — Stripe webhook allowlist (P3)
