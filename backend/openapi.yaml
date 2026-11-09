@@ -2104,10 +2104,12 @@ components:
           allOf:
           - $ref: '#/components/schemas/TeacherProfile'
           readOnly: true
+          nullable: true
         parent_account:
           allOf:
           - $ref: '#/components/schemas/ParentProfile'
           readOnly: true
+          nullable: true
       required:
       - email
       - id

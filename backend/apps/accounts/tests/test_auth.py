@@ -57,3 +57,17 @@ def test_user_str_is_email():
 
     assert str(teacher.user) == "x@example.com"
     assert str(teacher) == "x@example.com"
+
+
+@pytest.mark.parametrize("role", ["teacher", "parent"])
+def test_me_always_has_both_profile_keys(role):
+    # Typed clients rely on the contract: the missing profile is null, never an absent key.
+    from apps.common.factories import ParentAccountFactory
+    from apps.common.tests.helpers import client_for
+
+    user = TeacherFactory().user if role == "teacher" else ParentAccountFactory().user
+    body = client_for(user).get("/api/v1/auth/me/").json()
+
+    assert "teacher" in body and "parent_account" in body
+    assert (body["teacher"] is None) == (role == "parent")
+    assert (body["parent_account"] is None) == (role == "teacher")

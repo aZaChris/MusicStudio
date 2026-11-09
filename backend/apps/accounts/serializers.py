@@ -19,8 +19,9 @@ class ParentProfileSerializer(serializers.ModelSerializer):
 
 
 class MeSerializer(serializers.ModelSerializer):
-    teacher = TeacherProfileSerializer(read_only=True)
-    parent_account = ParentProfileSerializer(read_only=True)
+    # A user has at most one profile; the missing one is null. allow_null documents that.
+    teacher = TeacherProfileSerializer(read_only=True, allow_null=True)
+    parent_account = ParentProfileSerializer(read_only=True, allow_null=True)
 
     class Meta:
         model = User
