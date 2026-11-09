@@ -1,118 +1,128 @@
 <!--
 Sync Impact Report
-Version change: 1.0.0 → 2.0.0
-Modified principles: II. API-First Architecture (DRF viewsets → Next.js Route Handlers under
-  /api/v1/, same "future mobile client" guarantee); V. Production-Quality Codebase (drf-spectacular/
-  Django migrations → typed service layer/Drizzle migrations)
-Added sections: none (redefinition, not addition)
-Removed sections: none
-Modified: Additional Constraints (full stack swap: Django/DRF/Celery/Docker/AWS → Next.js/
-  Drizzle/Neon/Auth.js/Vercel Cron/Vercel, all on one platform); Development Workflow (branch
-  description updated to Next.js)
-Reason for MAJOR bump: the user decided mid-build to deploy backend and frontend together on
-  Vercel instead of Django/DRF + Docker/AWS — the concrete stack Principles II and V point at is
-  redefined, not just clarified. Principle intent (API-first, production-quality) is unchanged.
-Templates requiring updates: ✅ plan-template.md (generic, compatible as-is)
-  ✅ spec-template.md (generic, compatible as-is)  ✅ tasks-template.md (generic, compatible as-is)
+Version change: 2.0.0 → 3.0.0 (MAJOR: the repository is redefined from the Next.js web platform
+  to the mobile client only; every principle is redefined for a client of the Django API)
+Modified principles:
+  I. Tenant Isolation & RBAC → I. The Backend Is the Security Authority
+  II. API-First Architecture → II. Contract-Driven API Client
+  III. Test-First on Core Business Logic → IV. Tested Features
+  IV. MVP Scope Discipline → V. Phased Scope Discipline
+  V. Production-Quality Codebase → VII. Automated Quality Gate (+ parts of II)
+  VI. Bilingual & Themeable UI → VI. Accessible, Bilingual, Themed UI
+Added principles: III. Secure Session Handling; VIII. Decisions & Study Docs Ship With Code;
+  IX. Security Verified Per Phase (OWASP Mobile Top 10)
+Removed sections: Next.js/Drizzle/Neon/Auth.js/Vercel stack constraints (server code no longer
+  lives here; the backend is the Django API on branch refactor/production-standards)
+Templates requiring updates:
+  ✅ .specify/templates/plan-template.md (Constitution Check gates listed)
+  ✅ .specify/templates/spec-template.md (generic, compatible as-is)
+  ✅ .specify/templates/tasks-template.md (generic; tests are mandatory per Principle IV and are
+     generated as such by /speckit-tasks for this project)
+  ✅ README.md (rewritten for the mobile app in feature 002)
 Follow-up TODOs: none
 -->
 
-# MusicStudio Constitution
+# MusicStudio Mobile Constitution
 
 ## Core Principles
 
-### I. Tenant Isolation & RBAC (NON-NEGOTIABLE)
-A parent account MUST NEVER be able to read, list, or mutate another family's data through
-any code path, regardless of what the UI hides. Every query touching Student, Lesson, Package,
-or Payment data MUST be scoped by the requesting user's role and ownership at the SQL level
-(via the `lib/rbac.ts` scoping helpers), never by hiding fields in a component after an
-unscoped fetch. Role checks (teacher, studio_owner, parent) MUST be enforced in the service
-layer, not left to UI conditionals. Every new Route Handler / Server Action that touches this
-data MUST ship with a test proving cross-tenant access is denied, before it is considered done.
-Rationale: this is a multi-tenant system handling other people's children's data and payment
-records; a leaked query is not a bug to fix later, it is the one failure mode that ends trust
-in the product.
+### I. The Backend Is the Security Authority (NON-NEGOTIABLE)
+Tenant isolation, roles and permissions are enforced by the Django API, never by the app. The
+app MUST NOT infer access from what it has cached or from the user's role alone: it shows what
+the server returns and handles every refusal explicitly — 401 (session expired: refresh, then
+back to login), 403 (not allowed: message, no retry), 404 (not visible: "not found", never a
+crash). On logout or account switch the app MUST clear every cached response, so no data of
+one user is ever shown to the next.
+Rationale: hiding a button is not security; the server already proves cross-tenant denial with
+tests, and the app must not create a second, weaker source of truth.
 
-### II. API-First Architecture
-Business logic lives in a framework-agnostic service layer (`lib/services/*`), called from
-BOTH the Next.js UI (Server Components for reads, Server Actions for mutations) AND a
-documented REST API under `/api/v1/` (Next.js Route Handlers). The web UI is one client among
-future clients, not the source of truth for what the backend can do. Do not couple business
-logic to the web UI's shape; a future React Native app MUST be able to consume `/api/v1/`
-without backend changes beyond what any new feature would need anyway.
-Rationale: a native mobile app on the same API is explicitly planned next; retrofitting an API
-onto UI-coupled logic is far more expensive than keeping the service layer framework-agnostic
-now — this also happens to be idiomatic Next.js (Server Components fetch directly, Route
-Handlers exist for external/API consumers), so it costs nothing extra today.
+### II. Contract-Driven API Client
+Response and request types MUST be generated from the backend's OpenAPI contract
+(`backend/openapi.yaml` on branch `refactor/production-standards`), vendored into this
+repository. A check MUST fail when the vendored copy differs from the backend branch.
+Hand-written response types are forbidden; screens consume the generated types through a thin
+typed client in `src/lib/`.
+Rationale: hand-written types silently drift from the server (the inherited app used camelCase
+fields the Django API never sends); generated types turn drift into a compile error.
 
-### III. Test-First on Core Business Logic
-The following MUST have automated tests before a feature is merged: package lesson-count
-decrement on lesson completion, payment status transitions, and every permission boundary
-described in Principle I. Tests assert behavior (inputs → outputs/state), not implementation
-details. Other CRUD-only surface area may be covered more lightly, but these three areas are
-never optional.
-Rationale: these are the flows where a silent bug either loses a teacher money (package
-count) or leaks another family's data (permissions) — both are unacceptable in a system
-people pay teachers through.
+### III. Secure Session Handling
+Tokens MUST live only in `expo-secure-store` on native platforms (the web fallback exists for
+local development only). The access token is refreshed with the rotating refresh token on a
+401, with a single in-flight refresh shared by concurrent requests. Logout MUST call
+`POST /api/v1/auth/logout/` before clearing local state, and still clear local state if the
+call fails. Tokens and passwords MUST never be logged or put in URLs.
+Rationale: the backend revokes refresh tokens (rotation + blacklist); a client that ignores
+rotation logs users out at random, and a local-only logout leaves a valid token behind.
 
-### IV. MVP Scope Discipline
-Payment gateway integration, native mobile app code, video lessons, file/sheet-music
-libraries, recital/event planning, and multi-language support beyond English/Italian are OUT
-OF SCOPE until explicitly re-opened by the user. Do not scaffold, stub, or design around
-features on this list "for later" — YAGNI applies; the architecture must not block them, but
-it must not pay their cost today either.
-Rationale: this is a portfolio MVP with a defined success criterion; scope creep is the
-primary risk to ever finishing it.
+### IV. Tested Features
+Every feature ships automated tests in the same change: Jest with `jest-expo` and React Native
+Testing Library. Tested at minimum: the API client and session logic (refresh, logout, error
+mapping), and for each main screen its loading, empty, error and data states. Tests mock the
+network at the `fetch` boundary, not internal modules.
+Rationale: the inherited app had no tests at all; session and money screens are where silent
+bugs cost trust.
 
-### V. Production-Quality Codebase
-Code MUST read as something a team would deploy, not a tutorial: business logic lives in
-`lib/services/*`, not inlined in page components or route handlers; Drizzle migrations
-committed for every schema change; environment-based config (no secrets committed,
-`.env.example` kept current); TypeScript strict mode with no untyped `any` on the data layer.
-Rationale: this project exists in part to demonstrate professional-grade work; shortcuts that
-wouldn't survive a code review shouldn't survive here either.
+### V. Phased Scope Discipline
+Phase 1 is parity with the `app` branch on the Django API (login/logout, teacher home, roster
+and student detail, complete lesson, payments, parent portal). New features need a spec.
+Native modules that require a custom development build are out of scope unless decided in an
+ADR: the app MUST keep running in Expo Go. Stripe, if ever used, is test mode only.
+Rationale: a client rewrite dies of scope creep exactly like a backend does.
 
-### VI. Bilingual & Themeable UI
-The frontend MUST support English and Italian (IT is a first-class locale, not an
-afterthought — the approved product design is authored in Italian) with a runtime language
-toggle, and MUST support light/dark theme via a user-facing toggle. New UI strings MUST go
-through the i18n layer, not be hardcoded in components.
-Rationale: explicitly required by the product owner; retrofitting i18n and theming after
-components are built hardcoded is expensive and error-prone.
+### VI. Accessible, Bilingual, Themed UI
+All user-facing text goes through the typed EN/IT dictionary; enum values from the API are
+translated, never shown raw. Light and dark themes are supported. Interactive elements declare
+an accessibility role and label. Dates and times are shown and computed in the device's time
+zone — never by slicing UTC ISO strings for a local date.
+Rationale: product requirement since the MVP; the UTC date slice already produced wrong
+payment dates after midnight in Italy.
+
+### VII. Automated Quality Gate
+A GitHub Actions workflow MUST run on every push to this branch: TypeScript (`tsc --noEmit`,
+strict), ESLint, Jest, and the contract drift check. The same commands run locally before
+commit. A red pipeline blocks merge.
+Rationale: standards not enforced by a machine erode.
+
+### VIII. Decisions & Study Docs Ship With Code
+Every non-trivial decision produces an ADR in `docs/learning/adr/` (context, decision, rejected
+alternatives, consequences). Every feature produces Italian study documentation in
+`docs/learning/` in the same format as the backend (concept docs of 800–1500 words, glossary,
+interview Q&A, index). Code, comments, identifiers and commits are in English; study docs are
+in Italian; commit bodies explain why.
+Rationale: the project trains its developer; undocumented decisions cannot be defended.
+
+### IX. Security Verified Per Phase
+At the end of every phase the OWASP Mobile Top 10 is walked against the app and the result is
+recorded in `docs/learning/` (covered, partial, accepted, with evidence). No secrets in the
+repository: the app bundle is public by nature, so only public configuration (the API base URL)
+lives in `EXPO_PUBLIC_*` variables.
+Rationale: security reviewed once at the end is security never reviewed.
 
 ## Additional Constraints
 
-- **Stack**: Next.js (App Router, TypeScript) for both frontend and backend, deployed as one
-  Vercel project; Drizzle ORM + Neon Postgres (Vercel Marketplace) for persistence; Auth.js
-  (Credentials provider, JWT sessions) for authentication — no third-party auth vendor, because
-  accounts are invite-only (teachers/admins provision parents) rather than public self-signup,
-  so a custom-role credentials flow against our own `users` table is the better fit than a
-  social-login-oriented SaaS auth product; Vercel Cron Jobs replace the Celery Beat sweep for
-  lesson reminders (the only "background job" in this MVP is a periodic idempotent scan, which
-  a scheduled HTTP endpoint handles without needing a queue/worker).
-- **No payment gateway**: payments are recorded manually (cash/bank transfer/manual entry)
-  for MVP — see Principle IV.
-- **Secrets**: never committed; all environments configured via env vars (Vercel-managed in
-  prod, `.env.local` locally), with a checked-in `.env.example` documenting required keys.
+- **Stack**: Expo SDK 57, Expo Router (typed routes), React Native, TypeScript strict,
+  TanStack Query for server state, `expo-secure-store` for tokens. Dependencies are added with
+  `npx expo install` so versions match the SDK; Expo's versioned docs for v57 are the reference.
+- **Backend**: the Django REST API on branch `refactor/production-standards`, base path
+  `/api/v1/`, configured through `EXPO_PUBLIC_API_BASE_URL`. No AWS services.
+- **Branches**: `app` (inherited Expo app) and `web` (Next.js) are never modified. Work happens
+  on `refactor/mobile`.
 
 ## Development Workflow
 
 - Features flow through spec-kit: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` →
-  `/speckit-implement`. Direct ad-hoc feature work that skips a spec for anything beyond a
-  trivial fix is discouraged.
-- Every PR/change touching Student, Lesson, Package, or Payment data is self-reviewed against
-  Principle I and III before being considered complete.
-- Two long-lived branches exist for this product: `web` (this Next.js platform, deployed on
-  Vercel) and a future `app` branch (React Native, same `/api/v1/` surface). Work stays on the
-  branch matching its target client.
+  `/speckit-implement`. Ad-hoc work beyond trivial fixes is discouraged.
+- Small commits on `refactor/mobile`; each completed phase ends with a summary commit and an
+  updated `docs/learning/00-indice.md`.
+- Ambiguous choices that significantly change the architecture: pick the simplest, most
+  conservative option, record it in an ADR, and continue.
 
 ## Governance
 
-This constitution supersedes ad-hoc practices when they conflict. Amendments are made via
+This constitution supersedes ad-hoc practices when they conflict. Amendments go through
 `/speckit-constitution`, require a stated rationale, and bump the version per semantic
-versioning (MAJOR: principle removed/redefined incompatibly; MINOR: principle added or
-materially expanded; PATCH: clarification/wording). Any change that touches Student, Lesson,
-Package, or Payment data must be checked against Principle I and III at review time; violations
-must be fixed or explicitly justified in the PR description before merge.
+versioning (MAJOR: principle removed or redefined incompatibly; MINOR: principle added or
+materially expanded; PATCH: wording). Every change is self-reviewed against Principles I, II
+and III; violations are fixed or justified in the plan's Complexity Tracking before merge.
 
-**Version**: 2.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-09-17
+**Version**: 3.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-09

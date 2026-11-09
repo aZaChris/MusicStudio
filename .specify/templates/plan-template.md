@@ -40,7 +40,15 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] I. Server is the authority: 401/403/404 handled explicitly; cache cleared on logout
+- [ ] II. Types generated from the vendored OpenAPI contract; drift check passes
+- [ ] III. Tokens only in secure storage; single-flight refresh; logout calls the server
+- [ ] IV. Tests in the same change (logic + loading/empty/error/data screen states)
+- [ ] V. Within the current phase; still runs in Expo Go
+- [ ] VI. Typed EN/IT text, enums translated, a11y roles/labels, local-time dates
+- [ ] VII. tsc, eslint, jest, contract check green (CI + local)
+- [ ] VIII. ADRs for non-trivial decisions; Italian study docs + index planned
+- [ ] IX. Security impact considered (OWASP Mobile Top 10)
 
 ## Project Structure
 
