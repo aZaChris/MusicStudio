@@ -1,21 +1,16 @@
-import { useEffect, useState } from 'react';
-import { useColorScheme as useRNColorScheme } from 'react-native';
+import { useSyncExternalStore } from "react";
+import { useColorScheme as useRNColorScheme } from "react-native";
+
+const noSubscription = () => () => {};
 
 /**
- * To support static rendering, this value needs to be re-calculated on the client side for web
+ * The static web build is rendered on the server without a color scheme. During hydration we
+ * must render "light" like the server did, then the real scheme. useSyncExternalStore's server
+ * snapshot does exactly that without a setState inside an effect (the lint error inherited
+ * from the Expo template).
  */
 export function useColorScheme() {
-  const [hasHydrated, setHasHydrated] = useState(false);
-
-  useEffect(() => {
-    setHasHydrated(true);
-  }, []);
-
+  const isClient = useSyncExternalStore(noSubscription, () => true, () => false);
   const colorScheme = useRNColorScheme();
-
-  if (hasHydrated) {
-    return colorScheme;
-  }
-
-  return 'light';
+  return isClient ? colorScheme : "light";
 }

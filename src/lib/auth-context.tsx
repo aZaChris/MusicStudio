@@ -1,59 +1,117 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
-import { apiFetch, tokenStorage } from "./api";
-import { storage } from "./storage";
+import { ApiError, apiFetch, session } from "./api/client";
+import type { Me, TokenPair } from "./api/types";
+import type { TranslationKey } from "./i18n";
 
-export type Role = "teacher" | "studio_owner" | "parent";
-
-export interface Me {
-  id: number;
-  email: string;
-  role: Role;
-  preferredLanguage: "en" | "it";
-}
-
-const USER_KEY = "musicstudio-user";
+/** "unreachable": a session is stored but the server could not confirm it (offline). */
+export type AuthStatus = "loading" | "signed-in" | "signed-out" | "unreachable";
 
 interface AuthState {
   user: Me | null;
-  isLoading: boolean;
+  status: AuthStatus;
+  /** Why the user is on the login screen, e.g. the session expired. */
+  notice: TranslationKey | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  retry: () => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient();
   const [user, setUser] = useState<Me | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [status, setStatus] = useState<AuthStatus>("loading");
+  const [notice, setNotice] = useState<TranslationKey | null>(null);
 
-  useEffect(() => {
-    (async () => {
-      const [token, cachedUser] = await Promise.all([tokenStorage.get(), storage.get(USER_KEY)]);
-      // ponytail: cached at login time, not re-verified on each launch — if
-      // role/profile changes server-side, a re-login picks it up. Add
-      // GET /api/v1/auth/me (requireActor() already supports Bearer auth
-      // generically) if that staleness window ever matters.
-      if (token && cachedUser) setUser(JSON.parse(cachedUser));
-      setIsLoading(false);
-    })();
+  // Startup: never trust a cached user; ask the server who we are (audit issue 6).
+  // Returns the outcome instead of setting state, so the effect applies it in a callback.
+  const check = useCallback(async (): Promise<{ user: Me | null; status: AuthStatus }> => {
+    if (!(await session.refreshToken())) return { user: null, status: "signed-out" };
+    try {
+      return { user: await apiFetch<Me>("/auth/me/"), status: "signed-in" };
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 0) return { user: null, status: "unreachable" };
+      await session.clear();
+      return { user: null, status: "signed-out" };
+    }
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const { token, user: loggedInUser } = await apiFetch<{ token: string; user: Me }>("/auth/login", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
-    await Promise.all([tokenStorage.set(token), storage.set(USER_KEY, JSON.stringify(loggedInUser))]);
-    setUser(loggedInUser);
-  };
+  const apply = useCallback((result: { user: Me | null; status: AuthStatus }) => {
+    setUser(result.user);
+    setStatus(result.status);
+  }, []);
 
-  const logout = async () => {
-    await Promise.all([tokenStorage.clear(), storage.remove(USER_KEY)]);
+  useEffect(() => {
+    let mounted = true;
+    void check().then((result) => mounted && apply(result));
+    return () => {
+      mounted = false;
+    };
+  }, [check, apply]);
+
+  // The client could not renew the session: back to login, and drop every cached response.
+  useEffect(
+    () =>
+      session.onExpired(() => {
+        queryClient.clear();
+        setUser(null);
+        setNotice("auth.sessionExpired");
+        setStatus("signed-out");
+      }),
+    [queryClient],
+  );
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const tokens = await apiFetch<TokenPair>("/auth/token/", {
+        method: "POST",
+        body: { email, password },
+        auth: false,
+      });
+      await session.start(tokens);
+      const me = await apiFetch<Me>("/auth/me/");
+      queryClient.clear(); // nothing from a previous user survives a sign-in
+      setUser(me);
+      setNotice(null);
+      setStatus("signed-in");
+    },
+    [queryClient],
+  );
+
+  const logout = useCallback(async () => {
+    // The body is read at send time: if the access token had expired, the first call
+    // refreshes (rotating the refresh token) and its body holds the old, now blacklisted
+    // token -> 400. The second call sends the rotated one.
+    const sendLogout = async () => {
+      const refresh = await session.refreshToken();
+      if (refresh) await apiFetch("/auth/logout/", { method: "POST", body: { refresh } });
+    };
+    try {
+      await sendLogout();
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 400) await sendLogout().catch(() => undefined);
+      // Any other failure (offline...): still sign out locally, as the user asked.
+    }
+    await session.clear();
+    queryClient.clear();
     setUser(null);
-  };
+    setNotice(null);
+    setStatus("signed-out");
+  }, [queryClient]);
 
-  return <AuthContext.Provider value={{ user, isLoading, login, logout }}>{children}</AuthContext.Provider>;
+  const retry = useCallback(() => {
+    setStatus("loading");
+    void check().then(apply);
+  }, [check, apply]);
+
+  return (
+    <AuthContext.Provider value={{ user, status, notice, login, logout, retry }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

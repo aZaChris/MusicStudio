@@ -5,10 +5,10 @@ import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
 
 export default function ParentLayout() {
-  const { user, isLoading } = useAuth();
+  const { user, status } = useAuth();
   const theme = useTheme();
 
-  if (isLoading) return null;
+  if (status === "loading") return null;
   if (!user) return <Redirect href="/login" />;
   if (user.role !== "parent") return <Redirect href="/(teacher)/home" />;
 

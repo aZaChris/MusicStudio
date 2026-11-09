@@ -74,7 +74,7 @@ test("no stored session: the request goes without a token and fails with 401", a
 
 test("an unreachable server is status 0 and does not sign the user out", async () => {
   await signedIn();
-  global.fetch = jest.fn(async () => {
+  globalThis.fetch = jest.fn(async () => {
     throw new TypeError("Network request failed");
   }) as typeof fetch;
 
@@ -89,7 +89,7 @@ test("server errors keep detail, code and field errors", async () => {
     "POST /lessons/1/complete/": { status: 409, body: { detail: "Already completed.", code: "conflict" } },
   });
 
-  const fieldError = await apiFetch("/payments/", { method: "POST", body: {} }).catch((e) => e);
+  const fieldError = (await apiFetch("/payments/", { method: "POST", body: {} }).catch((e) => e)) as ApiError;
   expect(fieldError).toBeInstanceOf(ApiError);
   expect(fieldError.fieldErrors).toEqual({ amount: ["A valid number is required."] });
 

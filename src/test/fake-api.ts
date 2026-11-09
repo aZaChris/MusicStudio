@@ -22,7 +22,7 @@ export function installFakeApi(routes: Record<string, Handler> = {}): FakeApi {
   const table: Record<string, Handler> = { ...routes };
   const calls: FakeRequest[] = [];
 
-  global.fetch = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+  globalThis.fetch = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = String(input);
     const path = url.startsWith(API_BASE_URL) ? url.slice(API_BASE_URL.length) : url;
     const method = init?.method ?? "GET";

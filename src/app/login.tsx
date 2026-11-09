@@ -7,13 +7,15 @@ import { Button } from "@/components/Button";
 import { TextField } from "@/components/TextField";
 import { Fonts, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
+import { errorMessage } from "@/lib/errors";
 import { useT } from "@/lib/i18n";
 
 export default function LoginScreen() {
   const theme = useTheme();
   const t = useT();
-  const { user, login } = useAuth();
+  const { user, notice, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,8 +28,9 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       await login(email, password);
-    } catch {
-      setError(t("auth.invalidCredentials"));
+    } catch (err) {
+      // 401 on login = wrong credentials; anything else (offline, throttled) says what it is.
+      setError(err instanceof ApiError && err.status === 401 ? t("auth.invalidCredentials") : errorMessage(err, t));
     } finally {
       setLoading(false);
     }
@@ -53,10 +56,29 @@ export default function LoginScreen() {
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
+            autoComplete="email"
+            textContentType="username"
           />
-          <TextField label={t("auth.password")} value={password} onChangeText={setPassword} secureTextEntry />
+          <TextField
+            label={t("auth.password")}
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            autoComplete="password"
+            textContentType="password"
+          />
 
-          {error && <Text style={{ color: theme.dangerText }}>{error}</Text>}
+          {notice && !error && (
+            <Text accessibilityRole="alert" style={{ color: theme.warningText }}>
+              {t(notice)}
+            </Text>
+          )}
+
+          {error && (
+            <Text accessibilityRole="alert" style={{ color: theme.dangerText }}>
+              {error}
+            </Text>
+          )}
 
           <Button title={t("auth.login")} onPress={handleSubmit} loading={loading} />
         </View>

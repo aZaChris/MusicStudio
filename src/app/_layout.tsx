@@ -1,4 +1,4 @@
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import {
   NunitoSans_400Regular,
   NunitoSans_700Bold,
@@ -8,21 +8,22 @@ import { Poppins_600SemiBold, Poppins_700Bold } from "@expo-google-fonts/poppins
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { AuthProvider } from "@/lib/auth-context";
 import { detectLocale, LocaleContext } from "@/lib/i18n";
+import { createQueryClient } from "@/lib/query-client";
 import { Colors } from "@/constants/theme";
 
 SplashScreen.preventAutoHideAsync();
-
-const queryClient = new QueryClient();
 
 export default function RootLayout() {
   const scheme = useColorScheme();
   const theme = Colors[scheme === "dark" ? "dark" : "light"];
   const locale = detectLocale();
+  // One client per app mount (not module-level): logout clears it, tests get a fresh one.
+  const [queryClient] = useState(createQueryClient);
 
   const [fontsLoaded] = useFonts({
     Poppins_600SemiBold,
