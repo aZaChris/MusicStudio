@@ -9,6 +9,7 @@ export function TextField({ label, style, ...rest }: TextInputProps & { label: s
     <View style={styles.wrapper}>
       <Text style={[styles.label, { color: theme.textSecondary }]}>{label}</Text>
       <TextInput
+        accessibilityLabel={label}
         placeholderTextColor={theme.textSecondary}
         style={[
           styles.input,
