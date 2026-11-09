@@ -23,11 +23,11 @@
 
 ## Phase 4: US3 — Request id, JSON logs, Sentry (P2, needed by US2)
 
-- [ ] T010 [P] [US3] Tests: id echoed / generated / invalid replaced; access line JSON with route, status, duration, request_id; Celery task inherits id; formatter outputs valid JSON with exception; scrubber drops Authorization, cookies, Stripe-Signature, emails; in `backend/apps/common/tests/test_logging.py`, `test_sentry.py`
-- [ ] T011 [US3] `backend/apps/common/logging.py` (contextvar, `RequestIdMiddleware`, `RequestIdFilter`, `JsonFormatter`, Celery signal hooks connected in `apps.py`)
-- [ ] T012 [US3] `backend/apps/common/sentry.py` (`init_sentry()`, `before_send`) called from `backend/config/settings/prod.py` only when `SENTRY_DSN` set; JSON `LOGGING` in prod, middleware in base
-- [ ] T013 [US3] `raise_test_error` command in `backend/apps/common/management/commands/raise_test_error.py`
-- [ ] T014 [US3] ADR-019 in `docs/learning/adr/ADR-019-osservabilita-log-e-sentry.md`
+- [X] T010 [P] [US3] Tests: id echoed / generated / invalid replaced; access line JSON with route, status, duration, request_id; Celery task inherits id; formatter outputs valid JSON with exception; scrubber drops Authorization, cookies, Stripe-Signature, emails; in `backend/apps/common/tests/test_logging.py`, `test_sentry.py`
+- [X] T011 [US3] `backend/apps/common/logging.py` (contextvar, `RequestIdMiddleware`, `RequestIdFilter`, `JsonFormatter`, Celery signal hooks connected in `apps.py`)
+- [X] T012 [US3] `backend/apps/common/sentry.py` (`init_sentry()`, `before_send`) called from `backend/config/settings/prod.py` only when `SENTRY_DSN` set; JSON `LOGGING` in prod, middleware in base
+- [X] T013 [US3] `raise_test_error` command in `backend/apps/common/management/commands/raise_test_error.py`
+- [X] T014 [US3] ADR-019 in `docs/learning/adr/ADR-019-osservabilita-log-e-sentry.md`
 
 ## Phase 5: US2 — Deploy hardening and runbook (P1)
 

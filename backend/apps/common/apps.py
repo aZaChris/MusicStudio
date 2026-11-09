@@ -7,6 +7,7 @@ class CommonConfig(AppConfig):
     label = "common"
 
     def ready(self) -> None:
-        from . import signals
+        from . import logging, signals
 
         signals.connect()
+        logging.connect_celery_signals()

@@ -11,6 +11,8 @@ A middleware cannot do this: JWT authentication runs inside DRF, after middlewar
 from dataclasses import dataclass
 from typing import Any
 
+import sentry_sdk
+
 from apps.accounts.models import User
 
 
@@ -75,4 +77,7 @@ def get_tenant(request: Any) -> TenantContext:
         return cached
     context = resolve_tenant(user)
     setattr(django_request, _CACHE_ATTR, context)
+    # Error reports say which tenant and user hit the bug; no-op when Sentry is off.
+    sentry_sdk.set_tag("studio_id", context.studio_id)
+    sentry_sdk.set_tag("user_id", context.user_id)
     return context

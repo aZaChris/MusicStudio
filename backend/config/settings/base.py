@@ -51,6 +51,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # First: the request id must exist before anything logs (ADR-019).
+    "apps.common.logging.RequestIdMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -231,14 +233,28 @@ DASHBOARD_CACHE_SECONDS: int = env.int("DASHBOARD_CACHE_SECONDS", default=300)
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 DEFAULT_FROM_EMAIL: str = env("DEFAULT_FROM_EMAIL", default="noreply@musicstudio.local")
 
+# Plain text for humans in dev; prod switches the formatter to JSON (ADR-019).
+LOG_FORMAT: str = env("LOG_FORMAT", default="plain")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
+    "filters": {"request_id": {"()": "apps.common.logging.RequestIdFilter"}},
     "formatters": {
-        "plain": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+        "plain": {"format": "%(asctime)s %(levelname)s %(name)s [%(request_id)s] %(message)s"},
+        "json": {"()": "apps.common.logging.JsonFormatter"},
     },
-    "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "plain"}},
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": LOG_FORMAT,
+            "filters": ["request_id"],
+        }
+    },
     "root": {"handlers": ["console"], "level": env("LOG_LEVEL", default="INFO")},
+    "loggers": {
+        # One line per request; set ACCESS_LOG_LEVEL=WARNING to silence it.
+        "musicstudio.access": {"level": env("ACCESS_LOG_LEVEL", default="INFO")},
+    },
 }
 
 # Reverse proxies in front of gunicorn that append to X-Forwarded-For (ADR-021).

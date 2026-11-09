@@ -13,7 +13,7 @@ Prereqs: `cd backend && uv sync`, PostgreSQL 16 and Redis running, `DATABASE_URL
 4. **Logs (US3)**: run gunicorn with prod-like settings, make a request with
    `X-Request-ID: demo-123` → response echoes it; the access log line is JSON with
    `request_id=demo-123`; a Celery task enqueued by that request logs the same id.
-5. **Sentry**: with a test DSN, run `manage.py raise_test_error` (raises inside a request-like context and a Celery task) → events visible
+5. **Sentry**: with a test DSN, run `manage.py raise_test_error` → event visible
    within 1 minute, no `Authorization` header, no email. Without DSN the API still works.
 6. **Allowlist (US6)**: tests send a signed event from an allowed and a non-allowed
    address, and with a forged left-most `X-Forwarded-For`: only the allowed one is stored.

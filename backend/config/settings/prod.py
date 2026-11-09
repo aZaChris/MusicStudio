@@ -32,6 +32,9 @@ CSRF_COOKIE_SECURE = True
 SECURE_HSTS_SECONDS = env.int("DJANGO_HSTS_SECONDS", default=60 * 60 * 24 * 30)
 SECURE_HSTS_INCLUDE_SUBDOMAINS = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+# HSTS preload is a promise for the whole registered domain and hard to undo; the owner
+# decides it per domain, not this codebase. `check --deploy` runs in CI (OWASP API8).
+SILENCED_SYSTEM_CHECKS = ["security.W021"]
 
 STORAGES = {
     **STORAGES,  # noqa: F405
@@ -44,3 +47,20 @@ EMAIL_PORT = env.int("SMTP_PORT", default=587)
 EMAIL_HOST_USER = env("SMTP_USER")
 EMAIL_HOST_PASSWORD = env("SMTP_PASSWORD")
 EMAIL_USE_TLS = env.bool("SMTP_USE_TLS", default=True)
+
+# --- Observability (ADR-019) ------------------------------------------------------------
+LOGGING["handlers"]["console"]["formatter"] = env("LOG_FORMAT", default="json")  # type: ignore[index]  # noqa: F405
+
+# Number of proxies that append to X-Forwarded-For: Coolify's Traefik (ADR-021).
+TRUSTED_PROXY_COUNT = env.int("TRUSTED_PROXY_COUNT", default=1)
+
+SENTRY_DSN: str = env("SENTRY_DSN", default="")
+if SENTRY_DSN:
+    from apps.common.sentry import init_sentry
+
+    init_sentry(
+        dsn=SENTRY_DSN,
+        environment=env("SENTRY_ENVIRONMENT", default="production"),
+        traces_sample_rate=env.float("SENTRY_TRACES_SAMPLE_RATE", default=0.0),
+        release=env("SENTRY_RELEASE", default=None),
+    )
