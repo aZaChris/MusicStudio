@@ -38,8 +38,8 @@
 
 ## Phase 6: US6 — Stripe webhook allowlist (P3)
 
-- [ ] T019 [P] [US6] Tests: allowed IP processed; other IP 403 and nothing stored; forged left-most XFF refused; empty setting disables check but signature still required; in `backend/apps/payments/tests/test_webhook_allowlist.py`
-- [ ] T020 [US6] `STRIPE_WEBHOOK_ALLOWED_IPS` setting + check in `backend/apps/payments/webhooks.py`; ADR-021 `docs/learning/adr/ADR-021-allowlist-webhook-e-ip-reale.md`
+- [X] T019 [P] [US6] Tests: allowed IP processed; other IP 403 and nothing stored; forged left-most XFF refused; empty setting disables check but signature still required; in `backend/apps/payments/tests/test_webhook_allowlist.py`
+- [X] T020 [US6] `STRIPE_WEBHOOK_ALLOWED_IPS` setting + check in `backend/apps/payments/webhooks.py`; ADR-021 `docs/learning/adr/ADR-021-allowlist-webhook-e-ip-reale.md`
 
 ## Phase 7: US4 — Off-site backups and restore drill (P2)
 

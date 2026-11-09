@@ -213,6 +213,9 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
 # A restricted key (rk_test_...) with "Checkout Sessions: write" is recommended over sk_test_.
 STRIPE_API_KEY: str = env("STRIPE_API_KEY", default="")
 STRIPE_WEBHOOK_SECRET: str = env("STRIPE_WEBHOOK_SECRET", default="")
+# Second layer after the signature (ADR-021): only Stripe's published webhook addresses.
+# Empty = no address check (dev, tests, or a temporary escape hatch); signature still applies.
+STRIPE_WEBHOOK_ALLOWED_IPS: list[str] = env.list("STRIPE_WEBHOOK_ALLOWED_IPS", default=[])
 STRIPE_CURRENCY: str = env("STRIPE_CURRENCY", default="eur")
 CHECKOUT_SUCCESS_URL: str = env(
     "CHECKOUT_SUCCESS_URL", default="http://localhost:5173/payments/success"

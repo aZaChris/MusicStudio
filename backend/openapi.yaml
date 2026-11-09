@@ -1899,11 +1899,9 @@ paths:
         '200':
           description: Event received (or duplicate)
         '400':
-          description: Invalid input.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ValidationError'
+          description: Invalid payload or signature
+        '403':
+          description: Caller is not a Stripe webhook address
         '429':
           description: Rate limit exceeded; see Retry-After.
           content:
