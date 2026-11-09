@@ -32,3 +32,7 @@ class MeSerializer(serializers.ModelSerializer):
             "teacher",
             "parent_account",
         ]
+
+
+class LogoutSerializer(serializers.Serializer[None]):
+    refresh = serializers.CharField(write_only=True)

@@ -4,6 +4,54 @@ info:
   version: 1.0.0
   description: REST API for the MusicStudio teacher/parent platform.
 paths:
+  /api/v1/auth/logout/:
+    post:
+      operationId: v1_auth_logout_create
+      description: 'End this device''s session: its refresh token can no longer be
+        used (ADR-018).'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '205':
+          description: Session ended (also if already ended)
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/auth/me/:
     get:
       operationId: v1_auth_me_retrieve
@@ -2019,6 +2067,15 @@ components:
         * `completed` - Completed
         * `cancelled` - Cancelled
         * `no_show` - No-show
+    LogoutRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - refresh
     LowPackageStudent:
       type: object
       properties:

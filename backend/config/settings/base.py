@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     # third-party
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",  # refresh-token revocation (ADR-018)
     "drf_spectacular",
     "corsheaders",
     "django_filters",
@@ -151,9 +152,13 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env.int("JWT_ACCESS_MINUTES", default=60)),
+    # Access tokens are never checked against the blacklist (no query per request), so
+    # their lifetime is the window in which a logged-out token still works (ADR-018).
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=env.int("JWT_ACCESS_MINUTES", default=15)),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=env.int("JWT_REFRESH_DAYS", default=14)),
     "ROTATE_REFRESH_TOKENS": True,
+    # A rotated refresh token is dead: replaying it (e.g. a stolen copy) is refused.
+    "BLACKLIST_AFTER_ROTATION": True,
     "SIGNING_KEY": env("JWT_SIGNING_KEY", default=SECRET_KEY),
 }
 
@@ -235,6 +240,9 @@ LOGGING = {
     "handlers": {"console": {"class": "logging.StreamHandler", "formatter": "plain"}},
     "root": {"handlers": ["console"], "level": env("LOG_LEVEL", default="INFO")},
 }
+
+# Reverse proxies in front of gunicorn that append to X-Forwarded-For (ADR-021).
+TRUSTED_PROXY_COUNT: int = env.int("TRUSTED_PROXY_COUNT", default=0)
 
 # Studio sizing guardrail from the product spec (1-10 teachers per studio)
 STUDIO_MAX_TEACHERS = 10

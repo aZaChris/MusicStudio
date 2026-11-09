@@ -5,21 +5,21 @@
 
 ## Phase 1: Setup
 
-- [ ] T001 Add `sentry-sdk[django,celery]` to runtime deps and a `load` dependency group with `locust` in `backend/pyproject.toml`; `uv lock`
-- [ ] T002 Document new variables (`JWT_ACCESS_MINUTES=15`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `TRUSTED_PROXY_COUNT`, `STRIPE_WEBHOOK_ALLOWED_IPS`, `RCLONE_*`, `BACKUP_ALERT_URL`) in `.env.example`
+- [X] T001 Add `sentry-sdk[django,celery]` to runtime deps and a `load` dependency group with `locust` in `backend/pyproject.toml`; `uv lock`
+- [X] T002 Document new variables (`JWT_ACCESS_MINUTES=15`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`, `TRUSTED_PROXY_COUNT`, `STRIPE_WEBHOOK_ALLOWED_IPS`, `RCLONE_*`, `BACKUP_ALERT_URL`) in `.env.example`
 
 ## Phase 2: Foundational
 
-- [ ] T003 `backend/apps/common/net.py::client_ip(request)` honouring `TRUSTED_PROXY_COUNT` (right-most trusted entry of `X-Forwarded-For`, else `REMOTE_ADDR`) + tests in `backend/apps/common/tests/test_net.py`
+- [X] T003 `backend/apps/common/net.py::client_ip(request)` honouring `TRUSTED_PROXY_COUNT` (right-most trusted entry of `X-Forwarded-For`, else `REMOTE_ADDR`) + tests in `backend/apps/common/tests/test_net.py`
 
 ## Phase 3: US1 — Logout and revocation (P1) 🎯
 
-- [ ] T004 [US1] Enable `rest_framework_simplejwt.token_blacklist`, `BLACKLIST_AFTER_ROTATION`, access lifetime default 15 min in `backend/config/settings/base.py`; migrate
-- [ ] T005 [P] [US1] Tests: logout → refresh refused; logout twice harmless; token of another user → 400 and untouched; rotated refresh replay → 401; revoke-all affects only that user; purge removes only expired rows; in `backend/apps/accounts/tests/test_logout.py`
-- [ ] T006 [US1] `logout(user, refresh)` and `revoke_all_sessions(user)` in `backend/apps/accounts/services.py`; `LogoutView` + route `auth/logout/` in `backend/apps/accounts/views.py`, `urls.py`
-- [ ] T007 [US1] `revoke_sessions` command in `backend/apps/accounts/management/commands/revoke_sessions.py`; admin action in `backend/apps/accounts/admin.py`
-- [ ] T008 [US1] `purge_expired_tokens` task in `backend/apps/accounts/tasks.py` + daily beat entry in `backend/config/celery.py`
-- [ ] T009 [US1] Regenerate `backend/openapi.yaml`; ADR-018 in `docs/learning/adr/ADR-018-revoca-dei-token.md`
+- [X] T004 [US1] Enable `rest_framework_simplejwt.token_blacklist`, `BLACKLIST_AFTER_ROTATION`, access lifetime default 15 min in `backend/config/settings/base.py`; migrate
+- [X] T005 [P] [US1] Tests: logout → refresh refused; logout twice harmless; token of another user → 400 and untouched; rotated refresh replay → 401; revoke-all affects only that user; purge removes only expired rows; in `backend/apps/accounts/tests/test_logout.py`
+- [X] T006 [US1] `logout(user, refresh)` and `revoke_all_sessions(user)` in `backend/apps/accounts/services.py`; `LogoutView` + route `auth/logout/` in `backend/apps/accounts/views.py`, `urls.py`
+- [X] T007 [US1] `revoke_sessions` command in `backend/apps/accounts/management/commands/revoke_sessions.py`; admin action in `backend/apps/accounts/admin.py`
+- [X] T008 [US1] `purge_expired_tokens` task in `backend/apps/accounts/tasks.py` + daily beat entry in `backend/config/celery.py`
+- [X] T009 [US1] Regenerate `backend/openapi.yaml`; ADR-018 in `docs/learning/adr/ADR-018-revoca-dei-token.md`
 
 ## Phase 4: US3 — Request id, JSON logs, Sentry (P2, needed by US2)
 
