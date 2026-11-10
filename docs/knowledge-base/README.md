@@ -13,3 +13,10 @@ Problemi non banali risolti nel progetto: sintomo, causa radice, verifica, soluz
 | [deadlock-su-exclusion-constraint.md](deadlock-su-exclusion-constraint.md) | Inserimenti simultanei sullo stesso orario: deadlock gestito con retry, poi 409 |
 | [redis-giu-e-throttling.md](redis-giu-e-throttling.md) | I throttle DRF leggono da Redis: con Redis giù ogni richiesta dava 500; ora falliscono aperti |
 | [throttle-login-aggirabile-con-x-forwarded-for.md](throttle-login-aggirabile-con-x-forwarded-for.md) | Senza `NUM_PROXIES` il throttle del login usava tutto `X-Forwarded-For`: tentativi illimitati |
+| [riga-di-errore-django-senza-request-id.md](riga-di-errore-django-senza-request-id.md) | La riga `django.request` arrivava dopo il middleware, che aveva già azzerato il request id |
+| [rtk-nasconde-errori-di-pytest.md](rtk-nasconde-errori-di-pytest.md) | Il filtro di rtk mostrava "22 passed" nascondendo un errore: `rtk proxy` per i controlli |
+| [seed-con-hasher-diverso-login-401.md](seed-con-hasher-diverso-login-401.md) | Seed del load test con i settings di test (MD5): ogni login in produzione dava 401 |
+| [contratto-openapi-campi-nullabili.md](contratto-openapi-campi-nullabili.md) | Generando i tipi per i client: un'azione con il tipo sbagliato e tre campi null non dichiarati |
+| [senza-redis-ogni-richiesta-aspetta-il-timeout.md](senza-redis-ogni-richiesta-aspetta-il-timeout.md) | Senza Redis i throttle falliscono aperti ma dopo il timeout: ogni richiesta lenta |
+| [portale-disconnesso-dopo-30-minuti.md](portale-disconnesso-dopo-30-minuti.md) | Il portale non salvava il refresh token ruotato: utenti disconnessi dopo ~30 minuti |
+| [vitest-worker-non-partono-poca-ram.md](vitest-worker-non-partono-poca-ram.md) | Worker di Vitest che non partono e timeout con poca RAM: 2 worker e attese più lunghe |
