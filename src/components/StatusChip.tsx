@@ -15,8 +15,7 @@ export function StatusChip({ tone, label, small }: { tone: Tone; label: string; 
     bad: [c.badBg, c.badFg],
     plan: [c.planBg, c.planFg],
     off: [c.offBg, c.offFg],
-    // orange-text on orange-soft is 4.16:1; ink passes comfortably (docs/design-system.md)
-    low: [c.orangeSoft, c.ink],
+    low: [c.orangeSoft, c.orangeText],
   }[tone];
   return (
     <View style={[styles.base, small && styles.small, { backgroundColor: palette[0] }]}>

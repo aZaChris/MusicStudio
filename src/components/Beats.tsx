@@ -29,7 +29,7 @@ function Beat({ filled, size, onPlum }: { filled: boolean; size: number; onPlum?
     <Animated.View
       style={[
         { width: size, height: size, borderRadius: size / 2 },
-        filled ? { backgroundColor: fill } : { borderWidth: size < 14 ? 1.5 : 2, borderColor: c.orange, backgroundColor: onPlum ? "transparent" : c.orangeSoft },
+        filled ? { backgroundColor: fill } : { borderWidth: size < 14 ? 1.5 : 2, borderColor: onPlum ? c.orange : c.beatEdge, backgroundColor: onPlum ? "transparent" : c.orangeSoft },
         animated,
       ]}
     />

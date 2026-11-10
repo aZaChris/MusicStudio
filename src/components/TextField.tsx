@@ -37,7 +37,7 @@ export function TextField({
             color: c.ink,
             backgroundColor: c.card,
             // Active field: orange border (design/system README); error: bad-fg.
-            borderColor: invalid ? c.badFg : focused ? c.orange : c.line,
+            borderColor: invalid ? c.badFg : focused ? c.orange : c.fieldBorder,
           },
           style,
         ]}

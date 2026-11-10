@@ -56,7 +56,7 @@ export default function RosterScreen() {
           ListHeaderComponent={
             <View style={styles.head}>
               <ScreenHeader title={t("roster.title")} eyebrow={t("roster.activeCount", { count: String(list.length) })} />
-              <View style={[styles.search, { backgroundColor: c.card, borderColor: c.line }]}>
+              <View style={[styles.search, { backgroundColor: c.card, borderColor: c.fieldBorder }]}>
                 <Icon name="search" size={18} color={c.ink2} strokeWidth={2} />
                 <TextInput
                   accessibilityLabel={t("roster.search")}
