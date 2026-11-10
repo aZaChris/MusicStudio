@@ -43,13 +43,13 @@
 
 ## Phase 7: US5 — Docs (P3)
 
-- [ ] T021 [US5] ADR-023 (session, refresh in localStorage accepted risk, cookie next), ADR-024 (generated types), ADR-025 (container and headers)
-- [ ] T022 [US5] Concept docs: `sicurezza-di-una-spa.md` (XSS, CSP, token storage), `deploy-di-una-spa-con-nginx.md`; OWASP walk updated for the SPA; glossary; Q&A; overview; `00-indice.md` ("Riepilogo Web 1")
+- [X] T021 [US5] ADR-023 (session, refresh in localStorage accepted risk, cookie next), ADR-024 (generated types), ADR-025 (container and headers)
+- [X] T022 [US5] Concept docs: `sicurezza-di-una-spa.md` (XSS, CSP, token storage), `deploy-di-una-spa-con-nginx.md`; OWASP walk updated for the SPA; glossary; Q&A; overview; `00-indice.md` ("Riepilogo Web 1")
 
 ## Phase 8: Polish
 
-- [ ] T023 Full gate (backend + frontend) green; tasks marked; CLAUDE.md status
-- [ ] T024 Export (`Web 1 - Portale` in `scripts/export-study-docs.sh`), vault decisions, summary commit
+- [X] T023 Full gate (backend + frontend) green; tasks marked; CLAUDE.md status
+- [X] T024 Export (`Web 1 - Portale` in `scripts/export-study-docs.sh`), vault decisions, summary commit
 
 ## Dependencies
 

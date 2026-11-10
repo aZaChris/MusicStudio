@@ -218,6 +218,26 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Punto debole.** Se l'infrastruttura cambia, per esempio aggiungendo Cloudflare, il numero va cambiato. Sbagliarlo per eccesso ridà al client il controllo del suo IP.
 
+## Web 1: il portale web
+
+### 35. Il portale disconnetteva gli utenti dopo mezz'ora. Perché, e come l'hai trovato?
+
+**Risposta modello.** Dalla fase 4 il backend ruota il refresh token e mette nella lista nera quello usato. Il portale, scritto prima, salvava il nuovo token di accesso ma non il nuovo refresh token, quindi al secondo rinnovo usava un token già bruciato. L'ho trovato leggendo il client durante l'audit, perché sapevo cosa era cambiato nel backend. Ora salva il token ruotato, fa un solo rinnovo alla volta, e un test che ripristina il comportamento vecchio fallisce.
+
+**Punto debole.** Nessun test di integrazione collegava il portale al backend dopo la fase 4: il bug è rimasto nascosto finché non ho riaperto il portale.
+
+### 36. Dove tieni i token nel browser, e perché?
+
+**Risposta modello.** Il token di accesso solo in memoria; il refresh token in `localStorage`, come rischio accettato e documentato in un ADR. Lo limitano una Content-Security-Policy stretta, la rotazione con lista nera e il logout lato server. Il passo successivo è un cookie httpOnly, che richiede modifiche al backend per CSRF e CORS con credenziali.
+
+**Punto debole.** Uno script iniettato potrebbe leggere il refresh token. Dillo tu, con il piano per chiuderlo.
+
+### 37. Come hai reso il portale pronto per Coolify?
+
+**Risposta modello.** Immagine con versioni fissate, nginx senza privilegi sulla porta 8080, nessuna porta pubblicata: lo raggiunge solo il proxy di Coolify. nginx fa il fallback delle rotte e manda una CSP stretta con le altre intestazioni di sicurezza; il container non parte senza l'origine delle API. Un test vieta le porte nel compose e un job della CI costruisce e prova l'immagine vera.
+
+**Punto debole.** In locale non avevo Docker: la prova dell'immagine l'ho affidata alla CI invece di farla sul mio computer.
+
 ## Domanda finale tipica
 
 ### 19. Cosa faresti diversamente o cosa miglioreresti per primo?

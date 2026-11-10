@@ -2,7 +2,7 @@
 
 Questa cartella è materiale di studio, in italiano. Ogni file si capisce da solo e si può caricare singolarmente in NotebookLM. Il codice, i commenti e i commit sono in inglese.
 
-Stato: **fine della fase 4** (produzione), 9 novembre 2026.
+Stato: **fine della fase 4** (produzione) e del **Web 1** (portale web), 10 novembre 2026.
 
 ## Ordine di lettura consigliato
 
@@ -30,11 +30,15 @@ Stato: **fine della fase 4** (produzione), 9 novembre 2026.
 22. `concetti/log-strutturati-e-sentry.md` — request id, log JSON, Sentry senza dati personali (fase 4).
 23. `concetti/backup-off-site-e-restore-drill.md` — copie cifrate fuori dal server e prova di ripristino (fase 4).
 24. `concetti/load-testing.md` — Locust, percentili e il costo del login (fase 4).
-25. `concetti/sicurezza-api-owasp.md` — la checklist OWASP, aggiornata a ogni fase.
-26. Gli ADR, in ordine di numero.
-27. `../operations/runbook.md` — deploy, rollback, segreti, ripristino.
-28. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
-29. `glossario.md` — da consultare quando serve.
+25. `audit-frontend.md` — il portale web all'inizio del Web 1: il bug delle disconnessioni e il resto.
+26. `concetti/sicurezza-di-una-spa.md` — XSS, Content-Security-Policy, token nel browser (Web 1).
+27. `concetti/deploy-di-una-spa-con-nginx.md` — fallback, cache, intestazioni, niente porte esposte (Web 1).
+28. `verifica-web-end-to-end.md` — il portale contro il backend vero.
+29. `concetti/sicurezza-api-owasp.md` — la checklist OWASP, aggiornata a ogni fase.
+30. Gli ADR, in ordine di numero.
+31. `../operations/runbook.md` — deploy, rollback, segreti, ripristino.
+32. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
+33. `glossario.md` — da consultare quando serve.
 
 Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA, quello sull'ExclusionConstraint e le domande da colloquio.
 
@@ -69,6 +73,9 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-020-backup-off-site.md` — rclone crypt con `copy`, prova di ripristino.
 - `adr/ADR-021-allowlist-webhook-e-ip-reale.md` — IP di Stripe e IP reale dietro il proxy.
 - `adr/ADR-022-load-test-con-locust.md` — Locust in un gruppo separato, baseline documentato.
+- `adr/ADR-023-sessione-del-portale-web.md` — refresh ruotato salvato, un solo rinnovo, refresh in localStorage come rischio accettato.
+- `adr/ADR-024-tipi-del-portale-dal-contratto.md` — tipi del portale generati da `backend/openapi.yaml`.
+- `adr/ADR-025-container-del-portale.md` — nginx senza privilegi, niente porte, intestazioni di sicurezza, prova in CI.
 
 ### Concetti (fase 1)
 
@@ -105,6 +112,11 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/backup-off-site-e-restore-drill.md` — off-site cifrato, `copy` contro `sync`, RPO e RTO.
 - `concetti/load-testing.md` — utenti virtuali, percentili, PBKDF2, errori di misura.
 
+### Concetti (Web 1, portale web)
+
+- `concetti/sicurezza-di-una-spa.md` — XSS, CSP, dove tenere i token nel browser.
+- `concetti/deploy-di-una-spa-con-nginx.md` — fallback delle rotte, cache, intestazioni, utente non root.
+
 ### Operazioni
 
 - `../operations/runbook.md` — primo deploy, verifiche, rollback, rotazione dei segreti, Sentry, backup off-site, ripristino.
@@ -114,7 +126,7 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 ### Ripasso
 
 - `glossario.md` — ogni termine tecnico in italiano semplice.
-- `colloquio/domande-e-risposte.md` — 34 domande con risposta modello e punto debole.
+- `colloquio/domande-e-risposte.md` — 37 domande con risposta modello e punto debole.
 
 ## Formato dei documenti di concetto
 
@@ -167,3 +179,12 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Load test:** Locust con 50 utenti, zero errori, p95 delle letture tra 62 e 560 ms su un portatile; il login è limitato dalla CPU (PBKDF2).
 - **Qualità:** da 171 a 219 test, copertura 96%.
 - **Aperto (serve il proprietario):** deploy reale su Coolify e misura del rollback; DSN di Sentry; bucket e prova di ripristino dal bucket vero; load test sul server; branch protection su GitHub. Restano anche la prova end-to-end con una sandbox Stripe reale e la coerenza dello studio garantita solo dai service.
+
+## Riepilogo del Web 1 (portale web)
+
+- **Perimetro riaperto:** constitution 3.0.0, il portale in `frontend/` si sviluppa su questo branch con gli stessi standard del backend.
+- **Bug grave corretto:** dalla fase 4 il portale disconnetteva gli utenti dopo circa 30 minuti, perché non salvava il refresh token ruotato. Ora lo salva; un solo rinnovo alla volta, anche tra schede; logout vero con cache svuotata; token di accesso solo in memoria.
+- **Dati:** tipi generati dal contratto, tutte le pagine di studenti e pagamenti, errori tradotti e mai ritentati sui 4xx, date locali (il form dei pagamenti usava il giorno UTC).
+- **Deploy:** immagine con versioni fissate, nginx senza privilegi, fallback delle rotte, CSP stretta e altre intestazioni, nessuna porta pubblicata, CORS limitato al portale; un test vieta le porte nel compose, un job della CI prova l'immagine vera.
+- **Qualità:** TypeScript strict attivato, oxlint senza avvisi, Prettier, da 3 a 48 test, CI dedicata, README per la review, verifica end-to-end 10 su 10.
+- **Aperto (serve il proprietario):** deploy su Coolify e review dell'amico; prova dell'immagine in locale quando Docker sarà attivo in WSL; refresh token in cookie httpOnly come passo successivo.

@@ -22,7 +22,7 @@ Il concetto di business più importante è il **pacchetto**. Un genitore compra,
 
 Immagina cinque scatole.
 
-1. **Il proxy di Coolify** riceve il traffico HTTPS da Internet, gestisce il certificato e inoltra le richieste al backend.
+1. **Il proxy di Coolify** riceve il traffico HTTPS da Internet, gestisce il certificato e inoltra le richieste al backend o al portale web, ognuno con il suo dominio.
 2. **Il backend web**: Django con Django REST Framework, servito da gunicorn. Espone l'API su `/api/v1/`, la documentazione OpenAPI su `/api/docs/` e i controlli di salute su `/health/`.
 3. **PostgreSQL**: tutti i dati.
 4. **Redis**: la coda dei task di Celery e la cache (rate limiting e dashboard).
@@ -31,6 +31,8 @@ Immagina cinque scatole.
 In più ci sono due servizi di supporto. Il **backup** ogni notte salva il database in un volume. L'**offsite** copia quei dump, cifrati, su un bucket fuori dal server, così sopravvivono anche alla perdita della macchina. E c'è un servizio esterno: **Stripe**, che gestisce i pagamenti online in modalità test, con una pagina di pagamento ospitata e notifiche via webhook.
 
 Backend, worker e beat usano la stessa immagine Docker. Cambia solo il comando di avvio.
+
+C'è poi il **portale web** (`frontend/`): una SPA React servita da nginx senza privilegi, che parla con le API dal browser. I suoi tipi sono generati dal contratto OpenAPI, la sessione segue la rotazione dei refresh token, e il suo container manda una Content-Security-Policy stretta (ADR-023…025). Un'app mobile, con lo stesso contratto, vive sul branch `refactor/mobile`.
 
 ## Dentro il backend
 
@@ -84,8 +86,8 @@ A ogni push GitHub Actions esegue lint, formattazione, tipi, controllo delle mig
 - **Un solo server.** Se cade, l'app è ferma finché non si ripristina altrove. I backup ora sono anche fuori dal server, ma il ripristino dal bucket vero è ancora da provare.
 - **Migrazioni all'avvio del web.** Semplici e sicure con una replica, non con più repliche.
 - **La coerenza dello studio** tra un allievo e il suo insegnante è garantita dai service, non da un vincolo del database.
-- **Il frontend esistente** (`frontend/`, una SPA React) e l'app Expo del branch `app` parlano con API diverse: la SPA con queste, l'app con quelle Next.js del branch `web`. Riallinearli è un lavoro futuro.
-- **Docker non è stato eseguito** nell'ambiente di sviluppo. Le impostazioni di produzione sono state provate con gunicorn, anche sotto carico, ma il primo deploy reale su Coolify è ancora da fare.
+- **Il refresh token del portale web sta in `localStorage`**: uno script iniettato potrebbe leggerlo. È un rischio accettato e documentato (ADR-023); il passo successivo è un cookie httpOnly.
+- **Docker non è stato eseguito** nell'ambiente di sviluppo. Le impostazioni di produzione sono state provate con gunicorn, anche sotto carico; l'immagine del portale la costruisce e la prova la CI. Il primo deploy reale su Coolify è ancora da fare.
 - **I numeri del load test** vengono da un portatile, con client e server sulla stessa CPU. Servono a trovare problemi, non a promettere prestazioni.
 
 ## Dove andare dopo

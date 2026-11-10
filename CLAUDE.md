@@ -24,7 +24,7 @@ experience, English B1, and studies everything that is built here.
 | 3 Celery & payments | `specs/004-celery-payments` | done |
 | 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (owner tasks open: real Coolify deploy T018, bucket drill T024) |
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
-| Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | in progress |
+| Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (owner: Coolify deploy + friend's review T017; image run locally once Docker works in WSL) |
 
 The mobile app is on branch `refactor/mobile` (own CLAUDE.md and constitution).
 
@@ -115,5 +115,9 @@ whenever serializers/views change.
   through `rtk proxy` when the exact result matters.
 - Seed load-test data with the SAME settings as the server: test settings hash passwords
   with MD5, which production settings reject (every login 401).
+- The SPA's tests render the whole app: Vitest is capped at 2 workers and 10 s async waits
+  (more workers failed to start on a 2.7 GB machine).
+- Docker is not enabled in this WSL distro; the `web-image` CI job builds and checks the
+  portal image instead.
 - Never print or read credential files (`.env.local`, `.pgpass`); `.env.local` on the main
   machine holds real Neon credentials from the `app` branch and is git-ignored.

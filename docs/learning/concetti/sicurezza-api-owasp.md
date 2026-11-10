@@ -50,6 +50,8 @@ Il test `test_forged_forwarded_for_cannot_reset_the_login_throttle` manda sei te
 
 **API10 — Unsafe Consumption of APIs.** *Coperto.* I webhook di Stripe passano due controlli: l'indirizzo deve essere nella lista pubblicata da Stripe, e la firma deve essere valida. L'indirizzo è quello vero, calcolato contando i proxy fidati da destra di `X-Forwarded-For` (ADR-021). Un test prova che un'origine falsificata a sinistra viene rifiutata.
 
+**Il portale web.** Dal 10 novembre 2026 il giro copre anche la SPA in `frontend/`. Contro l'XSS: React mostra i dati come testo, e una Content-Security-Policy stretta permette script solo dal portale e connessioni solo verso le API. Il token di accesso sta in memoria; il refresh token in `localStorage` è un rischio accettato e documentato (ADR-023), con il cookie httpOnly come passo successivo. Le API accettano chiamate dal browser solo dall'origine del portale. Dettagli in `concetti/sicurezza-di-una-spa.md`.
+
 ## Alternative considerate
 
 **django-axes** per il login: blocca l'account dopo N errori. Ma chiunque conosca un'email potrebbe bloccare quell'account. Il limite per client non ha questo effetto.

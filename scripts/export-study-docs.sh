@@ -44,6 +44,7 @@ PHASES=(
   "Fase 2 - Dominio|exclusion-constraint multi-tenancy permessi-drf openapi-e-contratti|9|12"
   "Fase 3 - Celery e pagamenti|task-celery-idempotenti webhook-idempotenti pagamenti-online-stripe caching|13|17"
   "Fase 4 - Produzione|revoca-token-jwt ip-reale-dietro-proxy log-strutturati-e-sentry backup-off-site-e-restore-drill load-testing|18|22"
+  "Web 1 - Portale web|sicurezza-di-una-spa deploy-di-una-spa-con-nginx|23|25"
 )
 
 # Knowledge-base cases (real problems solved): cross-phase, refreshed every run
@@ -56,6 +57,10 @@ done
 copy "$SRC/../operations/runbook.md" "$DEST/Fase 4 - Produzione/Operazioni/runbook.md"
 copy "$SRC/../operations/restore-drill.md" "$DEST/Fase 4 - Produzione/Operazioni/restore-drill.md"
 copy "$SRC/../loadtest/2026-11-09/README.md" "$DEST/Fase 4 - Produzione/Operazioni/load-test-2026-11-09.md"
+
+# Web 1 (portale web): its audit and end-to-end record
+copy "$SRC/audit-frontend.md" "$DEST/Web 1 - Portale web/audit-frontend.md"
+copy "$SRC/verifica-web-end-to-end.md" "$DEST/Web 1 - Portale web/verifica-web-end-to-end.md"
 
 copy "$SRC/audit-iniziale.md" "$DEST/Fase 1 - Fondamenta/audit-iniziale.md"
 

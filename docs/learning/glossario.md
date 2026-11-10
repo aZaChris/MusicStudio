@@ -253,3 +253,19 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **Token blacklist (lista nera dei token).** L'elenco dei refresh token revocati, consultato a ogni rinnovo. In MusicStudio è l'app `token_blacklist` di simplejwt.
 
 **X-Forwarded-For.** L'header HTTP in cui ogni proxy aggiunge in fondo l'indirizzo da cui ha ricevuto la connessione. I valori a sinistra li può scrivere il client, quindi si legge contando da destra.
+
+**Content-Security-Policy (CSP).** Un'intestazione HTTP che dice al browser da dove la pagina può caricare script, stili e immagini, e verso dove può connettersi. È la seconda linea di difesa contro l'XSS.
+
+**CORS (Cross-Origin Resource Sharing).** Le regole con cui un server dice al browser quali altri siti possono chiamarlo. Le nostre API accettano chiamate dal browser solo dall'origine del portale.
+
+**httpOnly cookie.** Un cookie che il JavaScript della pagina non può leggere. È il posto più sicuro per un refresh token nel browser, ed è il nostro passo successivo.
+
+**nginx-unprivileged.** La variante dell'immagine di nginx che gira con un utente normale, non come amministratore, e ascolta sulla porta 8080.
+
+**Route fallback (fallback delle rotte).** In una SPA, rispondere con `index.html` a ogni percorso che non è un file, così il router del client mostra la pagina giusta anche dopo un ricaricamento.
+
+**SPA (Single-Page Application).** Un'applicazione web che il browser scarica una volta e che poi cambia pagina con JavaScript, chiamando le API per i dati.
+
+**Web Locks API.** Un'API del browser che permette a più schede della stessa origine di fare un'operazione una alla volta. La usiamo perché due schede non rinnovino insieme lo stesso refresh token.
+
+**XSS (Cross-Site Scripting).** Uno script estraneo che gira nella pagina con i poteri dell'utente.
