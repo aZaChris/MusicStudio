@@ -2,7 +2,7 @@
 # Production on Coolify uses docker-compose.coolify.yml instead (ADR-003).
 #
 # Host ports are published here on purpose (developer access) and are configurable.
-# The isolated React SPA (frontend/, out of scope) starts only with:  --profile frontend
+# The React SPA (frontend/) dev server starts only with:  --profile frontend
 
 services:
   db:
@@ -108,7 +108,7 @@ services:
     profiles: ["frontend"]
     build:
       context: ./frontend
-      dockerfile: ../infra/frontend.Dockerfile
+      dockerfile: Dockerfile
       target: dev
     environment:
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000/api/v1}

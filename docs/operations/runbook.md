@@ -13,8 +13,9 @@ Il file `docker-compose.coolify.yml` avvia sette servizi:
 - `beat`: lo scheduler che mette in coda i task periodici.
 - `backup`: un `pg_dump` giornaliero con rotazione (ADR-005).
 - `offsite`: copia i dump, cifrati, su un bucket fuori dal server (ADR-020).
+- `web`: il portale web (la SPA React), servito da nginx senza privilegi di amministratore (ADR-025).
 
-Nessun servizio pubblica porte. Il proxy di Coolify (Traefik) riceve l'HTTPS e inoltra al `backend`.
+Nessun servizio pubblica porte. Il proxy di Coolify (Traefik) riceve l'HTTPS e inoltra al `backend` e al `web`, ognuno con il suo dominio. Un test del backend (`config/tests/test_deploy_compose.py`) fallisce se qualcuno aggiunge una porta pubblicata o toglie un healthcheck.
 
 ## Primo deploy
 
@@ -28,7 +29,11 @@ Nessun servizio pubblica porte. Il proxy di Coolify (Traefik) riceve l'HTTPS e i
    - `STRIPE_WEBHOOK_ALLOWED_IPS`: la lista degli IP da cui Stripe invia i webhook, separati da virgola. Si prende da `https://stripe.com/files/ips/ips_webhooks.txt` (ADR-021).
    - Le variabili `RCLONE_*` per il backup off-site (vedi "Backup off-site").
 6. Lascia `TRUSTED_PROXY_COUNT=1`: dietro Coolify c'è un solo proxy che aggiunge l'indirizzo del client. Se metti Cloudflare davanti a Coolify, diventa 2.
-7. Avvia il deploy. Al primo avvio il `backend` applica le migrazioni (`RUN_MIGRATIONS=1`).
+7. Per il portale web:
+   - sul servizio `web` imposta il dominio con il suffisso della porta del container, per esempio `https://app.tuodominio.it:8080`;
+   - imposta `API_PUBLIC_URL` con l'indirizzo pubblico delle API, senza percorso, per esempio `https://api.tuodominio.it`. Serve due volte: entra nella build del portale e nella Content-Security-Policy. Se manca o non inizia con `https://`, il container del portale non parte, apposta;
+   - `CORS_ALLOWED_ORIGINS` del backend vale per default l'indirizzo del servizio `web`: le API accettano chiamate dal browser solo dal portale. Se il dominio del portale è diverso, impostalo a mano.
+8. Avvia il deploy. Al primo avvio il `backend` applica le migrazioni (`RUN_MIGRATIONS=1`).
 
 ## Verifiche dopo ogni deploy
 
@@ -37,6 +42,7 @@ Nessun servizio pubblica porte. Il proxy di Coolify (Traefik) riceve l'HTTPS e i
 3. Una richiesta con `curl -i` mostra l'header `X-Request-ID`. Con quel valore trovi la riga di log della richiesta.
 4. Dal terminale del container `backend` in Coolify: `python manage.py raise_test_error`. L'errore deve comparire in Sentry entro un minuto, senza token né email.
 5. In Coolify tutti i servizi devono risultare "healthy". Il `worker` impiega fino a un minuto.
+6. Apri il portale, fai login e ricarica una pagina interna, per esempio `/students`: deve riapparire il portale, non un errore 404. Negli strumenti per sviluppatori del browser, la risposta della pagina deve avere l'intestazione `Content-Security-Policy`.
 
 ## Rollback
 

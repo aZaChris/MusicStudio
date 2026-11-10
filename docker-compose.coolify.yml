@@ -48,7 +48,8 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-${SERVICE_FQDN_BACKEND_8000}}
       DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-${SERVICE_URL_BACKEND_8000}}
       DJANGO_ADMIN_URL: ${DJANGO_ADMIN_URL:-admin/}
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      # Only the web portal may call the API from a browser (ADR-025).
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-${SERVICE_URL_WEB_8080}}
       DATABASE_URL: postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@db:5432/${POSTGRES_DB:-musicstudio}
       REDIS_URL: redis://redis:6379/0
       RUN_MIGRATIONS: ${RUN_MIGRATIONS:-1}
@@ -183,6 +184,28 @@ services:
       timeout: 5s
       retries: 3
       start_period: 30s
+
+  web:
+    # The React portal (ADR-025): static files behind a non-root nginx on port 8080.
+    # No `ports:`: set the domain of this service in Coolify with the container port as
+    # suffix (e.g. https://app.example.com:8080) and Coolify's proxy routes it.
+    build:
+      context: ./frontend
+      target: prod
+      args:
+        # Baked into the bundle: changing the API address means rebuilding the portal.
+        VITE_API_BASE_URL: ${API_PUBLIC_URL:?}/api/v1
+    environment:
+      # The only extra origin the browser may connect to (Content-Security-Policy).
+      API_ORIGIN: ${API_PUBLIC_URL:?}
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   offsite:
     # Encrypted off-site copy of the dumps (ADR-020). rclone is configured entirely from

@@ -89,3 +89,76 @@ jobs:
         run: |
           uv run python manage.py spectacular --settings=config.settings.test --fail-on-warn --file /tmp/schema.yml
           diff -u openapi.yaml /tmp/schema.yml
+
+  frontend:
+    # The React portal (constitution 3.0.0, Principle VI-VII).
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies (locked)
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint (0 warnings)
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
+      - name: Tests
+        run: npm test
+
+      - name: Production build
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: https://api.example.com/api/v1
+
+      - name: API types match backend/openapi.yaml
+        run: npm run api:check
+
+  web-image:
+    # Builds and runs the production image to prove what the Coolify deploy relies on:
+    # non-root, SPA route fallback, security headers, health endpoint, fail-fast config.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the production image
+        run: >
+          docker build frontend --target prod -t musicstudio-web
+          --build-arg VITE_API_BASE_URL=https://api.example.com/api/v1
+
+      - name: Runs as a non-root user
+        run: test "$(docker run --rm --entrypoint id musicstudio-web -u)" != "0"
+
+      - name: Refuses to start without API_ORIGIN
+        run: "! docker run --rm musicstudio-web"
+
+      - name: Serves routes, health and security headers
+        run: |
+          docker run -d --name web -e API_ORIGIN=https://api.example.com -p 127.0.0.1:18080:8080 musicstudio-web
+          for i in $(seq 1 20); do curl -fs http://127.0.0.1:18080/healthz && break; sleep 1; done
+          curl -fsS -D headers.txt -o page.html http://127.0.0.1:18080/students/42
+          cat headers.txt
+          grep -q '<div id="root">' page.html
+          grep -qi "content-security-policy:.*connect-src 'self' https://api.example.com" headers.txt
+          grep -qi "content-security-policy:.*frame-ancestors 'none'" headers.txt
+          grep -qi "x-content-type-options: nosniff" headers.txt
+          grep -qi "referrer-policy: strict-origin-when-cross-origin" headers.txt
+          grep -qi "permissions-policy:" headers.txt
+          ! grep -qi "^server: nginx/" headers.txt
+          docker rm -f web

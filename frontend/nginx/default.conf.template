@@ -1,0 +1,37 @@
+# Rendered at container start by the nginx image (envsubst): only ${API_ORIGIN} is ours; nginx
+# variables like $uri are left alone because they are not defined in the environment.
+server {
+    listen 8080;
+    server_name _;
+    root /usr/share/nginx/html;
+    server_tokens off;
+
+    # Security headers (ADR-025). Declared once here: no location below uses add_header, so
+    # nginx does not drop them (add_header in a location would replace these, not extend them).
+    # HSTS is set by Coolify's proxy, which terminates HTTPS.
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${API_ORIGIN}; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=()" always;
+    add_header Cross-Origin-Opener-Policy "same-origin" always;
+
+    location = /healthz {
+        access_log off;
+        default_type text/plain;
+        return 200 "ok\n";
+    }
+
+    # Hashed file names: safe to cache for a year (a new build has new names).
+    location /assets/ {
+        expires 1y;
+        try_files $uri =404;
+    }
+
+    # Every other path is a client-side route: serve index.html, never cached, so a new
+    # deploy is picked up at the next page load.
+    location / {
+        expires -1;
+        try_files $uri $uri/ /index.html;
+    }
+}

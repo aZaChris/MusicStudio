@@ -29,16 +29,16 @@
 
 ## Phase 5: US2 — Safe deployment (P1)
 
-- [ ] T013 [US2] `frontend/nginx/default.conf.template` (fallback, cache rules, `/healthz`, `server_tokens off`, security headers with `${API_ORIGIN}` in CSP)
-- [ ] T014 [US2] `infra/frontend.Dockerfile` prod target: pinned node build, pinned `nginx-unprivileged`, `VITE_API_BASE_URL` build arg, template copied, port 8080; `.dockerignore`
-- [ ] T015 [US2] `docker-compose.coolify.yml`: `web` service (build args, `API_ORIGIN`, `expose`, healthcheck, depends on backend), backend `CORS_ALLOWED_ORIGINS` default to the web URL; `.env.example` (`API_PUBLIC_URL`); runbook section
+- [X] T013 [US2] `frontend/nginx/default.conf.template` (fallback, cache rules, `/healthz`, `server_tokens off`, security headers with `${API_ORIGIN}` in CSP)
+- [X] T014 [US2] `infra/frontend.Dockerfile` prod target: pinned node build, pinned `nginx-unprivileged`, `VITE_API_BASE_URL` build arg, template copied, port 8080; `.dockerignore`
+- [X] T015 [US2] `docker-compose.coolify.yml`: `web` service (build args, `API_ORIGIN`, `expose`, healthcheck, depends on backend), backend `CORS_ALLOWED_ORIGINS` default to the web URL; `.env.example` (`API_PUBLIC_URL`); runbook section
 - [ ] T016 [US2] Verify: no `ports:` in the Coolify compose; if Docker works in WSL, build and run the image and check uid, headers, fallback, health; record results
 - [ ] T017 [US2] 👤 Deploy on Coolify and have the friend review
 
 ## Phase 6: US4 — Review readiness (P2)
 
-- [ ] T018 [US4] `frontend` job in `.github/workflows/ci.yml` (npm ci, typecheck, lint, test, build, api:check)
-- [ ] T019 [US4] oxlint 0 findings; page title; `frontend/README.md` rewritten (what, run, test, deploy, security choices)
+- [X] T018 [US4] `frontend` job in `.github/workflows/ci.yml` (npm ci, typecheck, lint, test, build, api:check)
+- [X] T019 [US4] oxlint 0 findings; page title; `frontend/README.md` rewritten (what, run, test, deploy, security choices)
 - [ ] T020 [US4] End-to-end: production build against local Django (login, roster, payment, logout + old refresh refused) — record in `docs/learning/verifica-web-end-to-end.md`
 
 ## Phase 7: US5 — Docs (P3)
