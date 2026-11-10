@@ -39,7 +39,7 @@
 
 - [X] T018 [US4] `frontend` job in `.github/workflows/ci.yml` (npm ci, typecheck, lint, test, build, api:check)
 - [X] T019 [US4] oxlint 0 findings; page title; `frontend/README.md` rewritten (what, run, test, deploy, security choices)
-- [ ] T020 [US4] End-to-end: production build against local Django (login, roster, payment, logout + old refresh refused) — record in `docs/learning/verifica-web-end-to-end.md`
+- [X] T020 [US4] End-to-end: production build against local Django (login, roster, payment, logout + old refresh refused) — record in `docs/learning/verifica-web-end-to-end.md`
 
 ## Phase 7: US5 — Docs (P3)
 

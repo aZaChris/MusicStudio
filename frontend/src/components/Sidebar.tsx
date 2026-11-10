@@ -30,6 +30,8 @@ export function Sidebar() {
         padding: '24px 16px',
         gap: 28,
         minHeight: '100vh',
+        // Padding inside the 100vh, or the logout card at the bottom falls below the fold.
+        boxSizing: 'border-box',
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
