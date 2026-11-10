@@ -1,5 +1,9 @@
 <!--
 Sync Impact Report
+Version change: 3.0.0 → 3.0.1 (PATCH: branches `web`/`app` archived as tags; work moved to
+  `staging/backend` and `staging/mobile`; no principle changed)
+
+Previous report (3.0.0):
 Version change: 2.0.0 → 3.0.0 (MAJOR: Principle VI redefined — the web client in frontend/ is
   re-opened and developed on this branch)
 Modified principles:
@@ -112,8 +116,9 @@ same discipline as the backend where it applies:
   infers access from a cached role;
 - every feature ships tests (Vitest + Testing Library, network mocked at the `fetch` boundary);
 - user-facing text is bilingual EN/IT through i18next.
-Branches `web` (Next.js) and `app` (Expo) MUST NOT be modified. The mobile app lives on branch
-`refactor/mobile` under its own constitution. The backend keeps EN/IT where it owns
+The earlier rewrites `web` (Next.js) and `app` (Expo) are archived as tags `archive/web` and
+`archive/app`, which MUST NOT be moved. The mobile app lives on branch `staging/mobile` under its
+own constitution. The backend keeps EN/IT where it owns
 user-facing text (emails, admin, error messages via Django i18n).
 Rationale: the owner re-opened the web portal; a client that drifts from the contract or
 mishandles rotating tokens breaks against this backend (it did: phase 4 rotation logged SPA
@@ -186,4 +191,4 @@ materially expanded; PATCH: wording). Every change is self-reviewed against Prin
 and V before it is considered done; violations are fixed or justified in the plan's
 Complexity Tracking table.
 
-**Version**: 3.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-10
+**Version**: 3.0.1 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-10

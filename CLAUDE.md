@@ -9,10 +9,11 @@ experience, English B1, and studies everything that is built here.
 - A Django REST API for music teachers and small studios (lessons, packages, payments,
   parent portal). Two goals: a production-grade backend portfolio, and training the owner to
   mid-level backend skills. **The study documentation is a deliverable as much as the code.**
-- Work happens on branch `refactor/production-standards` (based on the Django commit
-  `4be062d`, see `docs/learning/adr/ADR-001-*`). Branches `web` (Next.js) and `app` (Expo)
-  are earlier rewrites: never modify them. There is no `main` yet.
-- Principles: `.specify/memory/constitution.md` (v3.0.0). They override habits; re-read the
+- Work happens on branch `staging/backend` (GitHub default branch), a copy of
+  `refactor/production-standards`, which started from the Django commit `4be062d` (see
+  `docs/learning/adr/ADR-001-*`). The earlier rewrites `web` (Next.js) and `app` (Expo) are no
+  longer branches: they are archived as tags `archive/web` and `archive/app`. There is no `main`.
+- Principles: `.specify/memory/constitution.md` (v3.0.1). They override habits; re-read the
   relevant principle before deciding.
 
 ## Roadmap and status
@@ -26,7 +27,9 @@ experience, English B1, and studies everything that is built here.
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
 | Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (owner: Coolify deploy + friend's review T017; image run locally once Docker works in WSL) |
 
-The mobile app is on branch `refactor/mobile` (own CLAUDE.md and constitution).
+The mobile app is on branch `staging/mobile` (own CLAUDE.md and constitution); it reads the
+backend contract from `staging/backend`. The `refactor/*` branches are kept as they were on
+2026-11-10 and no longer receive work.
 
 Open items carried over are listed at the end of `docs/learning/00-indice.md`.
 
@@ -44,7 +47,7 @@ Open items carried over are listed at the end of `docs/learning/00-indice.md`.
   `apps/common/scoping.py` + `TenantContext`. Every feature ships tests (cross-tenant
   read/write tests, query budgets on main endpoints). No AWS. `frontend/` (React SPA) is in
   scope since constitution 3.0.0: types generated from `backend/openapi.yaml`, Vitest tests.
-  Branches `web` and `app` are never modified. Stripe: **test mode only**, all calls in
+  The archive tags are never moved. Stripe: **test mode only**, all calls in
   `apps/payments/gateway.py`.
 - **Code, comments, identifiers, commits: English. Study docs: Italian.**
 
@@ -120,4 +123,4 @@ whenever serializers/views change.
 - Docker is not enabled in this WSL distro; the `web-image` CI job builds and checks the
   portal image instead.
 - Never print or read credential files (`.env.local`, `.pgpass`); `.env.local` on the main
-  machine holds real Neon credentials from the `app` branch and is git-ignored.
+  machine holds real Neon credentials from the old `app` branch and is git-ignored.
