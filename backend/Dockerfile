@@ -19,7 +19,10 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-ins
 COPY . .
 # collectstatic imports production settings, which refuse to load without their
 # variables. These throwaway values exist only for this build step.
-RUN DJANGO_SETTINGS_MODULE=config.settings.prod \
+# `env -i` starts from an empty environment: Coolify injects every app variable as a build
+# ARG, empty ones included, and TRUSTED_PROXY_COUNT='' crashed env.int() here.
+RUN env -i PATH=/usr/local/bin:/usr/bin:/bin \
+    DJANGO_SETTINGS_MODULE=config.settings.prod \
     DJANGO_SECRET_KEY=build-only JWT_SIGNING_KEY=build-only \
     DATABASE_URL=postgres://build@localhost/build \
     DJANGO_ALLOWED_HOSTS=build DJANGO_CSRF_TRUSTED_ORIGINS=https://build \
