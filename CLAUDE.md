@@ -19,7 +19,7 @@ Also read `AGENTS.md` (Expo SDK 57 docs are the reference: https://docs.expo.dev
 
 | Phase | Feature dir | Status |
 |---|---|---|
-| 1 Parity on the Django API | `specs/002-django-api-parity` | in progress: code, docs, CI green; to close: re-verify the parallel test run locally, real-device run in Expo Go (T032) |
+| 1 Parity on the Django API | `specs/002-django-api-parity` | code, docs, CI and local gate green; to close: real-device run in Expo Go (T032, owner) |
 
 Open items: `docs/learning/00-indice.md` ("Aperto"); `expo-router` advisories in the bundle wait
 for an SDK patch (`npx expo install --fix`), never `npm audit fix --force`.
@@ -67,3 +67,5 @@ Start the Django API from the main checkout (`backend/`, see its CLAUDE.md), the
 `EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npx expo start --web`. The backend must
 allow the web origin in `CORS_ALLOWED_ORIGINS`. No iOS/Android emulator is available in the
 agent environment: verify with tests and the web build.
+- Jest runs with `maxWorkers: 2` (package.json): with more workers the router screens time out
+  on a ~3 GB machine (14/53 failed; CI was green). Same cause as the backend's Vitest cap.
