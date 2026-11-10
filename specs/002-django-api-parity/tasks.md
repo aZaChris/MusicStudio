@@ -53,13 +53,13 @@
 - [X] T025 [US6] Fix the lint error in `src/hooks/use-color-scheme.web.ts`; `npx expo lint` clean
 - [X] T026 [US6] `.github/workflows/mobile-ci.yml` (npm ci, tsc, lint, jest --ci, contract:check with full history)
 - [X] T027 [US6] `scripts/verify-django.mjs`: Playwright against the exported web build and the local Django backend (login owner, home counts, complete lesson, payment, logout + old refresh refused, parent portal); run it and record the output in `docs/learning/verifica-end-to-end.md`
-- [ ] T028 [US6] ADRs `docs/learning/adr/ADR-M001…M005`, concept docs (800–1500 words): `client-api-generato-dal-contratto.md`, `sessione-jwt-nel-client.md`, `stato-del-server-con-react-query.md`, `test-di-un-app-react-native.md`; glossary, interview Q&A, `00-indice.md`, OWASP Mobile Top 10 walk `concetti/sicurezza-mobile-owasp.md`
+- [X] T028 [US6] ADRs `docs/learning/adr/ADR-M001…M005`, concept docs (800–1500 words): `client-api-generato-dal-contratto.md`, `sessione-jwt-nel-client.md`, `stato-del-server-con-react-query.md`, `test-di-un-app-react-native.md`; glossary, interview Q&A, `00-indice.md`, OWASP Mobile Top 10 walk `concetti/sicurezza-mobile-owasp.md`
 - [X] T029 [US6] Rewrite `README.md` for the mobile app; `.env.example` with `EXPO_PUBLIC_API_BASE_URL`
 
 ## Phase 9: Polish
 
-- [ ] T030 Full gate green (tsc, lint, jest, contract check); tasks marked; CLAUDE.md status
-- [ ] T031 Export the mobile study docs for NotebookLM (folder `Mobile - Fase 1`), vault decisions, phase summary commit
+- [X] T030 Full gate green (tsc, lint, jest, contract check); tasks marked; CLAUDE.md status
+- [X] T031 Export the mobile study docs for NotebookLM (folder `Mobile - Fase 1`), vault decisions, phase summary commit
 - [ ] T032 👤 Run the app in Expo Go on a real phone against a reachable backend
 
 ## Dependencies

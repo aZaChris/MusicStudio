@@ -14,6 +14,15 @@ Also read `AGENTS.md` (Expo SDK 57 docs are the reference: https://docs.expo.dev
 - Principles: `.specify/memory/constitution.md` (v3.0.0). Starting point:
   `docs/learning/audit-iniziale.md`.
 
+## Status
+
+| Phase | Feature dir | Status |
+|---|---|---|
+| 1 Parity on the Django API | `specs/002-django-api-parity` | done (owner: real-device run in Expo Go, T032) |
+
+Open items: `docs/learning/00-indice.md` ("Aperto"); `expo-router` advisories in the bundle wait
+for an SDK patch (`npx expo install --fix`), never `npm audit fix --force`.
+
 ## How to work
 
 - Spec-kit per feature: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` →
@@ -37,6 +46,19 @@ npm run contract:check        # vendored OpenAPI == backend branch
 
 `npm run contract:sync` refreshes `contract/openapi.yaml` from the backend branch and
 regenerates `src/lib/api/schema.d.ts`.
+
+## Study docs export
+
+`scripts/export-study-docs.sh` copies `docs/learning/` to the NotebookLM folder (`Mobile/` and
+`Mobile - Fase N - …/`), next to the backend's folders. Add each new phase to the script.
+
+## Gotchas
+
+- RNTL 14: `render` (via `renderRouter`) and `fireEvent` are async — always `await` them.
+- TypeScript 6 defaults `types` to `[]`: `tsconfig.json` lists `"jest"` explicitly.
+- `openapi-typescript` needs TS 5 as peer: run it only via `npm run contract:sync` (pinned npx).
+- Without a Redis server the backend's throttles wait for the connection timeout on every
+  request: for local e2e use a settings file with an in-memory cache.
 
 ## Running against the local backend
 
