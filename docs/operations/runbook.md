@@ -27,6 +27,16 @@ Prima del dominio definitivo si usa un **ambiente di staging**: una seconda riso
 - Stripe con chiavi di **test**, come sempre.
 - Dati di prova: `python manage.py seed_demo --force` dal terminale del container `backend`. Crea account con password nota (`password123`): **solo in staging**, mai in produzione.
 
+## Partire con dati veri (senza `seed_demo`)
+
+Dal terminale del container `backend`. La password non si passa mai sulla riga di comando (finirebbe nella cronologia della shell): il comando la chiede due volte, oppure la legge dalla variabile `ACCOUNT_PASSWORD` se è impostata. Deve superare i controlli di Django (almeno 8 caratteri, non troppo comune, non solo numeri).
+
+1. Il primo titolare: `python manage.py create_teacher --email tu@dominio.it --studio-name "Il nome del tuo studio"`. Senza `--studio-name` crea un insegnante che lavora da solo. Se l'email esiste già il comando si ferma: non tocca mai la password di un account esistente.
+2. Studenti, pacchetti e lezioni si inseriscono dall'app e dal portale web (pulsanti "Nuovo studente", "Nuovo pacchetto", "Programma lezione").
+3. Un genitore (portale in sola lettura): serve l'id dello studente, che si legge nell'indirizzo della pagina dello studente (`/students/7`). Poi `python manage.py create_parent --email genitore@dominio.it --student-id 7`. Con più figli si ripete `--student-id`. Lo stesso comando su un genitore già esistente aggiunge solo i collegamenti.
+
+Gli account di `seed_demo` (`owner@example.com` e gli altri) restano nel database finché non li togli. Prima di usare lo staging con persone vere, eliminali (con l'admin di Django se è attivo, insieme allo studio "Studio di Musica Bianchi") e non rilanciare `seed_demo`. Un'eliminazione automatica non c'è ancora.
+
 Le verifiche dopo il deploy, la misura con `scripts/measure-resources.sh` e la checklist "go / no-go" si fanno qui, prima di pubblicare il dominio vero.
 
 ## Primo deploy
