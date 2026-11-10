@@ -14,7 +14,8 @@
     "noUpcoming": "Nessuna lezione in programma.",
     "today": "Oggi",
     "minutes": "{{count}} min",
-    "lowPackages": "pacchetti in esaurimento"
+    "lowPackages": "pacchetti in esaurimento",
+    "recentPayments": "Pagamenti recenti"
   },
   "roster": {
     "title": "Studenti",
@@ -114,7 +115,12 @@
     "heroTitle": "Bentornato in sala prove.",
     "heroText": "Lezioni, pacchetti e pagamenti del tuo studio, in un solo posto. I genitori vedono le lezioni dei figli, in sola lettura.",
     "loginHint": "Usa l'email con cui lo studio ti ha registrato.",
-    "language": "Lingua"
+    "language": "Lingua",
+    "role": {
+      "teacher": "Insegnante",
+      "studio_owner": "Titolare dello studio",
+      "parent": "Genitore"
+    }
   },
   "theme": {
     "toggle": "Cambia tema chiaro/scuro",
@@ -158,6 +164,8 @@
     "lessons": "Numero di lezioni",
     "price": "Prezzo (€)",
     "purchaseDate": "Data di acquisto",
-    "expiryDate": "Scade il (facoltativo)"
+    "expiryDate": "Scade il (facoltativo)",
+    "boughtOn": "Acquistato il {{date}}",
+    "expiresOn": "scade il {{date}}"
   }
 }

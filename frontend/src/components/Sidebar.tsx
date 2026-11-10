@@ -64,6 +64,7 @@ export function Sidebar() {
         <Avatar name={user?.email ?? '?'} index={3} circle />
         <div className="ms-sidebar__foot-text">
           <span>{user?.email}</span>
+          <span className="ms-sidebar__role">{user ? t(`auth.role.${user.role}`) : ''}</span>
         </div>
         <button type="button" className="ms-btn ms-btn--on-plum" onClick={logout}>
           {t('auth.logout')}

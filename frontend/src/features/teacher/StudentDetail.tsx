@@ -6,7 +6,7 @@ import { AppShell } from '../../components/AppShell'
 import { QueryState } from '../../components/QueryState'
 import { Avatar, Beats, Icon, StatusChip } from '../../components/ui'
 import { lessonTone, packageTone } from '../../components/tones'
-import { formatDateTime } from '../../lib/dates'
+import { formatDateTime, formatDay } from '../../lib/dates'
 import { useCancelLesson } from './api/lessons'
 import { useStudent, useStudentLessons } from './api/students'
 import { LessonFormDialog } from './LessonFormDialog'
@@ -71,6 +71,12 @@ export function StudentDetail() {
                 </span>
                 <span className="muted" style={{ fontSize: 14 }}>
                   {pkg.lessons_remaining}/{pkg.total_lessons} · {t(`package.statusName.${pkg.status}`)}
+                </span>
+                <span className="muted" style={{ fontSize: 14, fontWeight: 500 }}>
+                  {t('package.boughtOn', { date: formatDay(pkg.purchase_date, i18n.language) })}
+                  {pkg.expiry_date
+                    ? ` · ${t('package.expiresOn', { date: formatDay(pkg.expiry_date, i18n.language) })}`
+                    : ''}
                 </span>
               </>
             ) : (

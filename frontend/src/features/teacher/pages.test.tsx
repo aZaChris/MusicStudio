@@ -15,6 +15,30 @@ describe('dashboard', () => {
     expect(screen.getByText(/Giulia Rossi — Running low/)).toBeInTheDocument()
   })
 
+  test('the home lists the four most recent payments, newest first', async () => {
+    signedInAs(teacherMe, {
+      'GET /dashboard/': { status: 200, body: dashboard() },
+      'GET /payments/': {
+        status: 200,
+        body: page([
+          payment(1, { student_name: 'Oldest One', date: '2026-10-01' }),
+          payment(2, { student_name: 'Newest One', date: '2026-11-08' }),
+          payment(3, { student_name: 'Middle Two', date: '2026-10-20' }),
+          payment(4, { student_name: 'Middle Three', date: '2026-10-25' }),
+          payment(5, { student_name: 'Middle Four', date: '2026-10-30' }),
+        ]),
+      },
+    })
+    renderApp('/')
+
+    expect(await screen.findByText('Newest One')).toBeInTheDocument()
+    const names = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => within(r).getAllByRole('cell')[0].textContent)
+    expect(names).toEqual(['Newest One', 'Middle Four', 'Middle Three', 'Middle Two'])
+  })
+
   test('an empty agenda says so', async () => {
     signedInAs(teacherMe, {
       'GET /dashboard/': {
@@ -153,7 +177,7 @@ describe('payments', () => {
     await screen.findByRole('option', { name: 'Giulia Rossi' }) // options load after the select
     fireEvent.change(screen.getByLabelText('Student'), { target: { value: '7' } })
     fireEvent.change(screen.getByLabelText('Amount'), { target: { value: amount } })
-    fireEvent.change(screen.getByLabelText('Method'), { target: { value: 'bank_transfer' } })
+    fireEvent.click(screen.getByRole('radio', { name: 'Bank transfer' }))
     fireEvent.click(screen.getByRole('button', { name: 'Register payment' }))
   }
 
@@ -166,7 +190,7 @@ describe('payments', () => {
     const row = screen.getAllByRole('row')[1] // [0] is the header
     expect(within(row).getByText('Paid')).toBeInTheDocument()
     expect(within(row).getByText('Bank transfer')).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: 'Bank transfer' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: 'Bank transfer' })).toBeInTheDocument()
   })
 
   test("at 00:30 local time the default date is today's local date, not the UTC one", async () => {

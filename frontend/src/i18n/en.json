@@ -14,7 +14,8 @@
     "noUpcoming": "No upcoming lessons.",
     "today": "Today",
     "minutes": "{{count}} min",
-    "lowPackages": "packages running low"
+    "lowPackages": "packages running low",
+    "recentPayments": "Recent payments"
   },
   "roster": {
     "title": "Students",
@@ -114,7 +115,12 @@
     "heroTitle": "Welcome back to the practice room.",
     "heroText": "Lessons, packages and payments of your studio, in one place. Parents see their children’s lessons, read-only.",
     "loginHint": "Use the email the studio registered you with.",
-    "language": "Language"
+    "language": "Language",
+    "role": {
+      "teacher": "Teacher",
+      "studio_owner": "Studio owner",
+      "parent": "Parent"
+    }
   },
   "theme": {
     "toggle": "Toggle light/dark theme",
@@ -158,6 +164,8 @@
     "lessons": "Number of lessons",
     "price": "Price (€)",
     "purchaseDate": "Purchase date",
-    "expiryDate": "Expires on (optional)"
+    "expiryDate": "Expires on (optional)",
+    "boughtOn": "Bought on {{date}}",
+    "expiresOn": "expires on {{date}}"
   }
 }

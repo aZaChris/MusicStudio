@@ -516,3 +516,48 @@ select.ms-input {
   padding: 0 14px;
   font-size: 14px;
 }
+
+.ms-sidebar__foot-text .ms-sidebar__role {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--plum-soft);
+}
+
+.ms-fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.ms-fieldset legend {
+  padding: 0 0 6px;
+  font-size: 14px;
+  font-weight: 700;
+}
+.ms-radio-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--line);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ms-radio-pill[data-checked='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.ms-radio-pill input {
+  margin: 0;
+  accent-color: var(--orange);
+}
+.ms-radio-pill:focus-within {
+  outline: 2px solid var(--orange-text);
+  outline-offset: 2px;
+}

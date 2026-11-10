@@ -155,20 +155,23 @@ export function Payments() {
               />
             </label>
           </div>
-          <label className="ms-field">
-            {t('payments.method')}
-            <select
-              className="ms-input"
-              value={method}
-              onChange={(e) => setMethod(e.target.value as PaymentMethod)}
-            >
+          <fieldset className="ms-fieldset">
+            <legend>{t('payments.method')}</legend>
+            <div className="ms-filters">
               {MANUAL_METHODS.map((m) => (
-                <option key={m} value={m}>
+                <label key={m} className="ms-radio-pill" data-checked={method === m}>
+                  <input
+                    type="radio"
+                    name="method"
+                    value={m}
+                    checked={method === m}
+                    onChange={() => setMethod(m)}
+                  />
                   {t(`payments.methodName.${m}`)}
-                </option>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </fieldset>
           <button
             type="submit"
             className="ms-btn ms-btn--primary ms-btn--l ms-btn--block"
