@@ -32,19 +32,21 @@ vibrazione leggera quando si salva. Tutto si spegne con "riduci movimento".
 
 ## Cosa ho trovato rivedendo il design system
 
-Contrasto, calcolato sui valori di `tokens.json` (soglie WCAG 2.2):
+Contrasto, calcolato sui valori di `tokens.json` (soglie WCAG 2.2). I tre problemi trovati sono
+stati corretti nel codice il 10 novembre 2026 (vedi `tokens.json`: i valori nuovi vanno riportati
+anche nel design system su claude.ai, altrimenti la prossima esportazione li riporta indietro):
 
-1. `orange-text` su `orange-soft` fa 4.16 a 1 nel tema chiaro. Sotto il 4.5 richiesto per il testo.
-   Succede nell'etichetta "In esaurimento" e nel testo della tab attiva. Nel codice l'etichetta
-   usa `ink` su `orange-soft` (13.5 a 1). Se si vuole risolvere alla radice, `orange-text` va
-   scurito di poco (circa `#a84a14`).
-2. Il contorno arancio delle battute vuote è 2.40 a 1 su `paper` e 2.60 a 1 su `card`. Per gli
-   elementi non testuali servono 3 a 1. Le battute restano leggibili grazie al riempimento
-   `orange-soft`, ma il contorno da solo non basta. Non l'ho cambiato perché è il segno distintivo
-   del sistema: è una scelta da fare nel design.
-3. `line` su `card` fa 1.32 a 1 (chiaro) e 1.24 a 1 (scuro). Va bene per i separatori, non per il
-   bordo dei campi di testo, che dovrebbe arrivare a 3 a 1. Servirebbe un token `field-border`.
-   Il campo attivo ha il bordo arancio, quindi il problema è sul campo a riposo.
+1. `orange-text` su `orange-soft` faceva 4.16 a 1 nel tema chiaro (etichetta "In esaurimento",
+   testo della tab attiva). Corretto: `orange-text` chiaro da `#b4531a` a `#a84a14`, ora 4.77 a 1
+   su `orange-soft`, 5.30 su `paper`, 5.75 su `card`. Il tema scuro non cambia. L'etichetta torna
+   al colore previsto dal design.
+2. Il contorno arancio delle battute vuote faceva 2.40 a 1 su `paper` e 2.60 su `card`. Corretto
+   con un token nuovo, `beat-edge`: chiaro `#c2631f` (3.80 su `paper`, 4.12 su `card`), scuro
+   `#f0904a` (già sopra 6). Su sfondo plum le battute usano ancora `orange`.
+3. Il bordo `line` dei campi di testo faceva 1.32 a 1. Corretto con un token nuovo,
+   `field-border`: chiaro `#857262` (4.23 su `paper`, 4.58 su `card`), scuro `#8a7767` (3.90 su
+   `card`, 4.29 su `paper`). Vale per i campi di testo e per la ricerca. `line` resta per
+   separatori e bordi delle schede.
 4. Tutte le altre coppie testo/fondo passano (chiaro e scuro), comprese le coppie di stato.
 
 Coerenza tra canvas e `tokens.json` (il codice segue `tokens.json`):
@@ -74,5 +76,6 @@ Coerenza tra canvas e `tokens.json` (il codice segue `tokens.json`):
 
 ## Da decidere
 
-- I tre punti di contrasto (1, 2, 3): correggerli nel design system su claude.ai e rigenerare.
+- Riportare i tre fix di contrasto (`orange-text`, `beat-edge`, `field-border`) nel design system
+  su claude.ai.
 - Se allineare i nomi del canvas a quelli dei token (punto 5).

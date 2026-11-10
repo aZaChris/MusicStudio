@@ -247,7 +247,7 @@ a {
   padding: 0 16px;
   border-radius: var(--radius-pill);
   background: var(--card);
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--field-border);
   color: var(--ink-2);
 }
 .ms-search svg {

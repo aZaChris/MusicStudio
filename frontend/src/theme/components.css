@@ -124,7 +124,7 @@
   height: 52px;
   box-sizing: border-box;
   padding: 0 16px;
-  border: 1.5px solid var(--line);
+  border: 1.5px solid var(--field-border);
   border-radius: var(--radius-field);
   background: var(--card);
   font-family: var(--font-body);
@@ -255,7 +255,7 @@ textarea.ms-input {
   height: 22px;
   border-radius: 50%;
   box-sizing: border-box;
-  border: 2px solid var(--orange);
+  border: 2px solid var(--beat-edge);
   background: var(--orange-soft);
   flex: none;
 }
@@ -277,6 +277,7 @@ textarea.ms-input {
 }
 .ms-beats--on-plum .ms-beat {
   background: transparent;
+  border-color: var(--orange);
 }
 .ms-beats--on-plum .ms-beat--on {
   background: var(--on-plum);

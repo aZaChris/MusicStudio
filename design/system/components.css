@@ -25,7 +25,7 @@
 
 /* Fields */
 .ms-field { display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 700; color: var(--ink); }
-.ms-input { height: 52px; box-sizing: border-box; padding: 0 16px; border: 1.5px solid var(--line); border-radius: var(--radius-field); background: var(--card); font-family: var(--font-body); font-size: 16px; color: var(--ink); }
+.ms-input { height: 52px; box-sizing: border-box; padding: 0 16px; border: 1.5px solid var(--field-border); border-radius: var(--radius-field); background: var(--card); font-family: var(--font-body); font-size: 16px; color: var(--ink); }
 textarea.ms-input { height: auto; padding: 12px 14px; resize: vertical; line-height: 1.45; }
 .ms-input:focus, .ms-input--focus { outline: none; border-color: var(--orange); box-shadow: 0 0 0 4px rgba(239, 133, 46, 0.18); }
 .ms-input--error, .ms-input[aria-invalid="true"] { border-color: var(--bad-fg); }
@@ -54,12 +54,12 @@ textarea.ms-input { height: auto; padding: 12px 14px; resize: vertical; line-hei
 
 /* Package beats: one dot per lesson, filled = used */
 .ms-beats { display: flex; flex-wrap: wrap; gap: 6px; }
-.ms-beat { width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--orange); background: var(--orange-soft); flex: none; }
+.ms-beat { width: 22px; height: 22px; border-radius: 50%; box-sizing: border-box; border: 2px solid var(--beat-edge); background: var(--orange-soft); flex: none; }
 .ms-beat--on { border: 0; background: var(--beat-on); }
 .ms-beats--s { gap: var(--space-1); }
 .ms-beats--s .ms-beat { width: 10px; height: 10px; border-width: 1.5px; }
 .ms-beats--l .ms-beat { width: 30px; height: 30px; }
-.ms-beats--on-plum .ms-beat { background: transparent; }
+.ms-beats--on-plum .ms-beat { background: transparent; border-color: var(--orange); }
 .ms-beats--on-plum .ms-beat--on { background: var(--on-plum); }
 .ms-beat--pop { animation: ms-beat-pop var(--duration-slow) var(--ease-bounce); }
 @keyframes ms-beat-pop { 0% { transform: scale(0.6); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }

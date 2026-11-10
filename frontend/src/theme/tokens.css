@@ -9,9 +9,11 @@
   --line-2: #f1e8dc;
   --orange: #ef852e;
   --on-orange: #2b1d14;
-  --orange-text: #b4531a;
+  --orange-text: #a84a14;
   --orange-soft: #fde6d2;
   --orange-border: #f6c9a2;
+  --beat-edge: #c2631f;
+  --field-border: #857262;
   --plum: #4b2e5a;
   --on-plum: #fbf5ec;
   --plum-soft: #e7daec;
@@ -71,6 +73,8 @@
   --orange-text: #f5a66a;
   --orange-soft: #3d2618;
   --orange-border: #6a3e22;
+  --beat-edge: #f0904a;
+  --field-border: #8a7767;
   --plum: #3a2547;
   --on-plum: #f5ece2;
   --plum-soft: #dccbe5;
