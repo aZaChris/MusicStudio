@@ -44,7 +44,7 @@ PHASES=(
   "Fase 2 - Dominio|exclusion-constraint multi-tenancy permessi-drf openapi-e-contratti|9|12"
   "Fase 3 - Celery e pagamenti|task-celery-idempotenti webhook-idempotenti pagamenti-online-stripe caching|13|17"
   "Fase 4 - Produzione|revoca-token-jwt ip-reale-dietro-proxy log-strutturati-e-sentry backup-off-site-e-restore-drill load-testing|18|22"
-  "Web 1 - Portale web|sicurezza-di-una-spa deploy-di-una-spa-con-nginx|23|25"
+  "Web 1 - Portale web|sicurezza-di-una-spa deploy-di-una-spa-con-nginx|23|26"
 )
 
 # Knowledge-base cases (real problems solved): cross-phase, refreshed every run

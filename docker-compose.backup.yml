@@ -1,0 +1,86 @@
+# OPTIONAL overlay: database backups run by the stack itself (ADR-005, ADR-020).
+#
+# NOT part of the Coolify deploy: the server's operator backs up the database with their own
+# tooling (ADR-026). Kept for a server without that, as an overlay on the main file:
+#   docker compose -f docker-compose.coolify.yml -f docker-compose.backup.yml up -d
+# Whatever does the backups, a dump must be restorable with scripts/restore-drill.sh.
+
+services:
+  backup:
+    # Scheduled pg_dump with rotation (ADR-005). Dumps land in the db-backups volume:
+    # /backups/{daily,weekly,monthly}/. The `offsite` service copies them off the server.
+    image: prodrigestivill/postgres-backup-local:16
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: ${POSTGRES_DB:-musicstudio}
+      POSTGRES_USER: ${SERVICE_USER_POSTGRES}
+      POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
+      SCHEDULE: ${BACKUP_SCHEDULE:-@daily}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:-7}
+      BACKUP_KEEP_WEEKS: ${BACKUP_KEEP_WEEKS:-4}
+      BACKUP_KEEP_MONTHS: ${BACKUP_KEEP_MONTHS:-6}
+      # Portable dumps: restorable into any role (restore drill, ADR-020).
+      POSTGRES_EXTRA_OPTS: "-Z1 --no-owner --no-privileges"
+      HEALTHCHECK_PORT: 8080
+    volumes:
+      - db-backups:/backups
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/ || exit 1"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  offsite:
+    # Encrypted off-site copy of the dumps (ADR-020). rclone is configured entirely from
+    # env vars: `bucket` is any S3-compatible storage (never AWS); `offsite` encrypts on
+    # top of it client-side, so the provider only ever stores ciphertext.
+    # `copy` never deletes remotely: a wiped local volume cannot empty the bucket. Copies
+    # older than the longest local retention (6 months) are deleted by age instead.
+    image: rclone/rclone:1.68.2
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        while true; do
+          if rclone copy /backups offsite: --exclude "last/**" && rclone delete offsite: --min-age "$${OFFSITE_KEEP_DAYS}d"; then
+            touch /tmp/offsite-ok
+            [ -n "$${BACKUP_ALERT_URL}" ] && wget -q -O /dev/null "$${BACKUP_ALERT_URL}"
+          else
+            echo "offsite copy FAILED" >&2
+            [ -n "$${BACKUP_ALERT_URL}" ] && wget -q -O /dev/null "$${BACKUP_ALERT_URL}/fail"
+          fi
+          sleep "$${OFFSITE_SCHEDULE_SECONDS}"
+        done
+    environment:
+      RCLONE_CONFIG_BUCKET_TYPE: s3
+      RCLONE_CONFIG_BUCKET_PROVIDER: ${RCLONE_S3_PROVIDER:-Other}
+      RCLONE_CONFIG_BUCKET_ENDPOINT: ${RCLONE_S3_ENDPOINT:?}
+      RCLONE_CONFIG_BUCKET_ACCESS_KEY_ID: ${RCLONE_S3_ACCESS_KEY_ID:?}
+      RCLONE_CONFIG_BUCKET_SECRET_ACCESS_KEY: ${RCLONE_S3_SECRET_ACCESS_KEY:?}
+      RCLONE_CONFIG_OFFSITE_TYPE: crypt
+      RCLONE_CONFIG_OFFSITE_REMOTE: bucket:${RCLONE_BUCKET:?}/musicstudio
+      RCLONE_CONFIG_OFFSITE_PASSWORD: ${RCLONE_CRYPT_PASSWORD:?}
+      RCLONE_CONFIG_OFFSITE_PASSWORD2: ${RCLONE_CRYPT_PASSWORD2:?}
+      OFFSITE_SCHEDULE_SECONDS: ${OFFSITE_SCHEDULE_SECONDS:-86400}
+      OFFSITE_KEEP_DAYS: ${OFFSITE_KEEP_DAYS:-190}
+      BACKUP_ALERT_URL: ${BACKUP_ALERT_URL:-}
+    volumes:
+      - db-backups:/backups:ro
+    depends_on:
+      backup:
+        condition: service_healthy
+    healthcheck:
+      # Unhealthy when the last successful copy is older than 26 hours.
+      test: ["CMD-SHELL", "find /tmp/offsite-ok -mmin -1560 | grep -q ."]
+      interval: 10m
+      timeout: 10s
+      retries: 1
+      # The first copy runs at start-up; give it time on a slow link.
+      start_period: 30m
+
+
+volumes:
+  db-backups:

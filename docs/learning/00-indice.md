@@ -76,6 +76,7 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-023-sessione-del-portale-web.md` — refresh ruotato salvato, un solo rinnovo, refresh in localStorage come rischio accettato.
 - `adr/ADR-024-tipi-del-portale-dal-contratto.md` — tipi del portale generati da `backend/openapi.yaml`.
 - `adr/ADR-025-container-del-portale.md` — nginx senza privilegi, niente porte, intestazioni di sicurezza, prova in CI.
+- `adr/ADR-026-backup-gestiti-dal-server.md` — i backup li fa chi amministra il server; i servizi dello stack diventano opzionali.
 
 ### Concetti (fase 1)
 
@@ -187,4 +188,5 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Dati:** tipi generati dal contratto, tutte le pagine di studenti e pagamenti, errori tradotti e mai ritentati sui 4xx, date locali (il form dei pagamenti usava il giorno UTC).
 - **Deploy:** immagine con versioni fissate, nginx senza privilegi, fallback delle rotte, CSP stretta e altre intestazioni, nessuna porta pubblicata, CORS limitato al portale; un test vieta le porte nel compose, un job della CI prova l'immagine vera.
 - **Qualità:** TypeScript strict attivato, oxlint senza avvisi, Prettier, da 3 a 48 test, CI dedicata, README per la review, verifica end-to-end 10 su 10.
-- **Aperto (serve il proprietario):** deploy su Coolify e review dell'amico; prova dell'immagine in locale quando Docker sarà attivo in WSL; refresh token in cookie httpOnly come passo successivo.
+- **Dopo la review (10 novembre):** l'amico ha approvato tutto tranne i backup, che gestisce lui sul suo server: i servizi di backup sono diventati opzionali (ADR-026). Il primo deploy avverrà su un dominio di staging.
+- **Aperto (serve il proprietario):** deploy in staging; prova dell'immagine in locale quando Docker sarà attivo in WSL; refresh token in cookie httpOnly come passo successivo.

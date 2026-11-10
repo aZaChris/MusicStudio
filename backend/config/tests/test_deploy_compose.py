@@ -6,19 +6,27 @@ import pytest
 import yaml
 from django.conf import settings
 
-COMPOSE = Path(settings.BASE_DIR).parent / "docker-compose.coolify.yml"
-SERVICES = yaml.safe_load(COMPOSE.read_text())["services"]
+ROOT = Path(settings.BASE_DIR).parent
+SERVICES = yaml.safe_load((ROOT / "docker-compose.coolify.yml").read_text())["services"]
+# The optional backup overlay (ADR-026) follows the same rules when someone does use it.
+BACKUP_OVERLAY = yaml.safe_load((ROOT / "docker-compose.backup.yml").read_text())["services"]
+ALL = {**SERVICES, **BACKUP_OVERLAY}
 
 
-@pytest.mark.parametrize("name", sorted(SERVICES))
+@pytest.mark.parametrize("name", sorted(ALL))
 def test_no_service_publishes_a_host_port(name):
     # Coolify's proxy routes by domain; a published port would bypass it (and its HTTPS).
-    assert "ports" not in SERVICES[name]
+    assert "ports" not in ALL[name]
 
 
-@pytest.mark.parametrize("name", sorted(SERVICES))
+@pytest.mark.parametrize("name", sorted(ALL))
 def test_every_service_has_a_healthcheck(name):
-    assert "healthcheck" in SERVICES[name]
+    assert "healthcheck" in ALL[name]
+
+
+def test_backups_are_not_part_of_the_coolify_deploy():
+    # The server's operator backs up the database (ADR-026); the overlay is opt-in only.
+    assert {"backup", "offsite"}.isdisjoint(SERVICES)
 
 
 def test_the_web_portal_is_built_for_production_and_only_exposed():

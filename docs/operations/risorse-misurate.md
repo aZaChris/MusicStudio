@@ -27,7 +27,7 @@ Altre dimensioni:
 
 ## Cosa non è stato misurato qui
 
-Redis, il worker e il beat di Celery, nginx del portale, i sidecar dei backup e le dimensioni delle immagini Docker: senza Docker non si possono avviare come in produzione. Lo script li misura sul server.
+Redis, il worker e il beat di Celery, nginx del portale e le dimensioni delle immagini Docker (i backup non fanno più parte del deploy: ADR-026): senza Docker non si possono avviare come in produzione. Lo script li misura sul server.
 
 ## Una stima prudente, da verificare
 

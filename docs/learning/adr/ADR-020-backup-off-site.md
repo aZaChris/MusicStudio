@@ -29,3 +29,7 @@ Dalla fase 1 un sidecar (`postgres-backup-local`) fa un `pg_dump` ogni giorno e 
 - Senza le password di cifratura, i backup off-site sono inutilizzabili. Il runbook lo ripete.
 - Le copie remote hanno anche i link fisici giornaliero, settimanale e mensile come file separati: si occupa un po' più spazio, ma è tutto molto piccolo (1,8 MB per 78.000 lezioni).
 - La configurazione di rclone non è stata provata contro un bucket vero: è il primo controllo dopo il deploy.
+
+## Aggiornamento (2026-11-10)
+
+Sul server di produzione i backup li gestisce chi lo amministra (ADR-026). Questi servizi sono passati nel file opzionale `docker-compose.backup.yml` e non fanno più parte del deploy su Coolify.
