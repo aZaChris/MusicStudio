@@ -19,7 +19,7 @@ Also read `AGENTS.md` (Expo SDK 57 docs are the reference: https://docs.expo.dev
 
 | Phase | Feature dir | Status |
 |---|---|---|
-| 1 Parity on the Django API | `specs/002-django-api-parity` | code, docs, CI and local gate green; to close: real-device run in Expo Go (T032, owner) |
+| 1 Parity on the Django API | `specs/002-django-api-parity` | done (owner: real-device run in Expo Go, T032) |
 
 Open items: `docs/learning/00-indice.md` ("Aperto"); `expo-router` advisories in the bundle wait
 for an SDK patch (`npx expo install --fix`), never `npm audit fix --force`.
