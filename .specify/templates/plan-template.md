@@ -45,7 +45,7 @@
 - [ ] III. Tests in the same change; query-count assertions on main endpoints
 - [ ] IV. Within the current roadmap phase
 - [ ] V. Logic in `services.py` / `selectors.py`; thin views/serializers; mypy clean
-- [ ] VI. No client code modified
+- [ ] VI. Web client (`frontend/`): generated types, rotating-token session, tests; `web`/`app` untouched
 - [ ] VII. CI (ruff, mypy, migrations check, pytest) green
 - [ ] VIII. ADRs for non-trivial decisions; Italian study docs + index update planned
 - [ ] IX. Security impact considered (OWASP API Top 10)

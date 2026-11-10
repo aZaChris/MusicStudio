@@ -1,5 +1,24 @@
 <!--
 Sync Impact Report
+Version change: 2.0.0 → 3.0.0 (MAJOR: Principle VI redefined — the web client in frontend/ is
+  re-opened and developed on this branch)
+Modified principles:
+  VI. Clients Are Out of Scope; Backend Stays Bilingual → VI. The Web Client Is In Scope; Other
+    Clients Stay Isolated
+  VII. Automated Quality Gate (+ frontend CI job)
+  VIII. Decisions & Study Docs Ship With Code (covers the web client)
+  IX. Security Verified Per Phase (OWASP walk covers the SPA: XSS, token storage)
+Added sections: Additional Constraints → web client stack
+Removed sections: none
+Templates requiring updates:
+  ✅ .specify/templates/plan-template.md (gate VI reworded)
+  ✅ .specify/templates/spec-template.md (generic, compatible as-is)
+  ✅ .specify/templates/tasks-template.md (generic, compatible as-is)
+  ✅ CLAUDE.md (frontend no longer "never modify"; roadmap row for the web track)
+Follow-up TODOs: none
+
+Previous report (2.0.0):
+Sync Impact Report
 Version change: 1.0.0 → 2.0.0 (MAJOR: Principle VI redefined, Principle IV scope changed,
   deployment target changed from AWS to Coolify)
 Modified principles:
@@ -82,19 +101,31 @@ Migrations are committed for every model change; static types are checked with m
 Rationale: business rules in one obvious place are testable without HTTP and reviewable at
 an interview; a monolith keeps operations simple for a 1–10 teacher product.
 
-### VI. Clients Are Out of Scope; Backend Stays Bilingual
-In the current roadmap only the backend is developed. Existing client code (`frontend/`, the
-`web` and `app` branches) MUST NOT be modified or deleted; it stays isolated. The backend
-keeps EN/IT support where it owns user-facing text (emails, admin, error messages via Django
-i18n).
-Rationale: the project's goal in this roadmap is backend depth; clients are re-opened later.
+### VI. The Web Client Is In Scope; Other Clients Stay Isolated
+The React SPA in `frontend/` is developed on this branch as a client of this API, with the
+same discipline as the backend where it applies:
+- response types MUST be generated from `backend/openapi.yaml`; no hand-written response types;
+- session handling MUST match the backend: store the rotated refresh token after every
+  refresh, one refresh in flight at a time, logout through `POST /api/v1/auth/logout/`, every
+  cached response cleared on logout;
+- the server is the authority on permissions: the SPA handles 401/403/404 explicitly and never
+  infers access from a cached role;
+- every feature ships tests (Vitest + Testing Library, network mocked at the `fetch` boundary);
+- user-facing text is bilingual EN/IT through i18next.
+Branches `web` (Next.js) and `app` (Expo) MUST NOT be modified. The mobile app lives on branch
+`refactor/mobile` under its own constitution. The backend keeps EN/IT where it owns
+user-facing text (emails, admin, error messages via Django i18n).
+Rationale: the owner re-opened the web portal; a client that drifts from the contract or
+mishandles rotating tokens breaks against this backend (it did: phase 4 rotation logged SPA
+users out after ~30 minutes).
 
 ### VII. Automated Quality Gate
 A GitHub Actions workflow MUST run on every push and pull request: ruff (lint + format
 check), mypy (django-stubs, djangorestframework-stubs), a migrations-in-sync check, and
 pytest with coverage against PostgreSQL and Redis service containers. A red pipeline blocks
 merge (enforced via branch protection on the default branch). The same checks run locally
-through pre-commit.
+through pre-commit. A separate job checks the SPA in `frontend/`: typecheck, lint, tests,
+production build, and that the generated API types match `backend/openapi.yaml`.
 Rationale: standards that are not enforced by a machine erode.
 
 ### VIII. Decisions & Study Docs Ship With Code
@@ -103,14 +134,15 @@ Every non-trivial architectural decision MUST produce an ADR in `docs/learning/a
 same PR, Italian study documentation in `docs/learning/` (concept files, glossary entries,
 interview Q&A) following the format defined in `docs/learning/00-indice.md`, and update that
 index. Code, comments, identifiers, and commit messages are in English; study docs in Italian.
-Commit bodies explain *why*.
+Commit bodies explain *why*. The web client is documented in the same `docs/learning/` tree.
 Rationale: the project trains its developer; undocumented decisions cannot be defended.
 
 ### IX. Security Verified Per Phase
 At the end of every phase the OWASP API Security Top 10 checklist MUST be walked against the
 API and the result recorded in `docs/learning/` (what is covered, what is open). No secrets
 in the repository; authentication endpoints are rate-limited; production settings fail fast
-when required configuration is missing.
+when required configuration is missing. From the web client's re-opening, the walk also
+covers the SPA (XSS exposure, token storage, what the browser bundle contains).
 Rationale: security reviewed once at the end is security never reviewed.
 
 ## Additional Constraints
@@ -118,6 +150,9 @@ Rationale: security reviewed once at the end is security never reviewed.
 - **Stack**: Python 3.12, Django (current LTS), Django REST Framework (API-only), PostgreSQL,
   Celery + Redis, simplejwt, drf-spectacular, pytest + pytest-django + factory_boy, ruff,
   mypy with django-stubs; dependencies locked with `uv`.
+- **Web client** (`frontend/`): React 19, TypeScript strict, Vite, TanStack Query,
+  react-router, i18next, Vitest + Testing Library, oxlint; dependencies locked with npm;
+  API types generated with openapi-typescript. Only `VITE_*` public configuration in the bundle.
 - **Configuration**: every setting that differs between environments comes from environment
   variables, documented in a checked-in `.env.example`. Settings modules: `base`, `dev`,
   `test`, `prod`.
@@ -151,4 +186,4 @@ materially expanded; PATCH: wording). Every change is self-reviewed against Prin
 and V before it is considered done; violations are fixed or justified in the plan's
 Complexity Tracking table.
 
-**Version**: 2.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-06
+**Version**: 3.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-10

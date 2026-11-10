@@ -12,7 +12,7 @@ experience, English B1, and studies everything that is built here.
 - Work happens on branch `refactor/production-standards` (based on the Django commit
   `4be062d`, see `docs/learning/adr/ADR-001-*`). Branches `web` (Next.js) and `app` (Expo)
   are earlier rewrites: never modify them. There is no `main` yet.
-- Principles: `.specify/memory/constitution.md` (v2.0.0). They override habits; re-read the
+- Principles: `.specify/memory/constitution.md` (v3.0.0). They override habits; re-read the
   relevant principle before deciding.
 
 ## Roadmap and status
@@ -24,6 +24,9 @@ experience, English B1, and studies everything that is built here.
 | 3 Celery & payments | `specs/004-celery-payments` | done |
 | 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (owner tasks open: real Coolify deploy T018, bucket drill T024) |
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
+| Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | in progress |
+
+The mobile app is on branch `refactor/mobile` (own CLAUDE.md and constitution).
 
 Open items carried over are listed at the end of `docs/learning/00-indice.md`.
 
@@ -39,8 +42,10 @@ Open items carried over are listed at the end of `docs/learning/00-indice.md`.
 - **Code**: modular monolith, one app per domain; writes in `services.py`, reads in
   `selectors.py`, thin views/serializers. Tenant scoping only through
   `apps/common/scoping.py` + `TenantContext`. Every feature ships tests (cross-tenant
-  read/write tests, query budgets on main endpoints). No AWS. `frontend/` is out of scope:
-  never modify it. Stripe: **test mode only**, all calls in `apps/payments/gateway.py`.
+  read/write tests, query budgets on main endpoints). No AWS. `frontend/` (React SPA) is in
+  scope since constitution 3.0.0: types generated from `backend/openapi.yaml`, Vitest tests.
+  Branches `web` and `app` are never modified. Stripe: **test mode only**, all calls in
+  `apps/payments/gateway.py`.
 - **Code, comments, identifiers, commits: English. Study docs: Italian.**
 
 ## Local setup and quality gate
