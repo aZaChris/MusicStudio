@@ -15,7 +15,7 @@ import { Screen, SectionTitle } from "@/components/Screen";
 import { lessonTone, packageTone, StatusChip } from "@/components/StatusChip";
 import { Fonts, Type } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
-import { formatDateOfDateTime } from "@/lib/dates";
+import { formatDateOfDateTime, formatDay } from "@/lib/dates";
 import { enumLabel, lessonStatusKey, useLocale, useT } from "@/lib/i18n";
 import { useCancelLesson, useStudent, useStudentLessons } from "@/lib/queries";
 
@@ -71,6 +71,10 @@ export default function StudentDetailScreen() {
             <>
               <Beats size="l" total={pkg.total_lessons} used={pkg.total_lessons - pkg.lessons_remaining} />
               <Text style={[styles.remaining, { color: c.orangeText }]}>{t("roster.remainingCount", { count: String(pkg.lessons_remaining) })}</Text>
+              <Text style={[Type.small, { color: c.ink2 }]}>
+                {t("package.boughtOn", { date: formatDay(pkg.purchase_date, locale) })}
+                {pkg.expiry_date ? ` · ${t("package.expiresOn", { date: formatDay(pkg.expiry_date, locale) })}` : ""}
+              </Text>
             </>
           ) : (
             <Text style={[Type.small, { color: c.ink2 }]}>{t("roster.noPackage")}</Text>

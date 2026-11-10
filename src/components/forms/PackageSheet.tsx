@@ -61,7 +61,7 @@ export function PackageSheet({
         {t("package.new")}
       </Text>
       <Text style={[Type.small, { color: c.ink2 }]}>
-        {studentName} · {t("package.boughtOn", { date: formatDay(today, locale) })}
+        {studentName} · {t("package.boughtOn", { date: formatDay(today, locale) }).toLowerCase()}
       </Text>
 
       <Text style={[Type.small, { color: c.ink, fontFamily: Fonts.bodyBold }]}>{t("package.lessons")}</Text>
