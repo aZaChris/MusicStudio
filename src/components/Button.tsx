@@ -1,55 +1,68 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from "react-native";
+import { ActivityIndicator, StyleSheet, Text, type PressableProps } from "react-native";
 
-import { Colors, Fonts, Radius, Spacing } from "@/constants/theme";
+import { Fonts, Radii } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { PressScale } from "./Motion";
 
-interface ButtonProps extends PressableProps {
+type Variant = "primary" | "secondary" | "ghost" | "success";
+
+interface ButtonProps extends Omit<PressableProps, "style" | "children"> {
   title: string;
-  variant?: "primary" | "secondary";
+  variant?: Variant;
   loading?: boolean;
+  /** 54px tall, for the one main action of a form. */
+  large?: boolean;
+  /** Fill the width of the parent. */
+  block?: boolean;
 }
 
-export function Button({ title, variant = "primary", loading, disabled, style, ...rest }: ButtonProps) {
-  const theme = useTheme();
-  const isPrimary = variant === "primary";
+/** Pill button. Text on orange is always `onOrange`, never white (it would fail contrast). */
+export function Button({ title, variant = "primary", loading, large, block, disabled, ...rest }: ButtonProps) {
+  const c = useTheme();
+  const palette = {
+    primary: { bg: c.orange, fg: c.onOrange, border: "transparent" },
+    secondary: { bg: "transparent", fg: c.ink, border: c.ink },
+    ghost: { bg: "transparent", fg: c.orangeText, border: "transparent" },
+    success: { bg: c.card, fg: c.okFg, border: c.teal },
+  }[variant];
+  const inactive = !!(disabled || loading);
 
   return (
-    <Pressable
+    <PressScale
       accessibilityRole="button"
       accessibilityLabel={title}
-      accessibilityState={{ disabled: !!(disabled || loading), busy: !!loading }}
-      disabled={disabled || loading}
-      style={({ pressed }) => [
+      accessibilityState={{ disabled: inactive, busy: !!loading }}
+      disabled={inactive}
+      style={[
         styles.base,
-        {
-          backgroundColor: isPrimary ? Colors.light.accent : theme.backgroundElement,
-          borderColor: isPrimary ? Colors.light.accent : theme.border,
-          opacity: pressed || disabled ? 0.7 : 1,
-        },
-        typeof style === "function" ? undefined : style,
+        large && styles.large,
+        block && styles.block,
+        { backgroundColor: palette.bg, borderColor: palette.border, opacity: disabled ? 0.5 : 1 },
       ]}
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={isPrimary ? "white" : theme.text} />
+        <ActivityIndicator color={palette.fg} />
       ) : (
-        <Text style={[styles.text, { color: isPrimary ? "white" : theme.text }]}>{title}</Text>
+        <Text style={[styles.text, large && styles.textLarge, { color: palette.fg }]}>{title}</Text>
       )}
-    </Pressable>
+    </PressScale>
   );
 }
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    paddingVertical: Spacing.three,
-    paddingHorizontal: Spacing.four,
+    height: 48,
+    paddingHorizontal: 22,
+    borderRadius: Radii.pill,
+    borderWidth: 1.5,
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
   },
-  text: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 15,
-  },
+  large: { height: 54, paddingHorizontal: 26 },
+  block: { alignSelf: "stretch" },
+  text: { fontFamily: Fonts.bodyBold, fontSize: 16 },
+  textLarge: { fontSize: 17 },
 });

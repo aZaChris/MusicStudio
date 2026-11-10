@@ -1,15 +1,16 @@
 import { StyleSheet, View, type ViewProps } from "react-native";
 
-import { Radius, Spacing } from "@/constants/theme";
+import { Radii } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
-export function Card({ style, ...rest }: ViewProps) {
-  const theme = useTheme();
+/** Flat card: 1px line, no shadow (shadows are for what floats). `row` uses the smaller radius. */
+export function Card({ style, row, ...rest }: ViewProps & { row?: boolean }) {
+  const c = useTheme();
   return (
     <View
       style={[
         styles.base,
-        { backgroundColor: theme.backgroundElement, borderColor: theme.border },
+        { backgroundColor: c.card, borderColor: c.line, borderRadius: row ? Radii.row : Radii.card, padding: row ? 14 : 20 },
         style,
       ]}
       {...rest}
@@ -17,10 +18,4 @@ export function Card({ style, ...rest }: ViewProps) {
   );
 }
 
-const styles = StyleSheet.create({
-  base: {
-    borderRadius: Radius.lg,
-    borderWidth: 1,
-    padding: Spacing.three,
-  },
-});
+const styles = StyleSheet.create({ base: { borderWidth: 1 } });

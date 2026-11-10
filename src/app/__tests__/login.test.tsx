@@ -38,7 +38,7 @@ test("a teacher signs in and lands on the teacher home", async () => {
   await fireEvent.changeText(screen.getByLabelText("Password"), "password123");
   await fireEvent.press(screen.getByRole("button", { name: "Log in" }));
 
-  expect(await screen.findByText("Hi, mario.rossi 👋")).toBeOnTheScreen();
+  expect(await screen.findByText("Hi, mario.rossi")).toBeOnTheScreen();
   expect(api.callsTo("POST /auth/token/")[0].body).toEqual({
     email: "mario.rossi@example.com",
     password: "password123",

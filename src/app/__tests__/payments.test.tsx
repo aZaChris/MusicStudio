@@ -19,6 +19,8 @@ const routes = (post: Parameters<typeof signedInAs>[1] = {}) => ({
 });
 
 async function fillForm(amount: string) {
+  // The form is a panel opened from the floating button; the button hides while it is open.
+  await fireEvent.press(await screen.findByRole("button", { name: "Register payment" }));
   await fireEvent.press(await screen.findByRole("radio", { name: "Giulia Rossi" }));
   await fireEvent.changeText(screen.getByLabelText("Amount"), amount);
   await fireEvent.press(screen.getByRole("radio", { name: "Bank transfer" }));
@@ -29,8 +31,9 @@ test("lists payments with translated method and status", async () => {
   await signedInAs(teacherMe, routes());
   await renderApp("/payments");
 
-  expect(await screen.findByText("€ 120.00")).toBeOnTheScreen();
-  expect(screen.getByText("Paid")).toBeOnTheScreen();
+  expect(await screen.findByText("€120.00")).toBeOnTheScreen();
+  // "Paid" is both the filter chip and the row's status chip.
+  expect(screen.getAllByText("Paid")).toHaveLength(2);
   expect(screen.getByText(/2 Nov 2026 · Bank transfer/)).toBeOnTheScreen();
 });
 

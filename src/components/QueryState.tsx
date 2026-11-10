@@ -1,11 +1,13 @@
 import type { ReactNode } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import { Spacing } from "@/constants/theme";
+import { Type } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { errorMessage } from "@/lib/errors";
 import { useT } from "@/lib/i18n";
+import { Alert } from "./Alert";
 import { Button } from "./Button";
+import { Skeleton } from "./Skeleton";
 
 interface QueryLike {
   isPending: boolean;
@@ -16,7 +18,7 @@ interface QueryLike {
 
 /**
  * One way to show loading, failure and "nothing here" on every screen, so no screen is ever
- * silently blank (audit issue 9).
+ * silently blank (audit issue 9). Loading is list-shaped placeholders, not a spinner.
  */
 export function QueryState({
   query,
@@ -29,45 +31,37 @@ export function QueryState({
   emptyText?: string;
   children: ReactNode;
 }) {
-  const theme = useTheme();
+  const c = useTheme();
   const t = useT();
 
   if (query.isPending) {
     return (
-      <View style={styles.center} accessibilityLabel={t("common.loading")}>
-        <ActivityIndicator />
+      <View style={styles.stack} accessibilityLabel={t("common.loading")} accessibilityRole="progressbar">
+        <Skeleton />
+        <Skeleton />
+        <Skeleton />
       </View>
     );
   }
   if (query.isError) {
     return (
-      <View style={styles.center}>
-        <Text accessibilityRole="alert" style={[styles.text, { color: theme.dangerText }]}>
-          {errorMessage(query.error, t)}
-        </Text>
+      <View style={styles.stack}>
+        <Alert kind="error">{errorMessage(query.error, t)}</Alert>
         <Button title={t("common.retry")} variant="secondary" onPress={() => query.refetch()} />
       </View>
     );
   }
   if (isEmpty) {
-    return <Text style={[styles.text, { color: theme.textSecondary }]}>{emptyText}</Text>;
+    return <Text style={[Type.small, { color: c.ink2 }]}>{emptyText}</Text>;
   }
   return <>{children}</>;
 }
 
-/** Inline error for forms and dialogs. */
+/** Inline error for forms and sheets. */
 export function ErrorText({ error }: { error: unknown }) {
-  const theme = useTheme();
   const t = useT();
   if (!error) return null;
-  return (
-    <Text accessibilityRole="alert" style={{ color: theme.dangerText }}>
-      {errorMessage(error, t)}
-    </Text>
-  );
+  return <Alert kind="error">{errorMessage(error, t)}</Alert>;
 }
 
-const styles = StyleSheet.create({
-  center: { padding: Spacing.four, alignItems: "center", gap: Spacing.three },
-  text: { textAlign: "center" },
-});
+const styles = StyleSheet.create({ stack: { gap: 12 } });

@@ -20,7 +20,7 @@ test("a parent with two children switches between them; payments are filtered by
   await renderApp("/portal");
 
   expect(await screen.findByText("Bravissima")).toBeOnTheScreen();
-  expect(await screen.findByText("€ 120.00")).toBeOnTheScreen();
+  expect(await screen.findByText("€120.00")).toBeOnTheScreen();
 
   await fireEvent.press(screen.getByRole("tab", { name: "Marco Rossi" }));
 

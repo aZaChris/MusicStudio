@@ -55,6 +55,12 @@ regenerates `src/lib/api/schema.d.ts`.
 
 ## Gotchas
 
+- Design system: colours, spacing, radii and motion come from `design/system/tokens.json`
+  (`npm run tokens`); never hard-code a hex in a component.
+- Reanimated's babel plugin treats any `.value` read inside a `style` as a shared-value read and
+  breaks at render: never name a plain object key `value` next to styles (see `StatCard`).
+- Jest: `react-native-worklets` needs its mock (`src/test/setup.ts`); expo-router's test library
+  swaps reanimated for reanimated's mock, so use `hooks/use-reduced-motion`, not reanimated's.
 - RNTL 14: `render` (via `renderRouter`) and `fireEvent` are async — always `await` them.
 - TypeScript 6 defaults `types` to `[]`: `tsconfig.json` lists `"jest"` explicitly.
 - `openapi-typescript` needs TS 5 as peer: run it only via `npm run contract:sync` (pinned npx).

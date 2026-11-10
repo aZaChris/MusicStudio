@@ -53,7 +53,7 @@ test("student detail shows the package and the translated lesson history", async
   await renderApp("/roster");
   await fireEvent.press(await screen.findByRole("button", { name: "Student7 Test" }));
 
-  expect(await screen.findByText("2/10 remaining")).toBeOnTheScreen();
+  expect(await screen.findByText("2 remaining")).toBeOnTheScreen();
   expect(screen.getByText("Active")).toBeOnTheScreen();
   expect(screen.getByText("Completed")).toBeOnTheScreen();
   expect(screen.getByText("No-show")).toBeOnTheScreen();

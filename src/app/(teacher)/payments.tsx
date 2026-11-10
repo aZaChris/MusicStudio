@@ -1,50 +1,42 @@
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Alert } from "@/components/Alert";
+import { BottomSheet } from "@/components/BottomSheet";
 import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
+import { FilterChips } from "@/components/FilterChips";
+import { Icon } from "@/components/Icon";
+import { PressScale } from "@/components/Motion";
 import { ErrorText, QueryState } from "@/components/QueryState";
+import { Screen, ScreenHeader } from "@/components/Screen";
+import { paymentTone, StatusChip } from "@/components/StatusChip";
 import { TextField } from "@/components/TextField";
-import { Fonts, Spacing } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { Fonts, shadow, Type } from "@/constants/theme";
+import { useScheme, useTheme } from "@/hooks/use-theme";
 import type { PaymentMethod } from "@/lib/api/types";
 import { formatDay, localDateISO } from "@/lib/dates";
+import { savedTap } from "@/lib/haptics";
 import { enumLabel, paymentMethodKey, paymentStatusKey, useLocale, useT } from "@/lib/i18n";
 import { usePayments, useRegisterPayment, useStudents } from "@/lib/queries";
 
 // Online card payments come from Stripe webhooks, never from this form.
 const MANUAL_METHODS: PaymentMethod[] = ["cash", "bank_transfer", "manual_entry"];
 
-function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
-  const theme = useTheme();
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      accessibilityLabel={label}
-    >
-      <View
-        style={[
-          styles.chip,
-          { backgroundColor: selected ? theme.accent : theme.backgroundMuted, borderColor: theme.border },
-        ]}
-      >
-        <Text style={{ color: selected ? "white" : theme.text, fontSize: 12.5 }}>{label}</Text>
-      </View>
-    </Pressable>
-  );
-}
+type Filter = "all" | "pending" | "paid";
 
 export default function PaymentsScreen() {
-  const theme = useTheme();
+  const c = useTheme();
+  const scheme = useScheme();
   const t = useT();
   const locale = useLocale();
   const payments = usePayments();
   const students = useStudents();
   const registerPayment = useRegisterPayment();
 
+  const [filter, setFilter] = useState<Filter>("all");
+  const [formOpen, setFormOpen] = useState(false);
   const [studentId, setStudentId] = useState<number | null>(null);
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState<PaymentMethod>("cash");
@@ -54,84 +46,128 @@ export default function PaymentsScreen() {
     registerPayment.mutate(
       // Local calendar date: after midnight in Italy the UTC date is still yesterday.
       { student: studentId, amount: amount.replace(",", "."), date: localDateISO(), method, status: "paid" },
-      { onSuccess: () => setAmount("") }, // on failure the form keeps what the user typed
+      {
+        onSuccess: () => {
+          setAmount("");
+          savedTap();
+        }, // on failure the form keeps what the user typed
+      },
     );
   };
 
+  const all = payments.data ?? [];
+  const shown = all.filter((p) => filter === "all" || (filter === "paid" ? p.status === "paid" : p.status !== "paid"));
+  const toCollect = all.filter((p) => p.status !== "paid").length;
+  const money = new Intl.NumberFormat(locale === "it" ? "it-IT" : "en-GB", { style: "currency", currency: "EUR" });
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }} edges={["bottom"]}>
-      <ScrollView contentContainerStyle={styles.content}>
-        <Card style={{ gap: Spacing.two }}>
-          <Text accessibilityRole="header" style={[styles.sectionTitle, { color: theme.text }]}>
+    <SafeAreaView style={[styles.fill, { backgroundColor: c.paper }]} edges={["top"]}>
+      <Screen edges={[]} padBottom={false}>
+        <ScreenHeader title={t("payments.title")} eyebrow={t("payments.toCollect", { count: String(toCollect) })} />
+        <FilterChips
+          options={[
+            { id: "all", label: t("payments.filter.all") },
+            { id: "pending", label: t("payments.filter.pending") },
+            { id: "paid", label: t("payments.filter.paid") },
+          ]}
+          value={filter}
+          onChange={setFilter}
+        />
+        <QueryState query={payments} isEmpty={all.length === 0} emptyText={t("payments.empty")}>
+          <View style={styles.list}>
+            {shown.map((item) => (
+              <Card key={item.id} row style={styles.row}>
+                <View style={styles.rowText}>
+                  <Text style={[Type.bodyStrong, { color: c.ink }]}>{item.student_name}</Text>
+                  <Text style={[Type.small, { color: c.ink2 }]}>
+                    {formatDay(item.date, locale)} · {enumLabel(t, paymentMethodKey(item.method))}
+                  </Text>
+                </View>
+                <View style={styles.rowEnd}>
+                  <Text style={[Type.amount, { color: c.ink }]}>{money.format(Number(item.amount))}</Text>
+                  {item.status && <StatusChip tone={paymentTone(item.status)} small label={enumLabel(t, paymentStatusKey(item.status))} />}
+                </View>
+              </Card>
+            ))}
+          </View>
+        </QueryState>
+        <View style={styles.fabSpace} />
+      </Screen>
+
+      {!formOpen && (
+        <PressScale
+          accessibilityRole="button"
+          accessibilityLabel={t("payments.registerPayment")}
+          onPress={() => setFormOpen(true)}
+          style={[styles.fab, { backgroundColor: c.orange }, shadow("float", scheme)]}
+        >
+          <Icon name="plus" size={20} color={c.onOrange} strokeWidth={2.4} />
+          <Text style={[styles.fabText, { color: c.onOrange }]}>{t("payments.registerPayment")}</Text>
+        </PressScale>
+      )}
+
+      {formOpen && (
+        <BottomSheet title={t("payments.registerPayment")} onClose={() => setFormOpen(false)}>
+          <Text accessibilityRole="header" style={[Type.heading, { color: c.ink, fontSize: 24 }]}>
             {t("payments.registerPayment")}
           </Text>
 
-          <Text style={[styles.label, { color: theme.textSecondary }]}>{t("payments.student")}</Text>
+          <Text style={[styles.label, { color: c.ink }]}>{t("payments.student")}</Text>
           <QueryState query={students} isEmpty={(students.data ?? []).length === 0} emptyText={t("roster.empty")}>
-            <View style={styles.chipRow} accessibilityRole="radiogroup">
-              {students.data?.map((s) => (
-                <Chip key={s.id} label={s.full_name} selected={studentId === s.id} onPress={() => setStudentId(s.id)} />
-              ))}
-            </View>
+            <FilterChips
+              role="radio"
+              options={(students.data ?? []).map((s) => ({ id: s.id, label: s.full_name }))}
+              value={studentId}
+              onChange={setStudentId}
+            />
           </QueryState>
 
-          <TextField
-            label={t("payments.amount")}
-            value={amount}
-            onChangeText={setAmount}
-            keyboardType="decimal-pad"
+          <TextField label={t("payments.amount")} value={amount} onChangeText={setAmount} keyboardType="decimal-pad" />
+
+          <Text style={[styles.label, { color: c.ink }]}>{t("payments.method")}</Text>
+          <FilterChips
+            role="radio"
+            options={MANUAL_METHODS.map((m) => ({ id: m, label: t(paymentMethodKey(m)) }))}
+            value={method}
+            onChange={setMethod}
           />
 
-          <Text style={[styles.label, { color: theme.textSecondary }]}>{t("payments.method")}</Text>
-          <View style={styles.chipRow} accessibilityRole="radiogroup">
-            {MANUAL_METHODS.map((m) => (
-              <Chip key={m} label={t(paymentMethodKey(m))} selected={method === m} onPress={() => setMethod(m)} />
-            ))}
-          </View>
-
           <ErrorText error={registerPayment.error} />
-          {registerPayment.isSuccess && !amount && (
-            <Text accessibilityLiveRegion="polite" style={{ color: theme.successText }}>
-              {t("payments.saved")}
-            </Text>
-          )}
+          {registerPayment.isSuccess && !amount && <Alert kind="success">{t("payments.saved")}</Alert>}
 
           <Button
             title={t("payments.registerPayment")}
+            large
+            block
             onPress={handleSubmit}
             loading={registerPayment.isPending}
             disabled={!studentId || !amount}
           />
-        </Card>
-
-        <QueryState query={payments} isEmpty={(payments.data ?? []).length === 0} emptyText={t("payments.empty")}>
-          {payments.data?.map((item) => (
-            <Card key={item.id} style={styles.paymentRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: theme.text, fontSize: 13 }}>{item.student_name}</Text>
-                <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                  {formatDay(item.date, locale)} · {enumLabel(t, paymentMethodKey(item.method))}
-                </Text>
-              </View>
-              <Text style={{ color: theme.text, fontSize: 13 }}>€ {item.amount}</Text>
-              {item.status && (
-                <Text style={{ color: theme.textSecondary, fontSize: 12 }}>
-                  {enumLabel(t, paymentStatusKey(item.status))}
-                </Text>
-              )}
-            </Card>
-          ))}
-        </QueryState>
-      </ScrollView>
+        </BottomSheet>
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { padding: Spacing.three, gap: Spacing.three },
-  sectionTitle: { fontFamily: Fonts.bodyExtraBold, fontSize: 14 },
+  fill: { flex: 1 },
+  list: { gap: 10 },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  rowText: { flex: 1, gap: 3 },
+  rowEnd: { alignItems: "flex-end", gap: 6 },
   label: { fontFamily: Fonts.bodyBold, fontSize: 13 },
-  chipRow: { flexDirection: "row", flexWrap: "wrap", gap: Spacing.one },
-  chip: { borderRadius: 999, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 6 },
-  paymentRow: { flexDirection: "row", alignItems: "center", gap: Spacing.two },
+  fabSpace: { height: 72 },
+  fab: {
+    position: "absolute",
+    right: 20,
+    bottom: 20,
+    height: 56,
+    paddingLeft: 18,
+    paddingRight: 22,
+    borderRadius: 999,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  fabText: { fontFamily: Fonts.bodyBold, fontSize: 16 },
 });

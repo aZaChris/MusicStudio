@@ -1,61 +1,58 @@
 import { Redirect, Tabs } from "expo-router";
-import { Text, type ColorValue } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 
-import { LogoutButton } from "@/components/LogoutButton";
-
-import { Fonts } from "@/constants/theme";
+import { Icon, type IconName } from "@/components/Icon";
+import { Fonts, Radii } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/lib/auth-context";
 import { useT } from "@/lib/i18n";
 
-// Text glyphs as icons (no icon font added: parity). Hidden from screen readers: the tab
-// title already says what it is.
-function TabIcon({ symbol, color }: { symbol: string; color: ColorValue }) {
+// The active tab gets a soft orange pill behind its icon (design: bottom bar).
+function TabIcon({ name, focused }: { name: IconName; focused: boolean }) {
+  const c = useTheme();
   return (
-    <Text importantForAccessibility="no" accessibilityElementsHidden style={{ fontSize: 18, color }}>
-      {symbol}
-    </Text>
+    <View style={[styles.pill, focused && { backgroundColor: c.orangeSoft }]}>
+      <Icon name={name} size={20} color={focused ? c.orangeText : c.ink2} />
+    </View>
   );
+}
+
+function TabLabel({ title, focused }: { title: string; focused: boolean }) {
+  const c = useTheme();
+  return <Text style={[styles.label, { color: focused ? c.ink : c.ink2, fontFamily: focused ? Fonts.bodyBold : Fonts.bodySemi }]}>{title}</Text>;
 }
 
 export default function TeacherLayout() {
   const { user, status } = useAuth();
-  const theme = useTheme();
+  const c = useTheme();
   const t = useT();
 
   if (status === "loading") return null;
   if (!user) return <Redirect href="/login" />;
   if (user.role === "parent") return <Redirect href="/(parent)/portal" />;
 
+  const tab = (title: string, icon: IconName) => ({
+    title,
+    tabBarIcon: ({ focused }: { focused: boolean }) => <TabIcon name={icon} focused={focused} />,
+    tabBarLabel: ({ focused }: { focused: boolean }) => <TabLabel title={title} focused={focused} />,
+  });
+
   return (
     <Tabs
       screenOptions={{
-        headerStyle: { backgroundColor: theme.backgroundElement },
-        headerTintColor: theme.text,
-        headerTitleStyle: { fontFamily: Fonts.heading },
-        tabBarActiveTintColor: theme.accent,
-        tabBarInactiveTintColor: theme.textSecondary,
-        tabBarStyle: { backgroundColor: theme.backgroundElement, borderTopColor: theme.border },
-        // Teachers could not log out in the inherited app (audit issue 4).
-        headerRight: () => <LogoutButton />,
+        headerShown: false,
+        tabBarStyle: { backgroundColor: c.card, borderTopColor: c.line, borderTopWidth: 1, paddingTop: 10 },
+        tabBarItemStyle: { gap: 4 },
       }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{ title: t("nav.home"), tabBarIcon: ({ color }) => <TabIcon symbol="⌂" color={color} /> }}
-      />
-      <Tabs.Screen
-        name="roster"
-        options={{
-          title: t("nav.students"),
-          headerShown: false, // roster/_layout.tsx's own Stack renders the header instead
-          tabBarIcon: ({ color }) => <TabIcon symbol="☰" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="payments"
-        options={{ title: t("nav.payments"), tabBarIcon: ({ color }) => <TabIcon symbol="€" color={color} /> }}
-      />
+      <Tabs.Screen name="home" options={tab(t("nav.home"), "home")} />
+      <Tabs.Screen name="roster" options={tab(t("nav.students"), "students")} />
+      <Tabs.Screen name="payments" options={tab(t("nav.payments"), "payments")} />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  pill: { width: 56, height: 30, borderRadius: Radii.pill, alignItems: "center", justifyContent: "center" },
+  label: { fontSize: 12 },
+});

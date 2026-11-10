@@ -61,7 +61,7 @@ test("completing a lesson posts the note and refreshes the home", async () => {
 
   await fireEvent.press(await screen.findByRole("button", { name: /Giulia Rossi/ }));
   await fireEvent.changeText(screen.getByLabelText("Progress note"), "Scales in G");
-  await fireEvent.press(screen.getByRole("button", { name: "Mark complete" }));
+  await fireEvent.press(screen.getByRole("button", { name: "Complete" }));
 
   expect(await screen.findByText("No upcoming lessons.")).toBeOnTheScreen();
   expect(api.callsTo("POST /lessons/1/complete/")[0].body).toEqual({ note: "Scales in G" });
@@ -75,8 +75,8 @@ test("a refused completion keeps the dialog open with the server's reason", asyn
   await renderApp("/home");
 
   await fireEvent.press(await screen.findByRole("button", { name: /Giulia Rossi/ }));
-  await fireEvent.press(screen.getByRole("button", { name: "Mark complete" }));
+  await fireEvent.press(screen.getByRole("button", { name: "Complete" }));
 
   expect(await screen.findByText("The server rejected the request: Lesson already completed.")).toBeOnTheScreen();
-  await waitFor(() => expect(screen.getByRole("button", { name: "Mark complete" })).toBeOnTheScreen());
+  await waitFor(() => expect(screen.getByRole("button", { name: "Complete" })).toBeOnTheScreen());
 });

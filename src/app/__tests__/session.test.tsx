@@ -117,7 +117,7 @@ test("after logout and a new sign-in, nothing of the previous user is shown", as
   await fireEvent.press(screen.getByRole("button", { name: "Log in" }));
 
   // While the new user's dashboard is still loading, the old "12" must not appear.
-  expect(await screen.findByText("Hi, luca 👋")).toBeOnTheScreen();
+  expect(await screen.findByText("Hi, luca")).toBeOnTheScreen();
   expect(screen.queryByText("12")).toBeNull();
   releaseDashboard();
   expect(await screen.findByText("4")).toBeOnTheScreen();

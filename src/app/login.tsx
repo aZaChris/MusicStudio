@@ -1,19 +1,31 @@
 import { Redirect } from "expo-router";
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from "react-native";
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
+import Svg, { Ellipse, Line } from "react-native-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Alert } from "@/components/Alert";
 import { Button } from "@/components/Button";
+import { LogoMark } from "@/components/Logo";
 import { TextField } from "@/components/TextField";
-import { Fonts, Spacing } from "@/constants/theme";
-import { useTheme } from "@/hooks/use-theme";
+import { Radii, shadow, Type } from "@/constants/theme";
+import { useScheme, useTheme } from "@/hooks/use-theme";
 import { ApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 import { errorMessage } from "@/lib/errors";
 import { useT } from "@/lib/i18n";
 
+// Five staff lines with three notes: decoration only, never behind text that must be read.
+const LINES = [10, 26, 42, 58, 74];
+const NOTES = [
+  [250, 58],
+  [300, 42],
+  [350, 26],
+];
+
 export default function LoginScreen() {
-  const theme = useTheme();
+  const c = useTheme();
+  const scheme = useScheme();
   const t = useT();
   const { user, notice, login } = useAuth();
   const [email, setEmail] = useState("");
@@ -37,62 +49,57 @@ export default function LoginScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.center}
-      >
-        <View style={styles.form}>
-          <View style={styles.logo}>
-            <View style={[styles.logoMark, { backgroundColor: theme.accent }]}>
-              <Text style={styles.logoGlyph}>♪</Text>
-            </View>
-            <Text style={[styles.title, { color: theme.text }]}>MusicStudio</Text>
+    <View style={[styles.fill, { backgroundColor: c.paper }]}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={styles.fill}>
+        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" bounces={false}>
+          <SafeAreaView edges={["top"]} style={[styles.story, { backgroundColor: c.plum }]}>
+            <Svg width="100%" height={90} viewBox="0 0 390 90" preserveAspectRatio="none" style={styles.staff} accessible={false}>
+              {LINES.map((y) => (
+                <Line key={y} x1="0" y1={y} x2="390" y2={y} stroke={c.plumLine} strokeWidth={1.5} />
+              ))}
+              {NOTES.map(([cx, cy]) => (
+                <Ellipse key={cx} cx={cx} cy={cy} rx="9" ry="7" fill={c.orange} rotation={-20} originX={cx} originY={cy} />
+              ))}
+            </Svg>
+            <LogoMark size={52} />
+            <Text accessibilityRole="header" style={[Type.titleXl, { color: c.onPlum }]}>
+              {t("auth.heroTitle")}
+            </Text>
+            <Text style={[Type.body, { color: c.plumSoft }]}>{t("auth.heroText")}</Text>
+          </SafeAreaView>
+
+          <View style={[styles.form, { backgroundColor: c.card }, shadow("card", scheme)]}>
+            <TextField
+              label={t("auth.email")}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="username"
+            />
+            <TextField
+              label={t("auth.password")}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="password"
+              textContentType="password"
+            />
+            <Button title={t("auth.login")} large block onPress={handleSubmit} loading={loading} />
+            {notice && !error ? <Alert kind="warning">{t(notice)}</Alert> : null}
+            {error ? <Alert kind="error">{error}</Alert> : null}
           </View>
-
-          <TextField
-            label={t("auth.email")}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            textContentType="username"
-          />
-          <TextField
-            label={t("auth.password")}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="password"
-            textContentType="password"
-          />
-
-          {notice && !error && (
-            <Text accessibilityRole="alert" style={{ color: theme.warningText }}>
-              {t(notice)}
-            </Text>
-          )}
-
-          {error && (
-            <Text accessibilityRole="alert" style={{ color: theme.dangerText }}>
-              {error}
-            </Text>
-          )}
-
-          <Button title={t("auth.login")} onPress={handleSubmit} loading={loading} />
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", padding: Spacing.four },
-  form: { width: "100%", maxWidth: 340, gap: Spacing.three },
-  logo: { alignItems: "center", gap: Spacing.two, marginBottom: Spacing.two },
-  logoMark: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  logoGlyph: { color: "white", fontSize: 22 },
-  title: { fontFamily: Fonts.headingBold, fontSize: 22 },
+  fill: { flex: 1 },
+  scroll: { flexGrow: 1 },
+  story: { minHeight: 340, paddingHorizontal: 28, paddingTop: 24, paddingBottom: 72, gap: 14 },
+  staff: { position: "absolute", left: 0, right: 0, bottom: 56 },
+  form: { marginTop: -40, marginHorizontal: 20, marginBottom: 32, borderRadius: Radii.sheet, padding: 22, gap: 18 },
 });
