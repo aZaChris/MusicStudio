@@ -60,6 +60,8 @@ regenerates `src/lib/api/schema.d.ts`.
 - `openapi-typescript` needs TS 5 as peer: run it only via `npm run contract:sync` (pinned npx).
 - Without a Redis server the backend's throttles wait for the connection timeout on every
   request: for local e2e use a settings file with an in-memory cache.
+- Jest runs with `maxWorkers: 2` (package.json): with more workers the router screens time out
+  on a ~3 GB machine (14/53 failed; CI was green). Same cause as the backend's Vitest cap.
 
 ## Running against the local backend
 
@@ -67,5 +69,3 @@ Start the Django API from the main checkout (`backend/`, see its CLAUDE.md), the
 `EXPO_PUBLIC_API_BASE_URL=http://localhost:8000/api/v1 npx expo start --web`. The backend must
 allow the web origin in `CORS_ALLOWED_ORIGINS`. No iOS/Android emulator is available in the
 agent environment: verify with tests and the web build.
-- Jest runs with `maxWorkers: 2` (package.json): with more workers the router screens time out
-  on a ~3 GB machine (14/53 failed; CI was green). Same cause as the backend's Vitest cap.
