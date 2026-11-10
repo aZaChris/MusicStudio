@@ -6,11 +6,12 @@ Also read `AGENTS.md` (Expo SDK 57 docs are the reference: https://docs.expo.dev
 
 ## What this branch is
 
-- `refactor/mobile`: the Expo app, refactored onto the **Django REST API** of branch
-  `refactor/production-standards` (case study, like the backend refactor). It starts from
-  branch `app` (commit `3fb9be8`), which was written for the Next.js API of branch `web`.
-- Never modify branches `app` and `web`. The backend lives on its own branch; contract fixes
-  go there, then the vendored contract here is refreshed.
+- `staging/mobile`: the Expo app, refactored onto the **Django REST API** of branch
+  `staging/backend` (case study, like the backend refactor). It is a copy of `refactor/mobile`,
+  which started from the old branch `app` (commit `3fb9be8`), written for the Next.js API of the
+  old branch `web`. Both old branches are archived as tags `archive/app` and `archive/web`.
+- The backend lives on its own branch; contract fixes go there, then the vendored contract here
+  is refreshed (`npm run contract:sync`).
 - Principles: `.specify/memory/constitution.md` (v3.0.0). Starting point:
   `docs/learning/audit-iniziale.md`.
 
@@ -18,7 +19,7 @@ Also read `AGENTS.md` (Expo SDK 57 docs are the reference: https://docs.expo.dev
 
 | Phase | Feature dir | Status |
 |---|---|---|
-| 1 Parity on the Django API | `specs/002-django-api-parity` | done (owner: real-device run in Expo Go, T032) |
+| 1 Parity on the Django API | `specs/002-django-api-parity` | in progress: code, docs, CI green; to close: re-verify the parallel test run locally, real-device run in Expo Go (T032) |
 
 Open items: `docs/learning/00-indice.md` ("Aperto"); `expo-router` advisories in the bundle wait
 for an SDK patch (`npx expo install --fix`), never `npm audit fix --force`.

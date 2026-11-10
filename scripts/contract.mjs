@@ -4,14 +4,14 @@
 //   node scripts/contract.mjs sync    copy the contract from the backend branch, regenerate types
 //   node scripts/contract.mjs check   fail if either file differs from what sync would produce
 //
-// The backend contract lives at backend/openapi.yaml on branch refactor/production-standards.
+// The backend contract lives at backend/openapi.yaml on branch staging/backend.
 // The local branch is preferred (it may hold unpushed contract fixes); CI only has origin/<branch>.
 import { execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const BRANCH = "refactor/production-standards";
+const BRANCH = "staging/backend";
 const SOURCE = "backend/openapi.yaml";
 const CONTRACT = "contract/openapi.yaml";
 const TYPES = "src/lib/api/schema.d.ts";

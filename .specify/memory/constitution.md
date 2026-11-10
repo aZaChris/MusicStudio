@@ -1,5 +1,9 @@
 <!--
 Sync Impact Report
+Version change: 3.0.0 → 3.0.1 (PATCH: work moved to staging/mobile, backend on staging/backend,
+  old branches archived as tags; no principle changed)
+
+Previous report (3.0.0):
 Version change: 2.0.0 → 3.0.0 (MAJOR: the repository is redefined from the Next.js web platform
   to the mobile client only; every principle is redefined for a client of the Django API)
 Modified principles:
@@ -12,7 +16,7 @@ Modified principles:
 Added principles: III. Secure Session Handling; VIII. Decisions & Study Docs Ship With Code;
   IX. Security Verified Per Phase (OWASP Mobile Top 10)
 Removed sections: Next.js/Drizzle/Neon/Auth.js/Vercel stack constraints (server code no longer
-  lives here; the backend is the Django API on branch refactor/production-standards)
+  lives here; the backend is the Django API on branch staging/backend)
 Templates requiring updates:
   ✅ .specify/templates/plan-template.md (Constitution Check gates listed)
   ✅ .specify/templates/spec-template.md (generic, compatible as-is)
@@ -38,7 +42,7 @@ tests, and the app must not create a second, weaker source of truth.
 
 ### II. Contract-Driven API Client
 Response and request types MUST be generated from the backend's OpenAPI contract
-(`backend/openapi.yaml` on branch `refactor/production-standards`), vendored into this
+(`backend/openapi.yaml` on branch `staging/backend`), vendored into this
 repository. A check MUST fail when the vendored copy differs from the backend branch.
 Hand-written response types are forbidden; screens consume the generated types through a thin
 typed client in `src/lib/`.
@@ -63,7 +67,7 @@ Rationale: the inherited app had no tests at all; session and money screens are 
 bugs cost trust.
 
 ### V. Phased Scope Discipline
-Phase 1 is parity with the `app` branch on the Django API (login/logout, teacher home, roster
+Phase 1 is parity with the old `app` branch (tag `archive/app`) on the Django API (login/logout, teacher home, roster
 and student detail, complete lesson, payments, parent portal). New features need a spec.
 Native modules that require a custom development build are out of scope unless decided in an
 ADR: the app MUST keep running in Expo Go. Stripe, if ever used, is test mode only.
@@ -103,16 +107,16 @@ Rationale: security reviewed once at the end is security never reviewed.
 - **Stack**: Expo SDK 57, Expo Router (typed routes), React Native, TypeScript strict,
   TanStack Query for server state, `expo-secure-store` for tokens. Dependencies are added with
   `npx expo install` so versions match the SDK; Expo's versioned docs for v57 are the reference.
-- **Backend**: the Django REST API on branch `refactor/production-standards`, base path
+- **Backend**: the Django REST API on branch `staging/backend`, base path
   `/api/v1/`, configured through `EXPO_PUBLIC_API_BASE_URL`. No AWS services.
-- **Branches**: `app` (inherited Expo app) and `web` (Next.js) are never modified. Work happens
-  on `refactor/mobile`.
+- **Branches**: work happens on `staging/mobile`. The old `app` and `web` branches are archived
+  as tags `archive/app` and `archive/web`, which are never moved.
 
 ## Development Workflow
 
 - Features flow through spec-kit: `/speckit-specify` → `/speckit-plan` → `/speckit-tasks` →
   `/speckit-implement`. Ad-hoc work beyond trivial fixes is discouraged.
-- Small commits on `refactor/mobile`; each completed phase ends with a summary commit and an
+- Small commits on `staging/mobile`; each completed phase ends with a summary commit and an
   updated `docs/learning/00-indice.md`.
 - Ambiguous choices that significantly change the architecture: pick the simplest, most
   conservative option, record it in an ADR, and continue.
@@ -125,4 +129,4 @@ versioning (MAJOR: principle removed or redefined incompatibly; MINOR: principle
 materially expanded; PATCH: wording). Every change is self-reviewed against Principles I, II
 and III; violations are fixed or justified in the plan's Complexity Tracking before merge.
 
-**Version**: 3.0.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-09
+**Version**: 3.0.1 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-10
