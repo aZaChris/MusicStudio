@@ -38,13 +38,13 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     DJANGO_SETTINGS_MODULE=config.settings.prod \
     PORT=8000
 
-RUN groupadd --system app && useradd --system --gid app --home-dir /app app
-
+# No RUN in this stage: Coolify injects every variable (secrets included) as a build ARG,
+# and a RUN would record them in the image history. A numeric uid needs no useradd.
 WORKDIR /app
 COPY --from=builder /opt/venv /opt/venv
-COPY --from=builder --chown=app:app /app /app
+COPY --from=builder --chown=10001:10001 /app /app
 
-USER app
+USER 10001:10001
 EXPOSE 8000
 
 # Liveness only: a database outage must not make Docker kill healthy web containers.

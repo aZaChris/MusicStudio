@@ -39,3 +39,12 @@ def test_the_web_portal_is_built_for_production_and_only_exposed():
 def test_browser_calls_to_the_api_default_to_the_portal_origin_only():
     cors = SERVICES["backend"]["environment"]["CORS_ALLOWED_ORIGINS"]
     assert cors == "${CORS_ALLOWED_ORIGINS:-${SERVICE_URL_WEB_8080}}"
+
+
+@pytest.mark.parametrize("dockerfile", ["backend/Dockerfile", "frontend/Dockerfile"])
+def test_the_shipped_image_stage_has_no_run_step(dockerfile):
+    # Coolify injects every variable, secrets included, as a build ARG; a RUN in the final
+    # stage would write them into the image history (docker history).
+    text = (ROOT / dockerfile).read_text()
+    final_stage = text[text.rindex("\nFROM ") :]
+    assert not any(line.lstrip().startswith("RUN ") for line in final_stage.splitlines())
