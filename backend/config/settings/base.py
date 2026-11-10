@@ -5,12 +5,18 @@ Every value that differs between environments comes from an environment variable
 (`dev`, `test`, `prod`) only override what they must.
 """
 
+import os
 from datetime import timedelta
 from pathlib import Path
 
 import environ
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+# An empty variable means "not set": platforms such as Coolify pass every variable to every
+# container, empty ones included, and env.int("") would crash instead of using the default.
+for _name in [name for name, value in os.environ.items() if value == ""]:
+    del os.environ[_name]
 
 env = environ.Env()
 # A local `backend/.env` is a dev convenience; containers get real env vars instead.

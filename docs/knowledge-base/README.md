@@ -20,4 +20,4 @@ Problemi non banali risolti nel progetto: sintomo, causa radice, verifica, soluz
 | [senza-redis-ogni-richiesta-aspetta-il-timeout.md](senza-redis-ogni-richiesta-aspetta-il-timeout.md) | Senza Redis i throttle falliscono aperti ma dopo il timeout: ogni richiesta lenta |
 | [portale-disconnesso-dopo-30-minuti.md](portale-disconnesso-dopo-30-minuti.md) | Il portale non salvava il refresh token ruotato: utenti disconnessi dopo ~30 minuti |
 | [vitest-worker-non-partono-poca-ram.md](vitest-worker-non-partono-poca-ram.md) | Worker di Vitest che non partono e timeout con poca RAM: 2 worker e attese più lunghe |
-| [coolify-build-arg-vuoti-collectstatic.md](coolify-build-arg-vuoti-collectstatic.md) | Coolify inietta ogni variabile come ARG di build, anche vuota: `collectstatic` falliva su un int vuoto |
+| [coolify-build-arg-vuoti-collectstatic.md](coolify-build-arg-vuoti-collectstatic.md) | Coolify passa ogni variabile, anche vuota, alla build e a tutti i container: `collectstatic`, worker e beat crashavano su un int vuoto |

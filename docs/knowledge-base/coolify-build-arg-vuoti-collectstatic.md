@@ -10,6 +10,8 @@ Coolify aggiunge al Dockerfile una dichiarazione `ARG` per **ogni** variabile d'
 
 In locale la variabile non esisteva proprio, quindi valeva il default e tutto funzionava.
 
+Lo stesso problema si è ripresentato all'avvio. Coolify passa le variabili della risorsa a **tutti** i container. Il `backend` riceveva `TRUSTED_PROXY_COUNT` con il default del compose (`${TRUSTED_PROXY_COUNT:-1}`), mentre `worker` e `beat` la ricevevano vuota così com'era: crash a ogni avvio, stato "Restarting".
+
 ## Come l'abbiamo confermata
 
 - Il traceback completo si vede solo con "Show Debug Logs" attivo in Coolify; il log mostra anche la riga "Added N ARG declarations to Dockerfile".
@@ -28,6 +30,8 @@ RUN env -i PATH=/usr/local/bin:/usr/bin:/bin \
 ```
 
 La build non dipende più da cosa c'è configurato nella piattaforma.
+
+Per l'avvio, la correzione è alla radice: in `config/settings/base.py` una variabile vuota viene tolta dall'ambiente prima di leggere i settings, quindi vale come non impostata e si usa il default. Il test `config/tests/test_empty_env_vars.py` carica i settings di produzione con variabili vuote: fallisce senza la correzione, passa con.
 
 ## Lezione per il futuro
 
