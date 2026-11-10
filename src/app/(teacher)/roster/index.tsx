@@ -9,7 +9,9 @@ import { Card } from "@/components/Card";
 import { Icon } from "@/components/Icon";
 import { PressScale } from "@/components/Motion";
 import { QueryState } from "@/components/QueryState";
+import { IconButton } from "@/components/IconButton";
 import { ScreenHeader } from "@/components/Screen";
+import { StudentSheet } from "@/components/forms/StudentSheet";
 import { paymentTone, StatusChip } from "@/components/StatusChip";
 import { Fonts, Radii, Type } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
@@ -24,20 +26,27 @@ export default function RosterScreen() {
   const students = useStudents();
   const list = students.data ?? [];
   const [query, setQuery] = useState("");
+  const [adding, setAdding] = useState(false);
   const needle = query.trim().toLowerCase();
   const shown = needle ? list.filter((s) => `${s.full_name} ${s.instrument}`.toLowerCase().includes(needle)) : list;
+
+  const addButton = <IconButton icon="plus" tone="accent" label={t("student.new")} onPress={() => setAdding(true)} />;
+  const sheet = adding ? (
+    <StudentSheet onClose={() => setAdding(false)} onSaved={(saved) => router.push(`/(teacher)/roster/${saved.id}`)} />
+  ) : null;
 
   // Loading, error and empty keep the page title; the list view carries its own as a header.
   if (students.isPending || students.isError || list.length === 0) {
     return (
       <SafeAreaView style={[styles.fill, { backgroundColor: c.paper }]} edges={["top"]}>
         <View style={styles.list}>
-          <ScreenHeader title={t("roster.title")} />
+          <ScreenHeader title={t("roster.title")} right={addButton} />
           <View style={{ height: 16 }} />
           <QueryState query={students} isEmpty emptyText={t("roster.empty")}>
             {null}
           </QueryState>
         </View>
+        {sheet}
       </SafeAreaView>
     );
   }
@@ -55,7 +64,7 @@ export default function RosterScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
           ListHeaderComponent={
             <View style={styles.head}>
-              <ScreenHeader title={t("roster.title")} eyebrow={t("roster.activeCount", { count: String(list.length) })} />
+              <ScreenHeader title={t("roster.title")} eyebrow={t("roster.activeCount", { count: String(list.length) })} right={addButton} />
               <View style={[styles.search, { backgroundColor: c.card, borderColor: c.fieldBorder }]}>
                 <Icon name="search" size={18} color={c.ink2} strokeWidth={2} />
                 <TextInput
@@ -107,6 +116,7 @@ export default function RosterScreen() {
           }}
         />
       </QueryState>
+      {sheet}
     </SafeAreaView>
   );
 }

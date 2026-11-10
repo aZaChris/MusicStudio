@@ -1,10 +1,15 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Avatar } from "@/components/Avatar";
 import { Beats } from "@/components/Beats";
 import { Card } from "@/components/Card";
+import { Button } from "@/components/Button";
 import { IconButton } from "@/components/IconButton";
+import { LessonSheet } from "@/components/forms/LessonSheet";
+import { PackageSheet } from "@/components/forms/PackageSheet";
+import { StudentSheet } from "@/components/forms/StudentSheet";
 import { QueryState } from "@/components/QueryState";
 import { Screen, SectionTitle } from "@/components/Screen";
 import { lessonTone, packageTone, StatusChip } from "@/components/StatusChip";
@@ -12,7 +17,7 @@ import { Fonts, Type } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { formatDateOfDateTime } from "@/lib/dates";
 import { enumLabel, lessonStatusKey, useLocale, useT } from "@/lib/i18n";
-import { useStudent, useStudentLessons } from "@/lib/queries";
+import { useCancelLesson, useStudent, useStudentLessons } from "@/lib/queries";
 
 export default function StudentDetailScreen() {
   const c = useTheme();
@@ -24,6 +29,8 @@ export default function StudentDetailScreen() {
   const student = useStudent(studentId);
   const lessons = useStudentLessons(studentId);
   const pkg = student.data?.active_package;
+  const cancelLesson = useCancelLesson();
+  const [sheet, setSheet] = useState<"edit" | "package" | "lesson" | null>(null);
 
   return (
     <Screen>
@@ -40,6 +47,18 @@ export default function StudentDetailScreen() {
               {student.data?.full_name}
             </Text>
             <Text style={[Type.small, { color: c.ink2, fontSize: 15 }]}>{student.data?.instrument}</Text>
+          </View>
+        </View>
+
+        <View style={styles.actions}>
+          <Button title={t("lesson.schedule")} block onPress={() => setSheet("lesson")} />
+          <View style={styles.actionsRow}>
+            <View style={styles.half}>
+              <Button title={t("package.new")} variant="secondary" block onPress={() => setSheet("package")} />
+            </View>
+            <View style={styles.half}>
+              <Button title={t("student.edit")} variant="secondary" block onPress={() => setSheet("edit")} />
+            </View>
           </View>
         </View>
 
@@ -67,10 +86,34 @@ export default function StudentDetailScreen() {
                 {!!lesson.notes && <Text style={[Type.small, { color: c.ink2 }]}>{lesson.notes}</Text>}
               </View>
               <StatusChip tone={lessonTone(lesson.status)} small label={enumLabel(t, lessonStatusKey(lesson.status))} />
+              {lesson.status === "scheduled" && (
+                <View style={styles.lessonActions}>
+                  <Button
+                    title={t("lesson.cancelLesson")}
+                    variant="ghost"
+                    disabled={cancelLesson.isPending}
+                    onPress={() => cancelLesson.mutate({ id: lesson.id, status: "cancelled" })}
+                  />
+                  <Button
+                    title={t("lesson.noShow")}
+                    variant="ghost"
+                    disabled={cancelLesson.isPending}
+                    onPress={() => cancelLesson.mutate({ id: lesson.id, status: "no_show" })}
+                  />
+                </View>
+              )}
             </Card>
           ))}
         </QueryState>
       </QueryState>
+
+      {sheet === "edit" && student.data && <StudentSheet student={student.data} onClose={() => setSheet(null)} />}
+      {sheet === "package" && student.data && (
+        <PackageSheet studentId={student.data.id} studentName={student.data.full_name} onClose={() => setSheet(null)} />
+      )}
+      {sheet === "lesson" && student.data && (
+        <LessonSheet studentId={student.data.id} studentName={student.data.full_name} onClose={() => setSheet(null)} />
+      )}
     </Screen>
   );
 }
@@ -82,6 +125,10 @@ const styles = StyleSheet.create({
   package: { gap: 12 },
   packageHead: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
   remaining: { fontFamily: Fonts.display, fontSize: 18 },
-  lesson: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 12 },
+  actions: { gap: 10 },
+  actionsRow: { flexDirection: "row", gap: 10 },
+  half: { flex: 1 },
+  lesson: { flexDirection: "row", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: 12 },
+  lessonActions: { flexDirection: "row", width: "100%", justifyContent: "flex-end", gap: 4 },
   lessonText: { flex: 1, gap: 2 },
 });

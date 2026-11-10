@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, type ReactNode } from "react";
-import { Modal, PanResponder, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, View, useWindowDimensions } from "react-native";
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -59,7 +59,7 @@ export function BottomSheet({ children, onClose, title }: { children: ReactNode;
 
   return (
     <Modal transparent animationType="none" visible onRequestClose={close} statusBarTranslucent>
-      <View style={styles.fill}>
+      <KeyboardAvoidingView style={styles.fill} behavior={Platform.OS === "ios" ? "padding" : undefined}>
         <Animated.View style={[StyleSheet.absoluteFill, { backgroundColor: c.scrim }, scrim]}>
           <Pressable style={styles.fill} onPress={close} accessible={false} />
         </Animated.View>
@@ -71,16 +71,25 @@ export function BottomSheet({ children, onClose, title }: { children: ReactNode;
           <View {...pan.panHandlers} style={styles.gripArea} accessible={false} importantForAccessibility="no-hide-descendants">
             <View style={[styles.grip, { backgroundColor: c.line }]} />
           </View>
-          {children}
+          {/* Tall forms scroll inside the panel instead of running off the screen. */}
+          <ScrollView
+            style={{ maxHeight: height * 0.7 }}
+            contentContainerStyle={styles.body}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {children}
+          </ScrollView>
         </Animated.View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1, justifyContent: "flex-end" },
-  sheet: { borderTopLeftRadius: Radii.sheet, borderTopRightRadius: Radii.sheet, paddingHorizontal: 20, paddingTop: 4, gap: 16 },
+  sheet: { borderTopLeftRadius: Radii.sheet, borderTopRightRadius: Radii.sheet, paddingHorizontal: 20, paddingTop: 4 },
+  body: { gap: 16 },
   gripArea: { alignItems: "center", paddingTop: 8, paddingBottom: 4 },
   grip: { width: 44, height: 5, borderRadius: Radii.pill },
 });

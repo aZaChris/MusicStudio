@@ -2,7 +2,18 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiFetch, fetchAllPages } from "./api/client";
-import type { Dashboard, Lesson, Payment, PaymentRequest, Student } from "./api/types";
+import type {
+  Dashboard,
+  Lesson,
+  LessonCancelStatus,
+  LessonRequest,
+  Package,
+  PackageRequest,
+  Payment,
+  PaymentRequest,
+  Student,
+  StudentRequest,
+} from "./api/types";
 
 export function useDashboard() {
   return useQuery({ queryKey: ["dashboard"], queryFn: () => apiFetch<Dashboard>("/dashboard/") });
@@ -62,5 +73,57 @@ export function useRegisterPayment() {
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["students"] });
     },
+  });
+}
+
+/** What changes when a student, package or lesson is added or edited: lists, detail, home counters. */
+function useRefresh() {
+  const queryClient = useQueryClient();
+  return () => {
+    void queryClient.invalidateQueries({ queryKey: ["students"] });
+    void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+  };
+}
+
+export function useCreateStudent() {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: (data: StudentRequest) => apiFetch<Student>("/students/", { method: "POST", body: data }),
+    onSuccess: refresh,
+  });
+}
+
+export function useUpdateStudent(id: number) {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: (data: Partial<StudentRequest>) =>
+      apiFetch<Student>(`/students/${id}/`, { method: "PATCH", body: data }),
+    onSuccess: refresh,
+  });
+}
+
+export function useCreatePackage() {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: (data: PackageRequest) => apiFetch<Package>("/packages/", { method: "POST", body: data }),
+    onSuccess: refresh,
+  });
+}
+
+export function useCreateLesson() {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: (data: LessonRequest) => apiFetch<Lesson>("/lessons/", { method: "POST", body: data }),
+    onSuccess: refresh,
+  });
+}
+
+/** Cancel a lesson, or mark the student as a no-show. */
+export function useCancelLesson() {
+  const refresh = useRefresh();
+  return useMutation({
+    mutationFn: ({ id, status }: { id: number; status: LessonCancelStatus }) =>
+      apiFetch<Lesson>(`/lessons/${id}/cancel/`, { method: "POST", body: { status } }),
+    onSuccess: refresh,
   });
 }

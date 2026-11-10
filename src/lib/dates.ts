@@ -39,3 +39,26 @@ export function formatDay(day: string, locale: Locale): string {
 export function formatDateOfDateTime(iso: string, locale: Locale): string {
   return formatDay(localDateISO(new Date(iso)), locale);
 }
+
+/**
+ * A wall-clock date + time picked by the user ("2026-11-12", "16:30") as the instant the API
+ * stores. Built from the phone's local time, so 16:30 in Rome stays 16:30 across summer time.
+ */
+export function localDateTimeToISO(day: string, time: string): string {
+  const [y, m, d] = day.split("-").map(Number);
+  const [hh, mm] = time.split(":").map(Number);
+  return new Date(y, m - 1, d, hh, mm).toISOString();
+}
+
+/** The next `count` calendar days from `from`, as API dates (`YYYY-MM-DD`), today first. */
+export function nextDays(count: number, from: Date = new Date()): string[] {
+  return Array.from({ length: count }, (_, i) => localDateISO(new Date(from.getFullYear(), from.getMonth(), from.getDate() + i)));
+}
+
+/** `date` plus whole months, as an API date. A 31st lands on the last day of a shorter month. */
+export function addMonths(day: string, months: number): string {
+  const [y, m, d] = day.split("-").map(Number);
+  const target = new Date(y, m - 1 + months, 1);
+  const last = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+  return localDateISO(new Date(target.getFullYear(), target.getMonth(), Math.min(d, last)));
+}
