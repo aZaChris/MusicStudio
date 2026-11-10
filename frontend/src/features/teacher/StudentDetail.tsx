@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 
@@ -6,7 +7,11 @@ import { QueryState } from '../../components/QueryState'
 import { Avatar, Beats, Icon, StatusChip } from '../../components/ui'
 import { lessonTone, packageTone } from '../../components/tones'
 import { formatDateTime } from '../../lib/dates'
+import { useCancelLesson } from './api/lessons'
 import { useStudent, useStudentLessons } from './api/students'
+import { LessonFormDialog } from './LessonFormDialog'
+import { PackageFormDialog } from './PackageFormDialog'
+import { StudentFormDialog } from './StudentFormDialog'
 
 export function StudentDetail() {
   const { t, i18n } = useTranslation()
@@ -15,6 +20,8 @@ export function StudentDetail() {
   const student = useStudent(studentId)
   const lessons = useStudentLessons(studentId)
   const pkg = student.data?.active_package
+  const cancelLesson = useCancelLesson()
+  const [dialog, setDialog] = useState<'edit' | 'package' | 'lesson' | null>(null)
 
   return (
     <AppShell>
@@ -32,6 +39,17 @@ export function StudentDetail() {
             <span className="page-eyebrow" style={{ fontSize: 16 }}>
               {student.data?.instrument}
             </span>
+          </div>
+          <div className="page-actions">
+            <button type="button" className="ms-btn ms-btn--secondary" onClick={() => setDialog('edit')}>
+              {t('student.edit')}
+            </button>
+            <button type="button" className="ms-btn ms-btn--secondary" onClick={() => setDialog('package')}>
+              {t('package.new')}
+            </button>
+            <button type="button" className="ms-btn ms-btn--primary" onClick={() => setDialog('lesson')}>
+              {t('lesson.schedule')}
+            </button>
           </div>
         </div>
 
@@ -79,15 +97,55 @@ export function StudentDetail() {
                     </span>
                     {lesson.notes && <span className="muted">{lesson.notes}</span>}
                   </div>
-                  <StatusChip tone={lessonTone(lesson.status)}>
-                    {t(`lesson.statusName.${lesson.status}`)}
-                  </StatusChip>
+                  <div className="page-actions" style={{ alignItems: 'center' }}>
+                    {lesson.status === 'scheduled' && (
+                      <>
+                        <button
+                          type="button"
+                          className="ms-btn ms-btn--ghost ms-btn--s"
+                          disabled={cancelLesson.isPending}
+                          onClick={() => cancelLesson.mutate({ id: lesson.id, status: 'cancelled' })}
+                        >
+                          {t('lesson.cancelLesson')}
+                        </button>
+                        <button
+                          type="button"
+                          className="ms-btn ms-btn--ghost ms-btn--s"
+                          disabled={cancelLesson.isPending}
+                          onClick={() => cancelLesson.mutate({ id: lesson.id, status: 'no_show' })}
+                        >
+                          {t('lesson.noShow')}
+                        </button>
+                      </>
+                    )}
+                    <StatusChip tone={lessonTone(lesson.status)}>
+                      {t(`lesson.statusName.${lesson.status}`)}
+                    </StatusChip>
+                  </div>
                 </div>
               ))}
             </QueryState>
           </section>
         </div>
       </QueryState>
+
+      {dialog === 'edit' && student.data && (
+        <StudentFormDialog student={student.data} onClose={() => setDialog(null)} />
+      )}
+      {dialog === 'package' && student.data && (
+        <PackageFormDialog
+          studentId={student.data.id}
+          studentName={student.data.full_name}
+          onClose={() => setDialog(null)}
+        />
+      )}
+      {dialog === 'lesson' && student.data && (
+        <LessonFormDialog
+          studentId={student.data.id}
+          studentName={student.data.full_name}
+          onClose={() => setDialog(null)}
+        />
+      )}
     </AppShell>
   )
 }

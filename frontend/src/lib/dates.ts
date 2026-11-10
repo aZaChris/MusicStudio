@@ -34,3 +34,14 @@ export function formatDateTime(iso: string, locale: string): string {
 export function formatTime(iso: string, locale: string): string {
   return new Date(iso).toLocaleTimeString(tag(locale), { hour: '2-digit', minute: '2-digit' })
 }
+
+/**
+ * A wall-clock date + time typed by the user ("2026-11-12", "16:30") as the instant the API
+ * stores. Built from the browser's local time, so 16:30 in Rome stays 16:30 in Rome all year,
+ * summer time included.
+ */
+export function localDateTimeToISO(day: string, time: string): string {
+  const [y, m, d] = day.split('-').map(Number)
+  const [hh, mm] = time.split(':').map(Number)
+  return new Date(y, m - 1, d, hh, mm).toISOString()
+}

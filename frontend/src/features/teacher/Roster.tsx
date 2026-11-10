@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import type { Student } from '../../api/types'
 import { AppShell } from '../../components/AppShell'
@@ -8,6 +8,7 @@ import { QueryState } from '../../components/QueryState'
 import { Avatar, Beats, Icon, StatusChip } from '../../components/ui'
 import { paymentTone } from '../../components/tones'
 import { useStudents } from './api/students'
+import { StudentFormDialog } from './StudentFormDialog'
 
 type Filter = 'all' | 'low' | 'none'
 const FILTERS: Filter[] = ['all', 'low', 'none']
@@ -21,7 +22,9 @@ function matches(student: Student, filter: Filter, query: string) {
 
 export function Roster() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const students = useStudents()
+  const [adding, setAdding] = useState(false)
   const list = students.data ?? []
   const [filter, setFilter] = useState<Filter>('all')
   const [query, setQuery] = useState('')
@@ -34,6 +37,10 @@ export function Roster() {
           <span className="page-eyebrow">{t('roster.activeCount', { count: list.length })}</span>
           <h1 className="page-title">{t('roster.title')}</h1>
         </div>
+        <button type="button" className="ms-btn ms-btn--primary" onClick={() => setAdding(true)}>
+          <Icon name="plus" size={18} />
+          {t('student.new')}
+        </button>
         <label className="ms-search">
           <Icon name="search" size={18} />
           <input
@@ -109,6 +116,13 @@ export function Roster() {
           </div>
         )}
       </QueryState>
+
+      {adding && (
+        <StudentFormDialog
+          onClose={() => setAdding(false)}
+          onSaved={(saved) => navigate(`/students/${saved.id}`)}
+        />
+      )}
     </AppShell>
   )
 }
