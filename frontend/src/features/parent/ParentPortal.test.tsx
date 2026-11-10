@@ -1,80 +1,47 @@
-import { render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fireEvent, screen } from '@testing-library/react'
+import { expect, test } from 'vitest'
 
-import { renderWithProviders } from '../../test/utils'
-import { ParentPortal } from './ParentPortal'
+import { page } from '../../test/fake-api'
+import { lesson, parentMe, payment, student } from '../../test/fixtures'
+import { renderApp, signedInAs } from '../../test/utils'
 
-function jsonResponse(body: unknown) {
-  return new Response(JSON.stringify(body), {
+const routes = {
+  'GET /students/': {
     status: 200,
-    headers: { 'Content-Type': 'application/json' },
-  })
+    body: page([student(7, { full_name: 'Giulia Rossi' }), student(8, { full_name: 'Marco Rossi' })]),
+  },
+  'GET /students/7/lessons/': {
+    status: 200,
+    body: [lesson({ id: 1, status: 'completed', notes: 'Bravissima' })],
+  },
+  'GET /students/8/lessons/': { status: 200, body: [lesson({ id: 2, student: 8, status: 'no_show' })] },
+  'GET /payments/?student=7': { status: 200, body: page([payment(1)]) },
+  'GET /payments/?student=8': {
+    status: 200,
+    body: page([payment(2, { student: 8, amount: '90.00', status: 'overdue' })]),
+  },
 }
 
-describe('ParentPortal', () => {
-  beforeEach(() => {
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (input: RequestInfo | URL) => {
-        const url = String(input)
-        if (url.includes('/lessons/')) {
-          return jsonResponse([
-            {
-              id: 1,
-              student: 1,
-              student_name: 'Sara Neri',
-              teacher: 1,
-              package: 1,
-              start_time: '2026-02-01T10:00:00Z',
-              duration_minutes: 30,
-              status: 'completed',
-              notes: 'Great progress',
-            },
-          ])
-        }
-        if (url.includes('/payments/')) {
-          return jsonResponse({
-            results: [
-              {
-                id: 1,
-                student: 1,
-                student_name: 'Sara Neri',
-                package: 1,
-                amount: '50.00',
-                date: '2026-01-15',
-                method: 'cash',
-                status: 'paid',
-              },
-            ],
-          })
-        }
-        // /students/
-        return jsonResponse({
-          count: 1,
-          results: [
-            {
-              id: 1,
-              first_name: 'Sara',
-              last_name: 'Neri',
-              full_name: 'Sara Neri',
-              instrument: 'Violino',
-              teacher: 1,
-              is_active: true,
-              active_package: null,
-              payment_status: 'paid',
-            },
-          ],
-        })
-      }),
-    )
-  })
+test('a parent switches between two children; payments are filtered by the server', async () => {
+  const api = signedInAs(parentMe, routes)
+  renderApp('/')
 
-  it('renders only the linked student, read-only', async () => {
-    render(renderWithProviders(<ParentPortal />))
+  expect(await screen.findByText('Bravissima')).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('tab', { name: 'Marco Rossi' }))
 
-    expect(await screen.findByText('Great progress')).toBeInTheDocument()
-    expect(await screen.findByText('50.00')).toBeInTheDocument()
-    // read-only: no write controls anywhere on the page
-    expect(screen.queryByRole('button', { name: /register/i })).not.toBeInTheDocument()
-  })
+  expect(await screen.findByText('No-show')).toBeInTheDocument()
+  expect(await screen.findByText('Overdue')).toBeInTheDocument()
+  expect(api.callsTo('GET /payments/').map((c) => c.path)).toEqual([
+    '/payments/?student=7',
+    '/payments/?student=8',
+  ])
+})
+
+test('the portal is read-only: no action changes data', async () => {
+  signedInAs(parentMe, routes)
+  renderApp('/')
+  await screen.findByText('Bravissima')
+
+  const actions = screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent)
+  expect(actions).toEqual(['Toggle light/dark theme', 'Passa all’italiano', 'Log out'])
 })

@@ -1,8 +1,8 @@
 import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 
-import { useAuth } from '../auth/AuthProvider'
-import { useTheme } from '../theme/ThemeProvider'
+import { useAuth } from '../auth/useAuth'
+import { useTheme } from '../theme/useTheme'
 
 const NAV_ITEMS = [
   { to: '/', icon: '▤', key: 'nav.dashboard' as const },
@@ -48,9 +48,7 @@ export function Sidebar() {
         >
           ♪
         </div>
-        <div style={{ fontFamily: 'var(--ms-font-heading)', fontWeight: 600, fontSize: 17 }}>
-          MusicStudio
-        </div>
+        <div style={{ fontFamily: 'var(--ms-font-heading)', fontWeight: 600, fontSize: 17 }}>MusicStudio</div>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -79,7 +77,12 @@ export function Sidebar() {
 
       <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={toggleTheme} title={t('theme.toggle')} aria-label={t('theme.toggle')} type="button">
+          <button
+            onClick={toggleTheme}
+            title={t('theme.toggle')}
+            aria-label={t('theme.toggle')}
+            type="button"
+          >
             {theme === 'dark' ? '☀️' : '🌙'}
           </button>
           <button

@@ -1,12 +1,14 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
+import { QueryState } from '../../components/QueryState'
 import { Sidebar } from '../../components/Sidebar'
 import { useStudents } from './api/students'
 
 export function Roster() {
   const { t } = useTranslation()
-  const { data, isLoading } = useStudents()
+  const students = useStudents()
+  const list = students.data ?? []
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh' }}>
@@ -16,9 +18,7 @@ export function Roster() {
           {t('roster.title')}
         </h1>
 
-        {isLoading && <p>…</p>}
-
-        {data && (
+        <QueryState query={students} isEmpty={list.length === 0} emptyText={t('roster.empty')}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ textAlign: 'left', fontSize: 12.5, color: 'var(--ms-text-muted)' }}>
@@ -29,11 +29,8 @@ export function Roster() {
               </tr>
             </thead>
             <tbody>
-              {data.results.map((student) => (
-                <tr
-                  key={student.id}
-                  style={{ borderTop: '1px solid var(--ms-border)', fontSize: 14 }}
-                >
+              {list.map((student) => (
+                <tr key={student.id} style={{ borderTop: '1px solid var(--ms-border)', fontSize: 14 }}>
                   <td style={{ padding: '10px 8px' }}>
                     <Link to={`/students/${student.id}`}>{student.full_name}</Link>
                   </td>
@@ -58,18 +55,14 @@ export function Roster() {
                     )}
                   </td>
                   <td style={{ padding: '10px 8px' }}>
-                    {student.payment_status ? t(`payments.status${capitalize(student.payment_status)}`) : '—'}
+                    {student.payment_status ? t(`payments.statusName.${student.payment_status}`) : '—'}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
+        </QueryState>
       </div>
     </div>
   )
-}
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1)
 }

@@ -1,10 +1,8 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
-type Theme = 'light' | 'dark'
+import { ThemeContext, type Theme } from './useTheme'
 
 const STORAGE_KEY = 'musicstudio-theme'
-
-const ThemeContext = createContext<{ theme: Theme; toggleTheme: () => void } | null>(null)
 
 function readStoredTheme(): Theme {
   try {
@@ -31,10 +29,4 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => setTheme((t) => (t === 'light' ? 'dark' : 'light'))
 
   return <ThemeContext.Provider value={{ theme, toggleTheme }}>{children}</ThemeContext.Provider>
-}
-
-export function useTheme() {
-  const ctx = useContext(ThemeContext)
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider')
-  return ctx
 }

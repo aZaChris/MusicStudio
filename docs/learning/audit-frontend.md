@@ -6,9 +6,9 @@ Il portale web è una SPA React che parla con il backend Django. È ferma all'MV
 
 ## Da dove partiamo
 
-- React 19, TypeScript strict, Vite 8, TanStack Query, react-router 7, i18next, Vitest con Testing Library, oxlint.
+- React 19, TypeScript, Vite 8, TanStack Query, react-router 7, i18next, Vitest con Testing Library, oxlint.
 - Circa 1.400 righe in `src/`: login, dashboard insegnante, elenco allievi, dettaglio allievo, pagamenti, portale genitore.
-- Misurato all'inizio: TypeScript senza errori; oxlint 0 errori e 2 avvisi; build di produzione riuscita (JavaScript 374 kB, 116 kB compressi); 3 test, che passano, ma uno è fallito alla prima esecuzione a macchina appena avviata e poi è passato: da tenere d'occhio.
+- Misurato all'inizio: TypeScript senza errori, ma con la modalità `strict` **non attivata** in `tsconfig.app.json` (attivandola, il codice compila comunque); oxlint 0 errori e 2 avvisi; build di produzione riuscita (JavaScript 374 kB, 116 kB compressi); 3 test, che passano, ma uno è fallito alla prima esecuzione a macchina appena avviata e poi è passato: da tenere d'occhio.
 - Fino alla constitution 3.0.0 la cartella era "fuori perimetro, non modificare". Per questo non ha seguito le fasi del backend.
 
 ## Problemi trovati, in ordine di gravità

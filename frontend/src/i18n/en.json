@@ -9,7 +9,8 @@
     "activeStudents": "active students",
     "pendingPayments": "pending payments",
     "thisWeek": "This week",
-    "upcoming": "Upcoming lessons"
+    "upcoming": "Upcoming lessons",
+    "noUpcoming": "No upcoming lessons."
   },
   "roster": {
     "title": "Students",
@@ -17,17 +18,20 @@
     "package": "Package",
     "remaining": "Remaining",
     "paymentStatus": "Payment status",
-    "lowPackage": "Running low"
+    "lowPackage": "Running low",
+    "empty": "No active students.",
+    "noPackage": "No active package"
   },
   "lesson": {
     "markComplete": "Mark complete",
     "note": "Progress note",
     "cancel": "Cancel",
-    "noShow": "No-show",
-    "statusScheduled": "Scheduled",
-    "statusCompleted": "Completed",
-    "statusCancelled": "Cancelled",
-    "statusNoShow": "No-show"
+    "statusName": {
+      "scheduled": "Scheduled",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "no_show": "No-show"
+    }
   },
   "payments": {
     "title": "Payments",
@@ -36,24 +40,66 @@
     "date": "Date",
     "method": "Method",
     "status": "Status",
-    "statusPaid": "Paid",
-    "statusPending": "Pending",
-    "statusOverdue": "Overdue"
+    "empty": "No payments yet.",
+    "saved": "Payment registered.",
+    "student": "Student",
+    "methodName": {
+      "cash": "Cash",
+      "bank_transfer": "Bank transfer",
+      "manual_entry": "Manual entry",
+      "card": "Card (online)"
+    },
+    "statusName": {
+      "paid": "Paid",
+      "pending": "Pending",
+      "overdue": "Overdue"
+    }
   },
   "parent": {
     "portalTitle": "Your lessons",
     "upcomingLessons": "Upcoming lessons",
     "attendance": "Attendance history",
     "paymentStatus": "Payment status",
-    "noStudents": "No students are linked to your account yet."
+    "noStudents": "No students are linked to your account yet.",
+    "lessons": "Lessons and attendance",
+    "payments": "Payments"
   },
   "auth": {
     "login": "Log in",
     "email": "Email",
     "password": "Password",
-    "logout": "Log out"
+    "logout": "Log out",
+    "invalidCredentials": "Invalid email or password.",
+    "sessionExpired": "Your session has ended. Please log in again.",
+    "unreachable": "Cannot reach the server to check your account."
   },
   "theme": {
     "toggle": "Toggle light/dark theme"
+  },
+  "common": {
+    "loading": "Loading…",
+    "retry": "Try again"
+  },
+  "error": {
+    "network": "Cannot reach the server. Check your connection.",
+    "sessionExpired": "Your session has ended. Please log in again.",
+    "forbidden": "You are not allowed to do this.",
+    "notFound": "Not found. It may have been removed or is not visible to you.",
+    "rateLimited": "Too many attempts. Wait a minute and try again.",
+    "server": "The server had a problem. Try again later.",
+    "rejected": "The server rejected the request.",
+    "rejectedWithReason": "The server rejected the request: {{reason}}",
+    "unexpected": "Something went wrong."
+  },
+  "student": {
+    "lessons": "Lessons",
+    "noLessons": "No lessons yet."
+  },
+  "package": {
+    "statusName": {
+      "active": "Active",
+      "expired": "Expired",
+      "completed": "Used up"
+    }
   }
 }

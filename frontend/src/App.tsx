@@ -1,6 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 
-import { useAuth } from './auth/AuthProvider'
+import { useAuth } from './auth/useAuth'
 import { Login } from './auth/Login'
 import { RequireRole } from './auth/RequireRole'
 import { Dashboard } from './features/teacher/Dashboard'

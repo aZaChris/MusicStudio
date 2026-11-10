@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { ErrorText } from '../../components/QueryState'
 import { useCompleteLesson } from './api/lessons'
 
 export function LessonCompleteModal({
@@ -16,10 +17,8 @@ export function LessonCompleteModal({
   const [note, setNote] = useState('')
   const completeLesson = useCompleteLesson()
 
-  const handleComplete = async () => {
-    await completeLesson.mutateAsync({ id: lessonId, note })
-    onClose()
-  }
+  // On failure the dialog stays open with the server's reason (e.g. 409 already completed).
+  const handleComplete = () => completeLesson.mutate({ id: lessonId, note }, { onSuccess: onClose })
 
   return (
     <div
@@ -35,6 +34,9 @@ export function LessonCompleteModal({
       onClick={onClose}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="lesson-complete-title"
         onClick={(e) => e.stopPropagation()}
         style={{
           background: 'var(--ms-surface)',
@@ -46,7 +48,10 @@ export function LessonCompleteModal({
           gap: 12,
         }}
       >
-        <h2 style={{ margin: 0, fontFamily: 'var(--ms-font-heading)', fontSize: 18 }}>
+        <h2
+          id="lesson-complete-title"
+          style={{ margin: 0, fontFamily: 'var(--ms-font-heading)', fontSize: 18 }}
+        >
           {studentName}
         </h2>
         <label>
@@ -58,6 +63,7 @@ export function LessonCompleteModal({
             style={{ width: '100%' }}
           />
         </label>
+        <ErrorText error={completeLesson.error} />
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
           <button type="button" onClick={onClose}>
             {t('lesson.cancel')}

@@ -9,7 +9,8 @@
     "activeStudents": "studenti attivi",
     "pendingPayments": "pagamenti in sospeso",
     "thisWeek": "Questa settimana",
-    "upcoming": "Prossime lezioni"
+    "upcoming": "Prossime lezioni",
+    "noUpcoming": "Nessuna lezione in programma."
   },
   "roster": {
     "title": "Studenti",
@@ -17,17 +18,20 @@
     "package": "Pacchetto",
     "remaining": "Rimanenti",
     "paymentStatus": "Stato pagamento",
-    "lowPackage": "In esaurimento"
+    "lowPackage": "In esaurimento",
+    "empty": "Nessuno studente attivo.",
+    "noPackage": "Nessun pacchetto attivo"
   },
   "lesson": {
     "markComplete": "Segna come completata",
     "note": "Nota di progresso",
     "cancel": "Annulla",
-    "noShow": "Assente",
-    "statusScheduled": "Programmata",
-    "statusCompleted": "Completata",
-    "statusCancelled": "Annullata",
-    "statusNoShow": "Assente"
+    "statusName": {
+      "scheduled": "Programmata",
+      "completed": "Completata",
+      "cancelled": "Annullata",
+      "no_show": "Assente"
+    }
   },
   "payments": {
     "title": "Pagamenti",
@@ -36,24 +40,66 @@
     "date": "Data",
     "method": "Metodo",
     "status": "Stato",
-    "statusPaid": "Pagato",
-    "statusPending": "In sospeso",
-    "statusOverdue": "Scaduto"
+    "empty": "Ancora nessun pagamento.",
+    "saved": "Pagamento registrato.",
+    "student": "Studente",
+    "methodName": {
+      "cash": "Contanti",
+      "bank_transfer": "Bonifico",
+      "manual_entry": "Inserimento manuale",
+      "card": "Carta (online)"
+    },
+    "statusName": {
+      "paid": "Pagato",
+      "pending": "In sospeso",
+      "overdue": "Scaduto"
+    }
   },
   "parent": {
     "portalTitle": "Le tue lezioni",
     "upcomingLessons": "Prossime lezioni",
     "attendance": "Storico presenze",
     "paymentStatus": "Stato pagamento",
-    "noStudents": "Nessuno studente è ancora collegato al tuo account."
+    "noStudents": "Nessuno studente è ancora collegato al tuo account.",
+    "lessons": "Lezioni e presenze",
+    "payments": "Pagamenti"
   },
   "auth": {
     "login": "Accedi",
     "email": "Email",
     "password": "Password",
-    "logout": "Esci"
+    "logout": "Esci",
+    "invalidCredentials": "Email o password non validi.",
+    "sessionExpired": "La sessione è terminata. Accedi di nuovo.",
+    "unreachable": "Impossibile raggiungere il server per verificare l'account."
   },
   "theme": {
     "toggle": "Cambia tema chiaro/scuro"
+  },
+  "common": {
+    "loading": "Caricamento…",
+    "retry": "Riprova"
+  },
+  "error": {
+    "network": "Impossibile raggiungere il server. Controlla la connessione.",
+    "sessionExpired": "La sessione è terminata. Accedi di nuovo.",
+    "forbidden": "Non hai i permessi per questa operazione.",
+    "notFound": "Non trovato. Potrebbe essere stato rimosso o non essere visibile per te.",
+    "rateLimited": "Troppi tentativi. Aspetta un minuto e riprova.",
+    "server": "Il server ha avuto un problema. Riprova più tardi.",
+    "rejected": "Il server ha rifiutato la richiesta.",
+    "rejectedWithReason": "Il server ha rifiutato la richiesta: {{reason}}",
+    "unexpected": "Qualcosa è andato storto."
+  },
+  "student": {
+    "lessons": "Lezioni",
+    "noLessons": "Ancora nessuna lezione."
+  },
+  "package": {
+    "statusName": {
+      "active": "Attivo",
+      "expired": "Scaduto",
+      "completed": "Esaurito"
+    }
   }
 }
