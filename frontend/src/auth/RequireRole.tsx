@@ -10,13 +10,18 @@ export function RequireRole({ roles, children }: { roles: Role[]; children: Reac
   const { t } = useTranslation()
   const { user, status, retry } = useAuth()
 
-  if (status === 'loading') return <p aria-busy="true">{t('common.loading')}</p>
+  if (status === 'loading')
+    return (
+      <p aria-busy="true" className="muted" style={{ padding: 32 }}>
+        {t('common.loading')}
+      </p>
+    )
   if (status === 'unreachable') {
     // A session is stored but cannot be confirmed: do not guess the role, do not sign out.
     return (
-      <div role="alert" style={{ padding: 32, display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span>{t('auth.unreachable')}</span>
-        <button type="button" onClick={retry}>
+      <div role="alert" className="ms-alert ms-alert--warning" style={{ margin: 32, alignItems: 'center' }}>
+        <span style={{ flex: 1 }}>{t('auth.unreachable')}</span>
+        <button type="button" className="ms-btn ms-btn--secondary" onClick={retry}>
           {t('common.retry')}
         </button>
       </div>

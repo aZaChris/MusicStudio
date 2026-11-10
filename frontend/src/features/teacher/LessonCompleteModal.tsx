@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { ErrorText } from '../../components/QueryState'
@@ -16,60 +16,55 @@ export function LessonCompleteModal({
   const { t } = useTranslation()
   const [note, setNote] = useState('')
   const completeLesson = useCompleteLesson()
+  const noteRef = useRef<HTMLTextAreaElement>(null)
+
+  useEffect(() => {
+    noteRef.current?.focus()
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose()
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [onClose])
 
   // On failure the dialog stays open with the server's reason (e.g. 409 already completed).
   const handleComplete = () => completeLesson.mutate({ id: lessonId, note }, { onSuccess: onClose })
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        inset: 0,
-        background: 'rgba(0,0,0,0.3)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 10,
-      }}
-      onClick={onClose}
-    >
+    <div className="ms-modal" onClick={onClose}>
       <div
+        className="ms-dialog"
         role="dialog"
         aria-modal="true"
         aria-labelledby="lesson-complete-title"
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: 'var(--ms-surface)',
-          borderRadius: 'var(--ms-radius-lg)',
-          padding: 24,
-          width: 360,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 12,
-        }}
       >
-        <h2
-          id="lesson-complete-title"
-          style={{ margin: 0, fontFamily: 'var(--ms-font-heading)', fontSize: 18 }}
-        >
-          {studentName}
-        </h2>
-        <label>
+        <div className="ms-stack" style={{ gap: 4 }}>
+          <h2 id="lesson-complete-title" className="ms-overlay-title">
+            {t('lesson.markComplete')}
+          </h2>
+          <span className="ms-overlay-sub">{studentName}</span>
+        </div>
+        <label className="ms-field">
           {t('lesson.note')}
           <textarea
+            ref={noteRef}
+            className="ms-input"
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            rows={3}
-            style={{ width: '100%' }}
+            rows={4}
           />
         </label>
         <ErrorText error={completeLesson.error} />
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button type="button" onClick={onClose}>
+        <div className="row-between" style={{ justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+          <button type="button" className="ms-btn ms-btn--secondary" onClick={onClose}>
             {t('lesson.cancel')}
           </button>
-          <button type="button" onClick={handleComplete} disabled={completeLesson.isPending}>
-            {t('lesson.markComplete')}
+          <button
+            type="button"
+            className="ms-btn ms-btn--primary"
+            onClick={handleComplete}
+            disabled={completeLesson.isPending}
+          >
+            {t('lesson.complete')}
           </button>
         </div>
       </div>

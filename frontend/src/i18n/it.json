@@ -1,16 +1,20 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Home",
     "students": "Studenti",
-    "payments": "Pagamenti"
+    "payments": "Pagamenti",
+    "label": "Principale"
   },
   "dashboard": {
-    "greeting": "Ciao, {{name}} 👋",
+    "greeting": "Ciao, {{name}}",
     "activeStudents": "studenti attivi",
     "pendingPayments": "pagamenti in sospeso",
     "thisWeek": "Questa settimana",
     "upcoming": "Prossime lezioni",
-    "noUpcoming": "Nessuna lezione in programma."
+    "noUpcoming": "Nessuna lezione in programma.",
+    "today": "Oggi",
+    "minutes": "{{count}} min",
+    "lowPackages": "pacchetti in esaurimento"
   },
   "roster": {
     "title": "Studenti",
@@ -20,7 +24,20 @@
     "paymentStatus": "Stato pagamento",
     "lowPackage": "In esaurimento",
     "empty": "Nessuno studente attivo.",
-    "noPackage": "Nessun pacchetto attivo"
+    "noPackage": "Nessun pacchetto attivo",
+    "activeCount_one": "{{count}} studente attivo",
+    "activeCount_other": "{{count}} studenti attivi",
+    "search": "Cerca studente",
+    "searchPlaceholder": "Cerca per nome o strumento",
+    "noMatch": "Nessuno studente corrisponde alla ricerca.",
+    "remainingOf": "{{remaining}} rimanenti su {{total}}",
+    "remainingCount_one": "{{count}} rimanente",
+    "remainingCount_other": "{{count}} rimanenti",
+    "filter": {
+      "all": "Tutti",
+      "low": "In esaurimento",
+      "none": "Senza pacchetto"
+    }
   },
   "lesson": {
     "markComplete": "Segna come completata",
@@ -31,7 +48,8 @@
       "completed": "Completata",
       "cancelled": "Annullata",
       "no_show": "Assente"
-    }
+    },
+    "complete": "Completa"
   },
   "payments": {
     "title": "Pagamenti",
@@ -53,6 +71,13 @@
       "paid": "Pagato",
       "pending": "In sospeso",
       "overdue": "Scaduto"
+    },
+    "toCollect_one": "{{count}} da incassare",
+    "toCollect_other": "{{count}} da incassare",
+    "filter": {
+      "all": "Tutti",
+      "pending": "Da incassare",
+      "paid": "Pagati"
     }
   },
   "parent": {
@@ -62,7 +87,14 @@
     "paymentStatus": "Stato pagamento",
     "noStudents": "Nessuno studente è ancora collegato al tuo account.",
     "lessons": "Lezioni e presenze",
-    "payments": "Pagamenti"
+    "payments": "Pagamenti",
+    "role": "Genitore",
+    "children": "Figli",
+    "nextLesson": "Prossima lezione",
+    "noNextLesson": "Nessuna lezione in programma",
+    "remaining_one": "{{count}} lezione rimasta nel pacchetto",
+    "remaining_other": "{{count}} lezioni rimaste nel pacchetto",
+    "paymentsHint": "Per pagare o correggere un importo, scrivi allo studio."
   },
   "auth": {
     "login": "Accedi",
@@ -71,10 +103,16 @@
     "logout": "Esci",
     "invalidCredentials": "Email o password non validi.",
     "sessionExpired": "La sessione è terminata. Accedi di nuovo.",
-    "unreachable": "Impossibile raggiungere il server per verificare l'account."
+    "unreachable": "Impossibile raggiungere il server per verificare l'account.",
+    "heroTitle": "Bentornato in sala prove.",
+    "heroText": "Lezioni, pacchetti e pagamenti del tuo studio, in un solo posto. I genitori vedono le lezioni dei figli, in sola lettura.",
+    "loginHint": "Usa l'email con cui lo studio ti ha registrato.",
+    "language": "Lingua"
   },
   "theme": {
-    "toggle": "Cambia tema chiaro/scuro"
+    "toggle": "Cambia tema chiaro/scuro",
+    "light": "Chiaro",
+    "dark": "Scuro"
   },
   "common": {
     "loading": "Caricamento…",
@@ -100,6 +138,7 @@
       "active": "Attivo",
       "expired": "Scaduto",
       "completed": "Esaurito"
-    }
+    },
+    "beats": "{{used}} lezioni usate su {{total}}"
   }
 }

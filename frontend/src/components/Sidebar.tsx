@@ -3,11 +3,12 @@ import { Link, useLocation } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
 import { useTheme } from '../theme/useTheme'
+import { Avatar, Icon, Logo, type IconName } from './ui'
 
-const NAV_ITEMS = [
-  { to: '/', icon: '▤', key: 'nav.dashboard' as const },
-  { to: '/students', icon: '☰', key: 'nav.students' as const },
-  { to: '/payments', icon: '€', key: 'nav.payments' as const },
+const NAV_ITEMS: { to: string; icon: IconName; key: 'nav.dashboard' | 'nav.students' | 'nav.payments' }[] = [
+  { to: '/', icon: 'home', key: 'nav.dashboard' },
+  { to: '/students', icon: 'students', key: 'nav.students' },
+  { to: '/payments', icon: 'payments', key: 'nav.payments' },
 ]
 
 export function Sidebar() {
@@ -16,101 +17,58 @@ export function Sidebar() {
   const { theme, toggleTheme } = useTheme()
   const location = useLocation()
 
-  const toggleLanguage = () => i18n.changeLanguage(i18n.language.startsWith('it') ? 'en' : 'it')
+  const isItalian = i18n.language.startsWith('it')
+  const toggleLanguage = () => i18n.changeLanguage(isItalian ? 'en' : 'it')
+  // Students/:id belongs to the "Students" entry; "/" matches only itself.
+  const isCurrent = (to: string) =>
+    to === '/' ? location.pathname === '/' : location.pathname.startsWith(to)
 
   return (
-    <nav
-      style={{
-        width: 232,
-        flex: 'none',
-        background: 'var(--ms-surface-muted)',
-        borderRight: '1px solid var(--ms-border)',
-        display: 'flex',
-        flexDirection: 'column',
-        padding: '24px 16px',
-        gap: 28,
-        minHeight: '100vh',
-        // Padding inside the 100vh, or the logout card at the bottom falls below the fold.
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 8px' }}>
-        <div
-          style={{
-            width: 36,
-            height: 36,
-            borderRadius: 'var(--ms-radius-sm)',
-            background: 'var(--ms-accent)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: 18,
-          }}
-        >
-          ♪
-        </div>
-        <div style={{ fontFamily: 'var(--ms-font-heading)', fontWeight: 600, fontSize: 17 }}>MusicStudio</div>
-      </div>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+    <aside className="ms-sidebar">
+      <Logo size={40} />
+      <nav className="ms-sidebar__nav" aria-label={t('nav.label')}>
         {NAV_ITEMS.map((item) => (
           <Link
             key={item.to}
             to={item.to}
-            style={{
-              cursor: 'pointer',
-              padding: '10px 14px',
-              borderRadius: 'var(--ms-radius-sm)',
-              fontWeight: 700,
-              fontSize: 14.5,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-              textDecoration: 'none',
-              color: 'inherit',
-              background: location.pathname === item.to ? 'var(--ms-border)' : 'transparent',
-            }}
+            className="ms-navlink"
+            aria-current={isCurrent(item.to) ? 'page' : undefined}
           >
-            <span style={{ opacity: 0.75 }}>{item.icon}</span> {t(item.key)}
+            <Icon name={item.icon} />
+            {t(item.key)}
           </Link>
         ))}
+      </nav>
+
+      <div className="ms-sidebar__tools">
+        <button
+          type="button"
+          className="ms-btn ms-btn--on-plum"
+          onClick={toggleTheme}
+          title={t('theme.toggle')}
+          aria-label={t('theme.toggle')}
+        >
+          {theme === 'dark' ? t('theme.light') : t('theme.dark')}
+        </button>
+        <button
+          type="button"
+          className="ms-btn ms-btn--on-plum"
+          onClick={toggleLanguage}
+          aria-label={isItalian ? 'Switch to English' : 'Passa all’italiano'}
+        >
+          {isItalian ? 'EN' : 'IT'}
+        </button>
       </div>
 
-      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={toggleTheme}
-            title={t('theme.toggle')}
-            aria-label={t('theme.toggle')}
-            type="button"
-          >
-            {theme === 'dark' ? '☀️' : '🌙'}
-          </button>
-          <button
-            onClick={toggleLanguage}
-            type="button"
-            aria-label={i18n.language.startsWith('it') ? 'Switch to English' : 'Passa all’italiano'}
-          >
-            {i18n.language.startsWith('it') ? 'EN' : 'IT'}
-          </button>
+      <div className="ms-sidebar__foot">
+        <Avatar name={user?.email ?? '?'} index={3} circle />
+        <div className="ms-sidebar__foot-text">
+          <span>{user?.email}</span>
         </div>
-        <div
-          style={{
-            padding: 14,
-            borderRadius: 'var(--ms-radius-md)',
-            background: 'var(--ms-border)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 2,
-          }}
-        >
-          <div style={{ fontWeight: 800, fontSize: 13.5 }}>{user?.email}</div>
-          <button onClick={logout} type="button" style={{ fontSize: 12.5, textAlign: 'left' }}>
-            {t('auth.logout')}
-          </button>
-        </div>
+        <button type="button" className="ms-btn ms-btn--on-plum" onClick={logout}>
+          {t('auth.logout')}
+        </button>
       </div>
-    </nav>
+    </aside>
   )
 }

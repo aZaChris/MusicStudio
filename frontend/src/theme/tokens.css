@@ -1,64 +1,98 @@
-/* Design tokens extracted from design/tokens.md (Claude Design artboards). */
-:root {
-  --ms-font-heading: 'Poppins', sans-serif;
-  --ms-font-body: 'Nunito Sans', sans-serif;
-
-  --ms-bg: oklch(97% 0.012 55);
-  --ms-surface: oklch(100% 0 0);
-  --ms-surface-muted: oklch(98% 0.008 55);
-  --ms-border: oklch(91% 0.015 55);
-  --ms-text: oklch(22% 0.02 40);
-  --ms-text-muted: oklch(48% 0.02 45);
-
-  --ms-accent: oklch(72% 0.16 55);
-
-  --ms-success-text: oklch(38% 0.09 150);
-  --ms-success-bg: oklch(93% 0.06 150);
-  --ms-danger-text: oklch(45% 0.16 25);
-  --ms-danger-bg: oklch(93% 0.07 25);
-  --ms-warning-text: oklch(45% 0.11 70);
-  --ms-warning-bg: oklch(94% 0.06 80);
-
-  --ms-radius-sm: 10px;
-  --ms-radius-md: 12px;
-  --ms-radius-lg: 16px;
+/* Generated from design/system/tokens.json by scripts/build-tokens.mjs. Do not edit by hand. */
+:root,
+:root[data-theme='light'] {
+  --paper: #fbf5ec;
+  --card: #ffffff;
+  --ink: #2b1d14;
+  --ink-2: #6b5647;
+  --line: #eadfd0;
+  --line-2: #f1e8dc;
+  --orange: #ef852e;
+  --on-orange: #2b1d14;
+  --orange-text: #b4531a;
+  --orange-soft: #fde6d2;
+  --orange-border: #f6c9a2;
+  --plum: #4b2e5a;
+  --on-plum: #fbf5ec;
+  --plum-soft: #e7daec;
+  --plum-line: #6e4f7e;
+  --beat-on: #4b2e5a;
+  --teal: #2f7a6e;
+  --ok-bg: #ddf0ea;
+  --ok-fg: #1f5f55;
+  --wait-bg: #fcefcf;
+  --wait-fg: #7a4f00;
+  --bad-bg: #f8dcd6;
+  --bad-fg: #8f2f22;
+  --plan-bg: #eee6f2;
+  --plan-fg: #4b2e5a;
+  --off-bg: #efe7dd;
+  --off-fg: #5a4636;
+  --scrim: rgba(43, 29, 20, 0.45);
+  --avatar-plum: #4b2e5a;
+  --avatar-orange: #ef852e;
+  --avatar-teal: #2f7a6e;
+  --avatar-peach: #f6c9a2;
+  --avatar-lilac: #6e4f7e;
+  --shadow-card: 0 12px 32px rgba(43, 29, 20, 0.1);
+  --shadow-float: 0 10px 24px rgba(180, 83, 26, 0.3);
+  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-body: Figtree, system-ui, sans-serif;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --radius-sm: 12px;
+  --radius-field: 14px;
+  --radius-row: 20px;
+  --radius-card: 24px;
+  --radius-sheet: 28px;
+  --radius-pill: 999px;
+  --duration-fast: 120ms;
+  --duration-base: 220ms;
+  --duration-slow: 320ms;
+  --ease-out-soft: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-bounce: cubic-bezier(0.3, 1.5, 0.5, 1);
 }
 
 :root[data-theme='dark'] {
-  --ms-bg: oklch(22% 0.02 40);
-  --ms-surface: oklch(27% 0.015 55);
-  --ms-surface-muted: oklch(25% 0.012 55);
-  --ms-border: oklch(35% 0.015 55);
-  --ms-text: oklch(95% 0.01 55);
-  --ms-text-muted: oklch(75% 0.015 45);
-
-  --ms-accent: oklch(72% 0.16 55);
-
-  --ms-success-text: oklch(85% 0.09 150);
-  --ms-success-bg: oklch(30% 0.06 150);
-  --ms-danger-text: oklch(85% 0.1 25);
-  --ms-danger-bg: oklch(32% 0.09 25);
-  --ms-warning-text: oklch(85% 0.08 80);
-  --ms-warning-bg: oklch(32% 0.07 70);
-}
-
-body {
-  margin: 0;
-  background: var(--ms-bg);
-  color: var(--ms-text);
-  font-family: var(--ms-font-body);
-}
-
-a,
-button,
-input,
-select,
-textarea {
-  font: inherit;
-  color: inherit;
-}
-
-:focus-visible {
-  outline: 2px solid var(--ms-accent);
-  outline-offset: 2px;
+  --paper: #1a1310;
+  --card: #261c17;
+  --ink: #f5ece2;
+  --ink-2: #bca898;
+  --line: #3a2c24;
+  --line-2: #31251f;
+  --orange: #f0904a;
+  --on-orange: #1a1310;
+  --orange-text: #f5a66a;
+  --orange-soft: #3d2618;
+  --orange-border: #6a3e22;
+  --plum: #3a2547;
+  --on-plum: #f5ece2;
+  --plum-soft: #dccbe5;
+  --plum-line: #5a3f6a;
+  --beat-on: #c9a6dd;
+  --teal: #5fb8a6;
+  --ok-bg: #183a33;
+  --ok-fg: #8fd9c4;
+  --wait-bg: #3d3010;
+  --wait-fg: #f2cf7a;
+  --bad-bg: #43201a;
+  --bad-fg: #f2a396;
+  --plan-bg: #33243f;
+  --plan-fg: #d6bfe6;
+  --off-bg: #33291f;
+  --off-fg: #cdb8a3;
+  --scrim: rgba(0, 0, 0, 0.6);
+  --avatar-plum: #4b2e5a;
+  --avatar-orange: #ef852e;
+  --avatar-teal: #2f7a6e;
+  --avatar-peach: #f6c9a2;
+  --avatar-lilac: #6e4f7e;
+  --shadow-card: 0 12px 32px rgba(0, 0, 0, 0.35);
+  --shadow-float: 0 10px 24px rgba(0, 0, 0, 0.45);
 }

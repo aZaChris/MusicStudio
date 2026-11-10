@@ -54,7 +54,7 @@ describe('dashboard', () => {
 
     fireEvent.click(await screen.findByRole('button', { name: /Giulia Rossi/ }))
     fireEvent.change(screen.getByLabelText('Progress note'), { target: { value: 'Scales in G' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Mark complete' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Complete' }))
 
     expect(await screen.findByText('No upcoming lessons.')).toBeInTheDocument()
     expect(api.callsTo('POST /lessons/1/complete/')[0].body).toEqual({ note: 'Scales in G' })
@@ -68,7 +68,7 @@ describe('dashboard', () => {
     renderApp('/')
 
     fireEvent.click(await screen.findByRole('button', { name: /Giulia Rossi/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Mark complete' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Complete' }))
 
     const dialog = await screen.findByRole('dialog')
     expect(
@@ -161,8 +161,11 @@ describe('payments', () => {
     signedInAs(teacherMe, routes())
     renderApp('/payments')
 
-    expect(await screen.findByText('Paid')).toBeInTheDocument()
-    expect(screen.getByText('2 Nov 2026')).toBeInTheDocument()
+    // The "Paid" filter chip is on screen before the rows are: wait for a row, then read its cells.
+    expect(await screen.findByText('2 Nov 2026')).toBeInTheDocument()
+    const row = screen.getAllByRole('row')[1] // [0] is the header
+    expect(within(row).getByText('Paid')).toBeInTheDocument()
+    expect(within(row).getByText('Bank transfer')).toBeInTheDocument()
     expect(screen.getByRole('option', { name: 'Bank transfer' })).toBeInTheDocument()
   })
 

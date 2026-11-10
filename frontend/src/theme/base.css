@@ -1,0 +1,493 @@
+/* App-level base and layout, on top of the design system tokens (tokens.css) and kit (components.css). */
+:root {
+  /* The variable build of Bricolage Grotesque registers under its own family name. */
+  --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
+  color-scheme: light;
+}
+:root[data-theme='dark'] {
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  margin: 0;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--orange-text);
+}
+
+:focus-visible {
+  outline: 2px solid var(--orange-text);
+  outline-offset: 2px;
+}
+
+/* ---- Page frame: plum sidebar + fluid main ---- */
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+}
+.app-side {
+  flex: 1 1 240px;
+  max-width: 100%;
+  display: flex;
+}
+.app-side .ms-sidebar {
+  width: 100%;
+}
+.app-main {
+  flex: 999 1 560px;
+  min-width: 0;
+  padding: 36px clamp(16px, 4vw, 48px) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.page-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+}
+.page-head__text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.page-eyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.page-title {
+  font-size: 40px;
+  line-height: 1.05;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.section-title {
+  font-size: 22px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+.panel {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  color: var(--ink);
+}
+.panel--accent {
+  border: 1.5px solid var(--orange-border);
+}
+.panel--plum {
+  background: var(--plum);
+  color: var(--on-plum);
+  border: 0;
+  border-radius: var(--radius-sheet);
+  padding: 26px;
+  gap: 18px;
+}
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+.stat-grid .ms-stat__value {
+  font-size: 48px;
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+.two-col {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+.list-line {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line-2);
+}
+.list-line:last-child {
+  border-bottom: 0;
+}
+.list-line__main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.muted {
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+.number-hero {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--orange-text);
+}
+.card-link {
+  text-decoration: none;
+  color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.back-link {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px 0 10px;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.back-link svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* Data tables (desktop lists of payments and students) */
+.ms-table-wrap {
+  overflow-x: auto;
+}
+.ms-table {
+  width: 100%;
+  min-width: 420px;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.ms-table th {
+  text-align: left;
+  padding: 0 0 10px;
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.ms-table td {
+  padding: 12px 0;
+  border-top: 1px solid var(--line-2);
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.ms-table td:first-child {
+  color: var(--ink);
+  font-weight: 700;
+}
+.ms-table .num {
+  text-align: right;
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+/* Search field with a leading icon */
+.ms-search {
+  flex: 0 1 340px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  background: var(--card);
+  border: 1.5px solid var(--line);
+  color: var(--ink-2);
+}
+.ms-search svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+.ms-search input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  font-size: 16px;
+  color: var(--ink);
+}
+.ms-search:focus-within {
+  border-color: var(--orange);
+}
+
+/* Form pieces the kit leaves out */
+select.ms-input {
+  padding: 0 14px;
+}
+.ms-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.ms-form__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-3);
+}
+.ms-form__grid .ms-input {
+  min-width: 0;
+}
+.ms-btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Modal: the kit's .ms-dialog centred over a scrim */
+.ms-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--scrim);
+  animation: ms-fade var(--duration-base) var(--ease-out-soft);
+}
+.ms-modal .ms-dialog {
+  animation: ms-dialog-in var(--duration-base) var(--ease-out-soft);
+}
+@keyframes ms-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes ms-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+}
+
+/* Loading: list-shaped placeholders instead of a spinner (motion.md) */
+.ms-skeleton {
+  height: 72px;
+  border-radius: var(--radius-row);
+  background: linear-gradient(90deg, var(--line-2) 25%, var(--line) 50%, var(--line-2) 75%);
+  background-size: 200% 100%;
+  animation: ms-shimmer 1.6s linear infinite;
+}
+@keyframes ms-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* Screen change: the new page slides in 24px from the right (motion.md) */
+.app-main,
+.login-page,
+.portal-main {
+  animation: ms-page-in var(--duration-base) var(--ease-out-soft);
+}
+@keyframes ms-page-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-main,
+  .login-page,
+  .portal-main,
+  .ms-modal,
+  .ms-modal .ms-dialog {
+    animation: ms-fade var(--duration-fast) linear;
+  }
+  .ms-skeleton {
+    animation: none;
+  }
+}
+
+/* Login: plum story panel + form */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  flex-wrap: wrap;
+}
+.login-story {
+  flex: 1 1 480px;
+  min-width: 0;
+  background: var(--plum);
+  color: var(--on-plum);
+  padding: clamp(32px, 6vw, 80px);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+}
+.login-story .ms-logo {
+  color: var(--on-plum);
+}
+.login-story h1 {
+  font-size: clamp(40px, 5vw, 64px);
+  line-height: 1.02;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.login-story p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--plum-soft);
+  max-width: 520px;
+}
+.login-story .ms-staff line {
+  stroke: var(--plum-line);
+}
+.login-story .ms-staff .ms-staff__note--accent {
+  fill: var(--on-plum);
+}
+.login-form-side {
+  flex: 1 1 420px;
+  min-width: 0;
+  padding: clamp(32px, 6vw, 80px) clamp(16px, 5vw, 80px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.login-form-side form {
+  width: 100%;
+  max-width: 420px;
+}
+
+/* Parent portal header */
+.portal-header {
+  background: var(--plum);
+  color: var(--on-plum);
+  padding: 16px clamp(16px, 4vw, 48px);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-3);
+}
+.portal-header .ms-logo {
+  color: var(--on-plum);
+}
+.portal-header__tools {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.portal-main {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 36px clamp(16px, 4vw, 48px) 48px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+.ms-btn--on-plum {
+  height: 38px;
+  padding: 0 14px;
+  font-size: 14px;
+  background: transparent;
+  color: var(--on-plum);
+  border: 1.5px solid var(--plum-soft);
+}
+.ms-role-tag {
+  padding: 4px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--plum-line);
+  color: var(--on-plum);
+  font-size: 12px;
+  font-weight: 700;
+}
+.ms-sidebar__foot-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ms-sidebar__foot-text span:first-child {
+  font-size: 14px;
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-sidebar__tools {
+  display: flex;
+  gap: var(--space-2);
+}
+.ms-sidebar .ms-btn--on-plum {
+  height: 36px;
+  font-size: 13px;
+}
+
+@media (max-width: 720px) {
+  .page-title {
+    font-size: 32px;
+  }
+  .ms-form__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.ms-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--plum-soft);
+}

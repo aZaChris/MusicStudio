@@ -1,8 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 
+import { AppShell } from '../../components/AppShell'
 import { QueryState } from '../../components/QueryState'
-import { Sidebar } from '../../components/Sidebar'
+import { Avatar, Beats, Icon, StatusChip } from '../../components/ui'
+import { lessonTone, packageTone } from '../../components/tones'
 import { formatDateTime } from '../../lib/dates'
 import { useStudent, useStudentLessons } from './api/students'
 
@@ -15,64 +17,77 @@ export function StudentDetail() {
   const pkg = student.data?.active_package
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar />
-      <div style={{ flex: 1, padding: '36px 44px', maxWidth: 1280 }}>
-        {/* A student that is not visible (404) shows a clear message, not an empty page. */}
-        <QueryState query={student}>
-          <h1 style={{ fontFamily: 'var(--ms-font-heading)', fontSize: 22, fontWeight: 600 }}>
-            {student.data?.full_name}
-          </h1>
-          <p style={{ color: 'var(--ms-text-muted)' }}>{student.data?.instrument}</p>
+    <AppShell>
+      <Link to="/students" className="back-link">
+        <Icon name="back" size={18} />
+        {t('nav.students')}
+      </Link>
 
-          <div
-            style={{
-              background: 'var(--ms-surface)',
-              border: '1px solid var(--ms-border)',
-              borderRadius: 'var(--ms-radius-lg)',
-              padding: 16,
-              marginBottom: 24,
-              maxWidth: 320,
-            }}
-          >
-            <div style={{ fontWeight: 700 }}>{t('roster.package')}</div>
-            {pkg ? (
-              <div>
-                {pkg.lessons_remaining}/{pkg.total_lessons} · {t(`package.statusName.${pkg.status}`)}
-              </div>
-            ) : (
-              <div style={{ color: 'var(--ms-text-muted)' }}>{t('roster.noPackage')}</div>
-            )}
+      {/* A student that is not visible (404) shows a clear message, not an empty page. */}
+      <QueryState query={student}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, alignItems: 'center' }}>
+          <Avatar name={student.data?.full_name ?? ''} size="l" />
+          <div className="page-head__text" style={{ flex: '1 1 260px' }}>
+            <h1 className="page-title">{student.data?.full_name}</h1>
+            <span className="page-eyebrow" style={{ fontSize: 16 }}>
+              {student.data?.instrument}
+            </span>
           </div>
+        </div>
 
-          <h2 style={{ fontSize: 16, fontFamily: 'var(--ms-font-heading)' }}>{t('student.lessons')}</h2>
-          <QueryState
-            query={lessons}
-            isEmpty={(lessons.data ?? []).length === 0}
-            emptyText={t('student.noLessons')}
-          >
-            <ul style={{ display: 'flex', flexDirection: 'column', gap: 8, listStyle: 'none', padding: 0 }}>
+        <div className="two-col">
+          <section className="panel">
+            <div className="row-between">
+              <h2 className="section-title">{t('roster.package')}</h2>
+              {pkg && (
+                <StatusChip tone={packageTone(pkg.status)}>
+                  {t(`package.statusName.${pkg.status}`)}
+                </StatusChip>
+              )}
+            </div>
+            {pkg ? (
+              <>
+                <Beats size="l" total={pkg.total_lessons} used={pkg.total_lessons - pkg.lessons_remaining} />
+                <span className="number-hero">
+                  {t('roster.remainingCount', { count: pkg.lessons_remaining })}
+                </span>
+                <span className="muted" style={{ fontSize: 14 }}>
+                  {pkg.lessons_remaining}/{pkg.total_lessons} · {t(`package.statusName.${pkg.status}`)}
+                </span>
+              </>
+            ) : (
+              <span className="muted" style={{ fontSize: 14 }}>
+                {t('roster.noPackage')}
+              </span>
+            )}
+          </section>
+
+          <section className="panel" style={{ gap: 6 }}>
+            <h2 className="section-title" style={{ marginBottom: 6 }}>
+              {t('student.lessons')}
+            </h2>
+            <QueryState
+              query={lessons}
+              isEmpty={(lessons.data ?? []).length === 0}
+              emptyText={t('student.noLessons')}
+            >
               {lessons.data?.map((lesson) => (
-                <li
-                  key={lesson.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    gap: 12,
-                    padding: '8px 12px',
-                    border: '1px solid var(--ms-border)',
-                    borderRadius: 8,
-                  }}
-                >
-                  <span>{formatDateTime(lesson.start_time, i18n.language)}</span>
-                  <span>{t(`lesson.statusName.${lesson.status}`)}</span>
-                  {lesson.notes && <span style={{ color: 'var(--ms-text-muted)' }}>{lesson.notes}</span>}
-                </li>
+                <div key={lesson.id} className="list-line">
+                  <div className="list-line__main">
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>
+                      {formatDateTime(lesson.start_time, i18n.language)}
+                    </span>
+                    {lesson.notes && <span className="muted">{lesson.notes}</span>}
+                  </div>
+                  <StatusChip tone={lessonTone(lesson.status)}>
+                    {t(`lesson.statusName.${lesson.status}`)}
+                  </StatusChip>
+                </div>
               ))}
-            </ul>
-          </QueryState>
-        </QueryState>
-      </div>
-    </div>
+            </QueryState>
+          </section>
+        </div>
+      </QueryState>
+    </AppShell>
   )
 }

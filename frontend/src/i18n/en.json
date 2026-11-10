@@ -1,16 +1,20 @@
 {
   "nav": {
-    "dashboard": "Dashboard",
+    "dashboard": "Home",
     "students": "Students",
-    "payments": "Payments"
+    "payments": "Payments",
+    "label": "Main"
   },
   "dashboard": {
-    "greeting": "Hi, {{name}} 👋",
+    "greeting": "Hi, {{name}}",
     "activeStudents": "active students",
     "pendingPayments": "pending payments",
     "thisWeek": "This week",
     "upcoming": "Upcoming lessons",
-    "noUpcoming": "No upcoming lessons."
+    "noUpcoming": "No upcoming lessons.",
+    "today": "Today",
+    "minutes": "{{count}} min",
+    "lowPackages": "packages running low"
   },
   "roster": {
     "title": "Students",
@@ -20,7 +24,20 @@
     "paymentStatus": "Payment status",
     "lowPackage": "Running low",
     "empty": "No active students.",
-    "noPackage": "No active package"
+    "noPackage": "No active package",
+    "activeCount_one": "{{count}} active student",
+    "activeCount_other": "{{count}} active students",
+    "search": "Search students",
+    "searchPlaceholder": "Search by name or instrument",
+    "noMatch": "No student matches the search.",
+    "remainingOf": "{{remaining}} left of {{total}}",
+    "remainingCount_one": "{{count}} left",
+    "remainingCount_other": "{{count}} left",
+    "filter": {
+      "all": "All",
+      "low": "Running low",
+      "none": "No package"
+    }
   },
   "lesson": {
     "markComplete": "Mark complete",
@@ -31,7 +48,8 @@
       "completed": "Completed",
       "cancelled": "Cancelled",
       "no_show": "No-show"
-    }
+    },
+    "complete": "Complete"
   },
   "payments": {
     "title": "Payments",
@@ -53,6 +71,13 @@
       "paid": "Paid",
       "pending": "Pending",
       "overdue": "Overdue"
+    },
+    "toCollect_one": "{{count}} to collect",
+    "toCollect_other": "{{count}} to collect",
+    "filter": {
+      "all": "All",
+      "pending": "To collect",
+      "paid": "Paid"
     }
   },
   "parent": {
@@ -62,7 +87,14 @@
     "paymentStatus": "Payment status",
     "noStudents": "No students are linked to your account yet.",
     "lessons": "Lessons and attendance",
-    "payments": "Payments"
+    "payments": "Payments",
+    "role": "Parent",
+    "children": "Children",
+    "nextLesson": "Next lesson",
+    "noNextLesson": "No lesson scheduled",
+    "remaining_one": "{{count}} lesson left in the package",
+    "remaining_other": "{{count}} lessons left in the package",
+    "paymentsHint": "To pay or correct an amount, write to the studio."
   },
   "auth": {
     "login": "Log in",
@@ -71,10 +103,16 @@
     "logout": "Log out",
     "invalidCredentials": "Invalid email or password.",
     "sessionExpired": "Your session has ended. Please log in again.",
-    "unreachable": "Cannot reach the server to check your account."
+    "unreachable": "Cannot reach the server to check your account.",
+    "heroTitle": "Welcome back to the practice room.",
+    "heroText": "Lessons, packages and payments of your studio, in one place. Parents see their children’s lessons, read-only.",
+    "loginHint": "Use the email the studio registered you with.",
+    "language": "Language"
   },
   "theme": {
-    "toggle": "Toggle light/dark theme"
+    "toggle": "Toggle light/dark theme",
+    "light": "Light",
+    "dark": "Dark"
   },
   "common": {
     "loading": "Loading…",
@@ -100,6 +138,7 @@
       "active": "Active",
       "expired": "Expired",
       "completed": "Used up"
-    }
+    },
+    "beats": "{{used}} of {{total}} lessons used"
   }
 }

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 
 import { errorMessage } from '../api/errors'
+import { Icon } from './ui'
 
 interface QueryLike {
   isPending: boolean
@@ -23,18 +24,28 @@ export function QueryState({
   children: ReactNode
 }) {
   const { t } = useTranslation()
-  if (query.isPending) return <p aria-busy="true">{t('common.loading')}</p>
+  if (query.isPending) {
+    // List-shaped placeholders instead of a spinner (design/system/motion.md).
+    return (
+      <div aria-busy="true" className="ms-stack">
+        <span className="muted">{t('common.loading')}</span>
+        <div className="ms-skeleton" />
+        <div className="ms-skeleton" />
+      </div>
+    )
+  }
   if (query.isError) {
     return (
-      <div role="alert" style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-        <span style={{ color: 'var(--ms-danger-text)' }}>{errorMessage(query.error, t)}</span>
-        <button type="button" onClick={() => query.refetch()}>
+      <div role="alert" className="ms-alert ms-alert--error" style={{ alignItems: 'center' }}>
+        <Icon name="alert" size={18} />
+        <span style={{ flex: 1 }}>{errorMessage(query.error, t)}</span>
+        <button type="button" className="ms-btn ms-btn--secondary" onClick={() => query.refetch()}>
           {t('common.retry')}
         </button>
       </div>
     )
   }
-  if (isEmpty) return <p style={{ color: 'var(--ms-text-muted)' }}>{emptyText}</p>
+  if (isEmpty) return <p className="muted">{emptyText}</p>
   return <>{children}</>
 }
 
@@ -43,8 +54,9 @@ export function ErrorText({ error }: { error: unknown }) {
   const { t } = useTranslation()
   if (!error) return null
   return (
-    <p role="alert" style={{ color: 'var(--ms-danger-text)', margin: 0 }}>
-      {errorMessage(error, t)}
-    </p>
+    <div role="alert" className="ms-alert ms-alert--error">
+      <Icon name="alert" size={18} />
+      <span>{errorMessage(error, t)}</span>
+    </div>
   )
 }

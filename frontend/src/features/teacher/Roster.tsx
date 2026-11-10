@@ -1,68 +1,114 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
+import type { Student } from '../../api/types'
+import { AppShell } from '../../components/AppShell'
 import { QueryState } from '../../components/QueryState'
-import { Sidebar } from '../../components/Sidebar'
+import { Avatar, Beats, Icon, StatusChip } from '../../components/ui'
+import { paymentTone } from '../../components/tones'
 import { useStudents } from './api/students'
+
+type Filter = 'all' | 'low' | 'none'
+const FILTERS: Filter[] = ['all', 'low', 'none']
+
+function matches(student: Student, filter: Filter, query: string) {
+  if (filter === 'low' && !student.active_package?.is_low) return false
+  if (filter === 'none' && student.active_package) return false
+  const needle = query.trim().toLowerCase()
+  return !needle || `${student.full_name} ${student.instrument}`.toLowerCase().includes(needle)
+}
 
 export function Roster() {
   const { t } = useTranslation()
   const students = useStudents()
   const list = students.data ?? []
+  const [filter, setFilter] = useState<Filter>('all')
+  const [query, setQuery] = useState('')
+  const shown = list.filter((s) => matches(s, filter, query))
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar />
-      <div style={{ flex: 1, padding: '36px 44px', maxWidth: 1280 }}>
-        <h1 style={{ fontFamily: 'var(--ms-font-heading)', fontSize: 22, fontWeight: 600 }}>
-          {t('roster.title')}
-        </h1>
-
-        <QueryState query={students} isEmpty={list.length === 0} emptyText={t('roster.empty')}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ textAlign: 'left', fontSize: 12.5, color: 'var(--ms-text-muted)' }}>
-                <th style={{ padding: '10px 8px' }}>{t('roster.student')}</th>
-                <th style={{ padding: '10px 8px' }}>{t('roster.package')}</th>
-                <th style={{ padding: '10px 8px' }}>{t('roster.remaining')}</th>
-                <th style={{ padding: '10px 8px' }}>{t('roster.paymentStatus')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {list.map((student) => (
-                <tr key={student.id} style={{ borderTop: '1px solid var(--ms-border)', fontSize: 14 }}>
-                  <td style={{ padding: '10px 8px' }}>
-                    <Link to={`/students/${student.id}`}>{student.full_name}</Link>
-                  </td>
-                  <td style={{ padding: '10px 8px' }}>
-                    {student.active_package
-                      ? `${student.active_package.lessons_remaining}/${student.active_package.total_lessons}`
-                      : '—'}
-                  </td>
-                  <td style={{ padding: '10px 8px' }}>
-                    {student.active_package?.is_low && (
-                      <span
-                        style={{
-                          background: 'var(--ms-warning-bg)',
-                          color: 'var(--ms-warning-text)',
-                          borderRadius: 999,
-                          padding: '2px 8px',
-                          fontSize: 12,
-                        }}
-                      >
-                        {t('roster.lowPackage')}
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ padding: '10px 8px' }}>
-                    {student.payment_status ? t(`payments.statusName.${student.payment_status}`) : '—'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </QueryState>
+    <AppShell>
+      <div className="page-head">
+        <div className="page-head__text">
+          <span className="page-eyebrow">{t('roster.activeCount', { count: list.length })}</span>
+          <h1 className="page-title">{t('roster.title')}</h1>
+        </div>
+        <label className="ms-search">
+          <Icon name="search" size={18} />
+          <input
+            type="search"
+            aria-label={t('roster.search')}
+            placeholder={t('roster.searchPlaceholder')}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
       </div>
-    </div>
+
+      <div className="ms-filters">
+        {FILTERS.map((f) => (
+          <button
+            key={f}
+            type="button"
+            className="ms-filter"
+            aria-pressed={filter === f}
+            onClick={() => setFilter(f)}
+          >
+            {t(`roster.filter.${f}`)}
+          </button>
+        ))}
+      </div>
+
+      <QueryState query={students} isEmpty={list.length === 0} emptyText={t('roster.empty')}>
+        {shown.length === 0 ? (
+          <p className="muted">{t('roster.noMatch')}</p>
+        ) : (
+          <div className="card-grid">
+            {shown.map((student, i) => {
+              const pkg = student.active_package
+              return (
+                <Link key={student.id} to={`/students/${student.id}`} className="ms-card card-link">
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
+                    <Avatar name={student.full_name} index={i} />
+                    <div className="list-line__main" style={{ flex: 1 }}>
+                      <span style={{ fontSize: 17, fontWeight: 700 }}>{student.full_name}</span>
+                      <span className="muted">{student.instrument}</span>
+                    </div>
+                  </div>
+                  {pkg ? (
+                    <div className="ms-stack" style={{ gap: 8 }}>
+                      <Beats total={pkg.total_lessons} used={pkg.total_lessons - pkg.lessons_remaining} />
+                      <div className="row-between">
+                        <span className="ms-beats-label">
+                          {t('roster.remainingOf', {
+                            remaining: pkg.lessons_remaining,
+                            total: pkg.total_lessons,
+                          })}
+                        </span>
+                        {pkg.is_low && (
+                          <StatusChip tone="low" small>
+                            {t('roster.lowPackage')}
+                          </StatusChip>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    <StatusChip tone="off">{t('roster.noPackage')}</StatusChip>
+                  )}
+                  {student.payment_status && (
+                    <div>
+                      <StatusChip tone={paymentTone(student.payment_status)} small>
+                        {t(`payments.statusName.${student.payment_status}`)}
+                      </StatusChip>
+                    </div>
+                  )}
+                </Link>
+              )
+            })}
+          </div>
+        )}
+      </QueryState>
+    </AppShell>
   )
 }
