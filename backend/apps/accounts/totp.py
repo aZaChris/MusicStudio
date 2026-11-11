@@ -6,7 +6,6 @@ that was already used, so a code seen over a shoulder cannot be replayed.
 """
 
 import base64
-import hashlib
 import hmac
 import secrets
 import struct

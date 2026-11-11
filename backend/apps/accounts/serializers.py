@@ -10,7 +10,7 @@ from apps.common.exceptions import DomainError
 from apps.students.models import ParentAccount
 from apps.studios.models import Teacher
 
-from . import services
+from . import mfa, services
 from .models import User
 
 
@@ -30,6 +30,10 @@ class MeSerializer(serializers.ModelSerializer):
     # A user has at most one profile; the missing one is null. allow_null documents that.
     teacher = TeacherProfileSerializer(read_only=True, allow_null=True)
     parent_account = ParentProfileSerializer(read_only=True, allow_null=True)
+    mfa_enabled = serializers.SerializerMethodField()
+
+    def get_mfa_enabled(self, obj: User) -> bool:
+        return mfa.is_enabled(obj)
 
     class Meta:
         model = User
@@ -39,6 +43,7 @@ class MeSerializer(serializers.ModelSerializer):
             "role",
             "preferred_language",
             "email_verified",
+            "mfa_enabled",
             "teacher",
             "parent_account",
         ]
@@ -87,6 +92,13 @@ class EmailNotConfirmed(DomainError):
     code = "email_not_confirmed"
 
 
+class InvalidMfaCode(DomainError):
+    """401 for a bad token or code at the second step; one body for every cause."""
+
+    status_code = 401
+    code = "invalid_mfa"
+
+
 class LoginSerializer(TokenObtainPairSerializer):
     """Sign-in with a per-account lockout. Wrong, unknown and locked all answer with the
     same generic 401, so the response never says whether the address exists or is locked.
@@ -111,6 +123,8 @@ class LoginSerializer(TokenObtainPairSerializer):
         services.register_login_success(self.user)
         if not self.user.email_verified:
             raise EmailNotConfirmed("Confirm your email address before signing in.")
+        if mfa.is_enabled(self.user):
+            return {"mfa_required": True, "mfa_token": mfa.make_login_token(self.user)}  # type: ignore[dict-item]
         audit.record("login.success", actor=self.user)
         return data
 
@@ -125,3 +139,39 @@ class PasswordResetConfirmSerializer(UidTokenSerializer):
 class PasswordChangeSerializer(serializers.Serializer[None]):
     current_password = serializers.CharField(write_only=True, trim_whitespace=False)
     new_password = serializers.CharField(write_only=True, trim_whitespace=False, max_length=128)
+
+
+class LoginResponseSerializer(serializers.Serializer[None]):
+    """Either the token pair, or `mfa_required` + `mfa_token` when a second step is due."""
+
+    access = serializers.CharField(required=False)
+    refresh = serializers.CharField(required=False)
+    mfa_required = serializers.BooleanField(required=False)
+    mfa_token = serializers.CharField(required=False)
+
+
+class MfaVerifySerializer(serializers.Serializer[None]):
+    mfa_token = serializers.CharField(max_length=512)
+    code = serializers.CharField(max_length=32)
+
+
+class MfaStatusSerializer(serializers.Serializer[None]):
+    enabled = serializers.BooleanField()
+    recovery_codes_left = serializers.IntegerField()
+
+
+class MfaSetupSerializer(serializers.Serializer[None]):
+    secret = serializers.CharField()
+    otpauth_uri = serializers.CharField()
+
+
+class MfaCodeSerializer(serializers.Serializer[None]):
+    code = serializers.CharField(max_length=32)
+
+
+class MfaPasswordCodeSerializer(MfaCodeSerializer):
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+
+class MfaRecoveryCodesSerializer(serializers.Serializer[None]):
+    recovery_codes = serializers.ListField(child=serializers.CharField())

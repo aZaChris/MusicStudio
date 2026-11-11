@@ -50,7 +50,7 @@ account; one pending invitation per (studio, email, role) (partial unique constr
 | Field | Type | Notes |
 |---|---|---|
 | device | FK MfaDevice, cascade | 10 per device; regenerated together |
-| code_hash | char | Django password hash of the code |
+| code_hash | char(64) | SHA-256 of the code (random, 50 bits: a slow hash adds cost, not safety) |
 | used_at | datetime, null | single use |
 
 ## students.Student (changed)

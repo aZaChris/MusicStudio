@@ -1,6 +1,8 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from apps.common.fields import EncryptedTextField
+
 
 class User(AbstractUser):
     class Role(models.TextChoices):
@@ -81,3 +83,28 @@ class Invitation(models.Model):
 
     def __str__(self) -> str:
         return f"{self.role} invitation #{self.pk}"
+
+
+class MfaDevice(models.Model):
+    """The authenticator app of an owner or teacher (ADR-029). Active once confirmed."""
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="mfa_device")
+    secret = EncryptedTextField()
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    # TOTP step of the last accepted code: a code can be used once (anti-replay).
+    last_used_step = models.BigIntegerField(default=0)
+
+    def __str__(self) -> str:
+        return f"MFA device of user #{self.user_id}"
+
+
+class RecoveryCode(models.Model):
+    """Single-use code for when the phone is lost. Only its SHA-256 is stored: the code is
+    random (50 bits), so a fast hash is enough and checking ten of them stays cheap."""
+
+    device = models.ForeignKey(MfaDevice, on_delete=models.CASCADE, related_name="recovery_codes")
+    code_hash = models.CharField(max_length=64)
+    used_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"Recovery code #{self.pk}"

@@ -20,6 +20,13 @@ NO_TENANT_DATA = {
     "auth/password-reset/",
     "auth/password-reset/confirm/",
     "auth/password/change/",
+    # MFA acts on request.user only; there is no object id in any of these URLs.
+    "auth/mfa/",
+    "auth/mfa/setup/",
+    "auth/mfa/confirm/",
+    "auth/mfa/disable/",
+    "auth/mfa/recovery-codes/",
+    "auth/mfa/verify/",
     "webhooks/stripe/",
     "invitations/lookup/",  # anonymous, by secret token
     "invitations/accept/",  # signed by Stripe, no user (apps/payments/tests)
