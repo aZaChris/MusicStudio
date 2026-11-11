@@ -6,6 +6,7 @@ dates) stays, with the names and free text removed, so the studio's books still 
 
 import uuid
 from collections.abc import Iterable
+from datetime import datetime, timedelta
 from functools import partial
 
 from django.conf import settings
@@ -20,7 +21,7 @@ from apps.accounts.models import Invitation, MfaDevice, User
 from apps.audit import services as audit
 from apps.common.exceptions import DomainConflict
 from apps.lessons.models import Lesson
-from apps.payments.models import CheckoutSession
+from apps.payments.models import CheckoutSession, Payment
 from apps.students.models import ParentAccount, ParentStudentLink, Student
 
 from . import selectors
@@ -165,3 +166,30 @@ def withdraw_consent(user: User, consent_id: int, password: str) -> None:
             studio_id=studio_id,
         )
     _notify_teachers(kept)
+
+
+# --- Retention (ADR-032) ------------------------------------------------------------------
+ARCHIVED_STUDENT = timedelta(days=730)  # 24 months after the last activity
+PAYMENTS = timedelta(days=3650)  # 10 years, the accounting retention to be confirmed
+AUDIT = timedelta(days=365)
+UNCONFIRMED_SIGNUP = timedelta(days=7)
+
+
+def run_retention(now: datetime | None = None) -> dict[str, int]:
+    """Daily clean-up of data past its retention period; returns how many rows each rule hit.
+    Safe to run twice: every rule only touches rows that are still past the limit."""
+    now = now or timezone.now()
+    cutoff = now - ARCHIVED_STUDENT
+    stale = Student.objects.filter(
+        is_active=False, anonymised_at__isnull=True, updated_at__lt=cutoff
+    ).exclude(lessons__start_time__gte=cutoff)
+    students = list(stale.distinct())
+    for student in students:
+        anonymise_student(student)
+    payments, _ = Payment.objects.filter(date__lt=(now - PAYMENTS).date()).delete()
+    return {
+        "students_anonymised": len(students),
+        "payments_deleted": payments,
+        "audit_deleted": audit.purge_older_than(now - AUDIT),
+        "signups_deleted": account_services.purge_unconfirmed(now - UNCONFIRMED_SIGNUP),
+    }

@@ -25,4 +25,9 @@ app.conf.beat_schedule = {
         "task": "apps.accounts.tasks.purge_expired_tokens",
         "schedule": crontab(hour=3, minute=17),
     },
+    # Retention periods of ADR-032: old archived students, payments, audit, unconfirmed sign-ups.
+    "run-retention": {
+        "task": "apps.privacy.tasks.run_retention",
+        "schedule": crontab(hour=3, minute=42),
+    },
 }

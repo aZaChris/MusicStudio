@@ -19,3 +19,11 @@ def notify_parent_left(student_id: int) -> None:
         context={"student_name": student.full_name, "first_name": teacher_user.first_name},
         log_id=teacher_user.pk,
     )
+
+
+@shared_task
+def run_retention() -> dict[str, int]:
+    """Daily: anonymise old archived students, delete data past its retention period."""
+    from . import services
+
+    return services.run_retention()
