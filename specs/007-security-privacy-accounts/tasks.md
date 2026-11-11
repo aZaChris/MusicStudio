@@ -57,7 +57,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 - [X] T031 [US5] `totp.py` (RFC 6238 stdlib: secret generation, `otpauth://` URI, verify with ±1 step and `last_used_step`) + tests with the RFC 6238 SHA-1 vectors in `backend/apps/accounts/totp.py`, `backend/apps/accounts/tests/test_totp.py`; ADR-029
 - [X] T032 [US5] `MfaDevice` (secret encrypted), `RecoveryCode` models + migration; services setup/confirm/disable/regenerate codes/verify login; two-step login (`mfa_required` + signed `mfa_token` 5 min) and `auth/mfa/*` endpoints in `backend/apps/accounts/`; audit `mfa.*`
 - [X] T033 [P] [US5] Tests: owners/teachers only, confirm required, login without code gives no tokens, replayed code refused, recovery code single use, disable requires password+code, expired `mfa_token`, throttle, in `backend/apps/accounts/tests/test_mfa.py`
-- [ ] T034 [US5] Commands `unlock_account`, `reset_mfa` (audited) in `backend/apps/accounts/management/commands/` + tests; runbook section in `docs/operations/runbook.md`
+- [X] T034 [US5] Commands `unlock_account`, `reset_mfa` (audited) in `backend/apps/accounts/management/commands/` + tests; runbook section in `docs/operations/runbook.md`
 - [ ] T035 [US5] Portal: MFA step in `auth/Login.tsx` (code or recovery code), `features/account/MfaSetup.tsx` (secret shown for manual entry, `otpauth` link, confirm, recovery codes shown once with copy/download); locked/generic messages; tests `frontend/src/features/account/mfa.test.tsx`
 
 ## Phase 8: US6 — Families control their data (P2)

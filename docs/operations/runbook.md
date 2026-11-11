@@ -81,6 +81,14 @@ Le verifiche dopo il deploy, la misura con `scripts/measure-resources.sh` e la c
 
 Dopo ogni cambio: redeploy e verifiche.
 
+## Account bloccato o senza secondo fattore
+
+Due comandi per l'operatore, dal terminale del `backend`. Entrambi scrivono nell'audit log (`account.unlock_by_operator`, `mfa.reset_by_operator`).
+
+- **Account bloccato** dopo cinque password sbagliate (si sblocca da solo dopo 15 minuti, poi 30, 60... fino a 24 ore): `python manage.py unlock_account email@esempio.it`. Azzera anche il livello del blocco.
+- **Telefono e codici di recupero persi**: `python manage.py reset_mfa email@esempio.it`. Dopo il comando basta la password per entrare, quindi **verifica prima chi sei davvero** (per esempio una chiamata o un messaggio da un canale che già conosci). Poi chiedi alla persona di riattivare la verifica in due passaggi.
+- Chi dimentica la password non ha bisogno di questi comandi: il reset via email toglie anche il blocco.
+
 ## Sentry
 
 1. Crea un account gratuito su sentry.io e un progetto di tipo **Django**.
