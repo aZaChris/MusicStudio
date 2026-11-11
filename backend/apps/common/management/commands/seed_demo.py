@@ -78,11 +78,13 @@ class Command(BaseCommand):
             },
         )
         # Keyed on the date (not the exact instant) so re-running the seed stays idempotent.
+        # `start_time__date` compares in the current time zone, so the date must be local too:
+        # between 22:00 and 24:00 UTC the UTC date and the Rome date differ.
         reminder_time = (timezone.now() + datetime.timedelta(hours=24)).replace(
             second=0, microsecond=0
         )
         if not Lesson.objects.filter(
-            student=low_student, start_time__date=reminder_time.date()
+            student=low_student, start_time__date=timezone.localtime(reminder_time).date()
         ).exists():
             Lesson.objects.create(
                 student=low_student,
