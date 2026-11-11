@@ -122,6 +122,9 @@ ROUTES = {
     "privacy/erase/",
     "privacy/consents/",
     "privacy/consents/<pk>/withdraw/",
+    # The audit list is owner-only and scoped by the selector; cross-studio and role cases
+    # are in apps/audit/tests/test_audit_list.py.
+    "audit/",
 }
 
 

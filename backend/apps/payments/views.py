@@ -21,7 +21,7 @@ class PaymentViewSet(viewsets.ModelViewSet[Payment]):
         return payments_for(get_tenant(self.request))
 
     def perform_create(self, serializer: PaymentSerializer) -> None:  # type: ignore[override]
-        serializer.instance = create_payment(**serializer.validated_data)
+        serializer.instance = create_payment(actor=self.request.user, **serializer.validated_data)
 
     def perform_update(self, serializer: PaymentSerializer) -> None:  # type: ignore[override]
         instance = cast(Payment, serializer.instance)  # always set on update

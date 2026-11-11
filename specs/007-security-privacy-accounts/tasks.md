@@ -76,8 +76,8 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 ## Phase 10: US8 — The owner can see who did what (P3)
 
-- [ ] T044 [US8] Audit list endpoint `audit/` (owner only, own studio, filters action/since/until, paginated, query budget) in `backend/apps/audit/selectors.py`, `views.py`; tests incl. teacher/parent 403 and other studio invisible; add to IDOR table
-- [ ] T045 [US8] Check every action in the data-model list is recorded by its service (one test per action) in `backend/apps/audit/tests/test_coverage.py`; record `payment.record` in `backend/apps/payments/services.py`
+- [X] T044 [US8] Audit list endpoint `audit/` (owner only, own studio, filters action/since/until, paginated, query budget) in `backend/apps/audit/selectors.py`, `views.py`; tests incl. teacher/parent 403 and other studio invisible; add to IDOR table
+- [X] T045 [US8] Check every action in the data-model list is recorded by its service (one test per action) in `backend/apps/audit/tests/test_coverage.py`; record `payment.record` in `backend/apps/payments/services.py`
 - [ ] T046 [US8] Portal: `features/audit/AuditPage.tsx` (table, action/date filters, translated action names) + tests
 
 ## Phase 11: Cross-cutting security

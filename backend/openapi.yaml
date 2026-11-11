@@ -4,6 +4,82 @@ info:
   version: 1.0.0
   description: REST API for the MusicStudio teacher/parent platform.
 paths:
+  /api/v1/audit/:
+    get:
+      operationId: v1_audit_list
+      description: Who did what in the owner's studio, newest first.
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+          enum:
+          - account.unlock_by_operator
+          - consent.give
+          - consent.withdraw
+          - email.confirm
+          - invitation.accept
+          - invitation.revoke
+          - invitation.send
+          - login.failure
+          - login.locked
+          - login.success
+          - mfa.disable
+          - mfa.enable
+          - mfa.recovery_used
+          - mfa.reset_by_operator
+          - password.change
+          - password.reset
+          - payment.record
+          - privacy.erase
+          - privacy.export
+          - registration
+          - role.change
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: since
+        schema:
+          type: string
+        description: ISO 8601 date-time
+      - in: query
+        name: until
+        schema:
+          type: string
+        description: ISO 8601 date-time
+      tags:
+      - audit
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAuditEntryList'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/auth/confirm-email/:
     post:
       operationId: v1_auth_confirm_email_create
@@ -2844,6 +2920,85 @@ components:
           type: string
       required:
       - detail
+    ActionEnum:
+      enum:
+      - registration
+      - email.confirm
+      - login.success
+      - login.failure
+      - login.locked
+      - password.reset
+      - password.change
+      - mfa.enable
+      - mfa.disable
+      - mfa.recovery_used
+      - mfa.reset_by_operator
+      - account.unlock_by_operator
+      - invitation.send
+      - invitation.accept
+      - invitation.revoke
+      - role.change
+      - consent.give
+      - consent.withdraw
+      - privacy.export
+      - privacy.erase
+      - payment.record
+      type: string
+      description: |-
+        * `registration` - Registration
+        * `email.confirm` - Email Confirm
+        * `login.success` - Login Success
+        * `login.failure` - Login Failure
+        * `login.locked` - Login Locked
+        * `password.reset` - Password Reset
+        * `password.change` - Password Change
+        * `mfa.enable` - Mfa Enable
+        * `mfa.disable` - Mfa Disable
+        * `mfa.recovery_used` - Mfa Recovery Used
+        * `mfa.reset_by_operator` - Mfa Reset By Operator
+        * `account.unlock_by_operator` - Account Unlock By Operator
+        * `invitation.send` - Invitation Send
+        * `invitation.accept` - Invitation Accept
+        * `invitation.revoke` - Invitation Revoke
+        * `role.change` - Role Change
+        * `consent.give` - Consent Give
+        * `consent.withdraw` - Consent Withdraw
+        * `privacy.export` - Privacy Export
+        * `privacy.erase` - Privacy Erase
+        * `payment.record` - Payment Record
+    AuditEntry:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        action:
+          $ref: '#/components/schemas/ActionEnum'
+        outcome:
+          $ref: '#/components/schemas/OutcomeEnum'
+        actor_email:
+          type: string
+          nullable: true
+          readOnly: true
+        target_type:
+          type: string
+          maxLength: 40
+        target_id:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: -9223372036854775808
+          format: int64
+          nullable: true
+        metadata: {}
+      required:
+      - action
+      - actor_email
+      - created_at
+      - id
     Checkout:
       type: object
       description: 'Response of POST /packages/{id}/checkout/: where to send the payer.'
@@ -3294,6 +3449,16 @@ components:
       required:
       - code
       - mfa_token
+    OutcomeEnum:
+      enum:
+      - success
+      - failure
+      - denied
+      type: string
+      description: |-
+        * `success` - Success
+        * `failure` - Failure
+        * `denied` - Denied
     Package:
       type: object
       description: |-
@@ -3376,6 +3541,29 @@ components:
       - purchase_date
       - student
       - total_lessons
+    PaginatedAuditEntryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEntry'
     PaginatedInvitationList:
       type: object
       required:

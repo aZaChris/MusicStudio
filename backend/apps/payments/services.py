@@ -10,6 +10,7 @@ from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.audit import services as audit
 from apps.common.exceptions import DomainConflict
 from apps.packages.models import Package
 from apps.students.models import Student
@@ -26,9 +27,24 @@ def ensure_package_matches_student(student: Student, package: Package | None) ->
         )
 
 
-def create_payment(*, student: Student, package: Package | None = None, **fields: Any) -> Payment:
+def _record_audit(payment: Payment, actor: Any) -> None:
+    audit.record(
+        audit.Action.PAYMENT_RECORD,
+        actor=actor,
+        target=payment,
+        studio_id=payment.student.studio_id,
+        metadata={"method": payment.method, "amount": str(payment.amount)},
+    )
+
+
+def create_payment(
+    *, student: Student, package: Package | None = None, actor: Any = None, **fields: Any
+) -> Payment:
+    """Record a payment by hand. `actor` is the signed-in user (None for the system)."""
     ensure_package_matches_student(student, package)
-    return Payment.objects.create(student=student, package=package, **fields)
+    payment = Payment.objects.create(student=student, package=package, **fields)
+    _record_audit(payment, actor)
+    return payment
 
 
 # The only allowed status changes. "paid" is final: money records must not silently go back.
@@ -200,7 +216,7 @@ def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> None:
     amount = (
         Decimal(session.amount_total) / 100 if session.amount_total is not None else checkout.amount
     )
-    Payment.objects.create(
+    payment = Payment.objects.create(
         student=package.student,
         package=package,
         amount=amount,  # what Stripe actually charged, even if the price changed since
@@ -209,6 +225,7 @@ def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> None:
         status=Payment.Status.PAID,
         checkout=checkout,
     )
+    _record_audit(payment, None)
     checkout.status = CheckoutSession.Status.COMPLETED
     checkout.save(update_fields=["status", "updated_at"])
 
