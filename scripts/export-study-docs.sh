@@ -45,6 +45,7 @@ PHASES=(
   "Fase 3 - Celery e pagamenti|task-celery-idempotenti webhook-idempotenti pagamenti-online-stripe caching|13|17"
   "Fase 4 - Produzione|revoca-token-jwt ip-reale-dietro-proxy log-strutturati-e-sentry backup-off-site-e-restore-drill load-testing|18|22"
   "Web 1 - Portale web|sicurezza-di-una-spa deploy-di-una-spa-con-nginx|23|26"
+  "Fase 7 - Sicurezza privacy e account|account-e-token-monouso mfa-totp cifratura-dei-campi gdpr-per-sviluppatori audit-log|27|32"
 )
 
 # Knowledge-base cases (real problems solved): cross-phase, refreshed every run
@@ -61,6 +62,11 @@ copy "$SRC/../loadtest/2026-11-09/README.md" "$DEST/Fase 4 - Produzione/Operazio
 # Web 1 (portale web): its audit and end-to-end record
 copy "$SRC/audit-frontend.md" "$DEST/Web 1 - Portale web/audit-frontend.md"
 copy "$SRC/verifica-web-end-to-end.md" "$DEST/Web 1 - Portale web/verifica-web-end-to-end.md"
+
+# Phase 7: the Italian privacy drafts (to be validated by a professional)
+for f in registro-trattamenti informativa-famiglie informativa-insegnanti; do
+  copy "$SRC/../privacy/$f.md" "$DEST/Fase 7 - Sicurezza privacy e account/Bozze legali/$f.md"
+done
 
 copy "$SRC/audit-iniziale.md" "$DEST/Fase 1 - Fondamenta/audit-iniziale.md"
 
