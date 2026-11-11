@@ -76,6 +76,26 @@ Preparare adesso fa risparmiare il giorno del deploy: `docs/CHECKLIST_17.md`, pa
 dominio mittente, record DNS SPF/DKIM). La prova che conferma, reset e inviti **arrivano davvero** (task
 T058) si fa dopo il deploy: registrati dal portale, controlla anche la cartella spam, apri il link.
 
+**Indirizzi di prova**: servono solo per ricevere i messaggi. Su Proton puoi usare un indirizzo per ruolo
+(account diversi) oppure alias con il più (`tuonome+titolare@proton.me`, controlla che il tuo piano li
+supporti). L'app tratta ogni indirizzo come una persona diversa.
+
+**Controllo dell'SMTP** prima dei giri completi, dal terminale del `backend` in Coolify:
+
+```
+python manage.py shell -c "from django.core.mail import send_mail; send_mail('prova', 'funziona', None, ['tuonome+prova@proton.me'])"
+```
+
+Deve stampare `1` e l'email arriva dopo pochi secondi (guarda anche lo spam). Se dà errore, incollalo
+senza la password.
+
+**Sentry** (facoltativo): il codice è già pronto, **non** incollare lo snippet `sentry_sdk.init` che
+mostra la pagina di Sentry (sovrascriverebbe la nostra configurazione, che toglie email e token prima
+dell'invio). Crea il progetto con piattaforma **Django**, metti il DSN in `SENTRY_DSN` su Coolify (mai nel
+repository) con `SENTRY_ENVIRONMENT=staging`, poi `python manage.py raise_test_error`: l'errore deve
+comparire in Sentry. Non attivare i log né le metriche di Sentry: non passano dalla nostra ripulitura.
+Controlla nelle impostazioni dell'organizzazione che la regione dei dati sia quella europea.
+
 ## 7. Vault Obsidian
 
 Sul computer dove c'è il vault, aggiungi a `20 Progetti/MusicStudio/Decisioni MusicStudio.md` le righe
