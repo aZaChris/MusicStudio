@@ -22,9 +22,9 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 ## Phase 3: US4 — Nobody sees what is not theirs (P1) 🎯 baseline first
 
-- [ ] T011 [US4] IDOR fixture world: two studios, two teachers per studio, two families, adult student, in `backend/apps/common/tests/idor_world.py`
-- [ ] T012 [US4] Parametrised IDOR suite (`@pytest.mark.idor`) over every existing endpoint (students, lessons, packages, payments, checkout, dashboard, studio, studio/teachers): read, list, update, delete and related-field writes across teacher/teacher, studio/studio, parent/parent → 404 / rejected and nothing written, in `backend/apps/common/tests/test_idor.py`; fix any gap found (record it in the OWASP doc)
-- [ ] T013 [US4] Guard test: every URL pattern under `/api/v1/` is either in the IDOR table or in an explicit "no tenant data" allow-list, so a new endpoint without IDOR coverage fails the build, in `backend/apps/common/tests/test_idor_coverage.py`
+- [X] T011 [US4] IDOR fixture world: two studios, two teachers per studio, two families, adult student, in `backend/apps/common/tests/idor_world.py`
+- [X] T012 [US4] Parametrised IDOR suite (`@pytest.mark.idor`) over every existing endpoint (students, lessons, packages, payments, checkout, dashboard, studio, studio/teachers): read, list, update, delete and related-field writes across teacher/teacher, studio/studio, parent/parent → 404 / rejected and nothing written, in `backend/apps/common/tests/test_idor.py`; fix any gap found (record it in the OWASP doc)
+- [X] T013 [US4] Guard test: every URL pattern under `/api/v1/` is either in the IDOR table or in an explicit "no tenant data" allow-list, so a new endpoint without IDOR coverage fails the build, in `backend/apps/common/tests/test_idor_coverage.py`
 
 ## Phase 4: US1 — A studio owner signs up alone (P1)
 
