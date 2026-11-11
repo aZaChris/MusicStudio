@@ -21,3 +21,4 @@ Problemi non banali risolti nel progetto: sintomo, causa radice, verifica, soluz
 | [portale-disconnesso-dopo-30-minuti.md](portale-disconnesso-dopo-30-minuti.md) | Il portale non salvava il refresh token ruotato: utenti disconnessi dopo ~30 minuti |
 | [vitest-worker-non-partono-poca-ram.md](vitest-worker-non-partono-poca-ram.md) | Worker di Vitest che non partono e timeout con poca RAM: 2 worker e attese più lunghe |
 | [coolify-build-arg-vuoti-collectstatic.md](coolify-build-arg-vuoti-collectstatic.md) | Coolify passa ogni variabile, anche vuota, alla build e a tutti i container: `collectstatic`, worker e beat crashavano su un int vuoto |
+| [celery-scrive-i-token-nei-log.md](celery-scrive-i-token-nei-log.md) | Il log di fine task di Celery includeva gli argomenti, quindi il token d'invito in chiaro: un filtro li toglie |

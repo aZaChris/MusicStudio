@@ -281,7 +281,10 @@ LOG_FORMAT: str = env("LOG_FORMAT", default="plain")
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
-    "filters": {"request_id": {"()": "apps.common.logging.RequestIdFilter"}},
+    "filters": {
+        "request_id": {"()": "apps.common.logging.RequestIdFilter"},
+        "task_args": {"()": "apps.common.logging.TaskArgsFilter"},
+    },
     "formatters": {
         "plain": {"format": "%(asctime)s %(levelname)s %(name)s [%(request_id)s] %(message)s"},
         "json": {"()": "apps.common.logging.JsonFormatter"},
@@ -295,6 +298,8 @@ LOGGING = {
     },
     "root": {"handlers": ["console"], "level": env("LOG_LEVEL", default="INFO")},
     "loggers": {
+        # Task arguments can hold one-time tokens: strip them from Celery's own task lines.
+        "celery.app.trace": {"filters": ["task_args"]},
         # One line per request; set ACCESS_LOG_LEVEL=WARNING to silence it.
         "musicstudio.access": {"level": env("ACCESS_LOG_LEVEL", default="INFO")},
     },

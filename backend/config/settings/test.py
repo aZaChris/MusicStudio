@@ -36,4 +36,10 @@ REST_FRAMEWORK = {
     },
 }
 
-LOGGING = {"version": 1, "disable_existing_loggers": False}
+# Quiet logging, but keep the privacy filter so the no-PII-in-logs test sees what production sees.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "filters": LOGGING["filters"],  # noqa: F405
+    "loggers": {"celery.app.trace": {"filters": ["task_args"]}},
+}

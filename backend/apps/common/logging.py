@@ -80,6 +80,17 @@ class RequestIdFilter(logging.Filter):
         return True
 
 
+class TaskArgsFilter(logging.Filter):
+    """Celery's "task succeeded" record carries the task's arguments in `data`. Ours include
+    one-time tokens and user ids, so they never reach a log (constitution X)."""
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        data = getattr(record, "data", None)
+        if isinstance(data, dict):
+            record.data = {k: v for k, v in data.items() if k not in ("args", "kwargs")}
+        return True
+
+
 _STANDARD = set(logging.LogRecord("", 0, "", 0, "", None, None).__dict__) | {
     "message",
     "asctime",

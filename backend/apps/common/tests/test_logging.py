@@ -108,3 +108,13 @@ def test_no_header_outside_a_request_and_unsafe_task_ids_ignored():
     rlog.bind_task_request_id(task=task)
     rlog.unbind_task_request_id(task=task)
     assert rlog.request_id_var.get() == "-"
+
+
+def test_task_args_filter_strips_arguments_but_keeps_the_rest():
+    from apps.common.logging import TaskArgsFilter
+
+    record = logging.LogRecord("celery.app.trace", 20, "p", 1, "Task succeeded", (), None)
+    record.data = {"id": "abc", "runtime": 0.1, "args": "[1, 'secret-token']", "kwargs": "{}"}
+
+    assert TaskArgsFilter().filter(record) is True
+    assert record.data == {"id": "abc", "runtime": 0.1}
