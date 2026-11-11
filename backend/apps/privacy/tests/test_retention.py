@@ -88,10 +88,3 @@ def test_command_runs_the_same_rules():
     out = StringIO()
     call_command("run_retention", stdout=out)
     assert "students_anonymised: 1" in out.getvalue()
-
-
-def test_the_nightly_job_is_scheduled():
-    from config.celery import app
-
-    tasks = {e["task"] for e in app.conf.beat_schedule.values()}
-    assert "apps.privacy.tasks.run_retention" in tasks

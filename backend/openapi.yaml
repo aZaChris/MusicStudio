@@ -3664,6 +3664,8 @@ components:
           maxLength: 100
         is_active:
           type: boolean
+        is_adult:
+          type: boolean
     Payment:
       type: object
       description: |-
@@ -3831,6 +3833,11 @@ components:
           readOnly: true
         is_active:
           type: boolean
+        is_adult:
+          type: boolean
+        has_account:
+          type: boolean
+          readOnly: true
         active_package:
           allOf:
           - $ref: '#/components/schemas/Package'
@@ -3844,6 +3851,7 @@ components:
       - active_package
       - first_name
       - full_name
+      - has_account
       - id
       - instrument
       - last_name
@@ -3866,6 +3874,8 @@ components:
           minLength: 1
           maxLength: 100
         is_active:
+          type: boolean
+        is_adult:
           type: boolean
       required:
       - first_name

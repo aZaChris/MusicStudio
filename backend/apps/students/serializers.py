@@ -15,6 +15,8 @@ class StudentSerializer(serializers.ModelSerializer[Student]):
     # A student may have no active package: the contract must say nullable (typed clients).
     active_package = PackageSerializer(read_only=True, allow_null=True)
     payment_status = serializers.SerializerMethodField()
+    # True once the adult student accepted an invitation; no extra query (user_id is local).
+    has_account = serializers.SerializerMethodField()
 
     class Meta:
         model = Student
@@ -27,10 +29,22 @@ class StudentSerializer(serializers.ModelSerializer[Student]):
             "teacher",
             "studio",
             "is_active",
+            "is_adult",
+            "has_account",
             "active_package",
             "payment_status",
         ]
         read_only_fields = ["teacher", "studio"]
+
+    def get_has_account(self, obj: Student) -> bool:
+        return obj.user_id is not None
+
+    def validate_is_adult(self, value: bool) -> bool:
+        # Only adults may have an account of their own (constitution X): taking the flag away
+        # from a student who already signed in would leave a minor with an account.
+        if not value and self.instance is not None and self.instance.user_id is not None:
+            raise serializers.ValidationError("This student already has an account.")
+        return value
 
     def get_payment_status(self, obj: Student) -> str | None:
         # Annotated by students.selectors.students_for; one query only on single-object paths.

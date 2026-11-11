@@ -65,3 +65,26 @@ def test_student_cannot_write(method, path, body):
     assert res.status_code == 403
     me.refresh_from_db()
     assert me.first_name != "Hacked"
+
+
+def test_teacher_marks_a_student_adult_and_cannot_undo_it_once_they_have_an_account():
+    me = StudentFactory()
+    client = client_for(me.teacher.user)
+    url = f"/api/v1/students/{me.pk}/"
+
+    res = client.patch(url, {"is_adult": True}, format="json")
+    assert res.status_code == 200
+    assert (res.data["is_adult"], res.data["has_account"]) == (True, False)
+
+    make_student_account(me)
+    res = client.patch(url, {"is_adult": False}, format="json")
+    assert res.status_code == 400
+    assert client.get(url).data["has_account"] is True
+
+
+def test_has_account_cannot_be_written():
+    me = StudentFactory()
+    client = client_for(me.teacher.user)
+    client.patch(f"/api/v1/students/{me.pk}/", {"has_account": True}, format="json")
+    me.refresh_from_db()
+    assert me.user_id is None

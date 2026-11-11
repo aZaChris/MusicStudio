@@ -71,7 +71,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 ## Phase 9: US7 — Adult students see their own lessons (P3)
 
-- [ ] T042 [US7] `is_adult` writable and `has_account` read-only on the student serializer; student role read-only on students/lessons/packages/payments (permissions unchanged for writes; tests that every write is 403 and reads are self-only) in `backend/apps/students/serializers.py`, `backend/apps/common/tests/test_student_role.py`; add student role to the IDOR table
+- [X] T042 [US7] `is_adult` writable and `has_account` read-only on the student serializer; student role read-only on students/lessons/packages/payments (permissions unchanged for writes; tests that every write is 403 and reads are self-only) in `backend/apps/students/serializers.py`, `backend/apps/common/tests/test_student_role.py`; add student role to the IDOR table
 - [ ] T043 [US7] Portal: "Maggiorenne" toggle in `StudentFormDialog`, "Invita allievo" for adult students, `features/student/StudentHome.tsx` read-only, role routing in `auth/RequireRole.tsx`; tests
 
 ## Phase 10: US8 — The owner can see who did what (P3)
