@@ -18,7 +18,9 @@ RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-ins
 
 COPY . .
 # collectstatic imports production settings, which refuse to load without their
-# variables. These throwaway values exist only for this build step.
+# variables (config/tests/test_dockerfile_build_env.py keeps this list complete).
+# These throwaway values exist only for this build step; the Fernet key is a fake one
+# (production refuses the public development key on purpose), never a real key.
 # `env -i` starts from an empty environment: Coolify injects every app variable as a build
 # ARG, empty ones included, and TRUSTED_PROXY_COUNT='' crashed env.int() here.
 RUN env -i PATH=/usr/local/bin:/usr/bin:/bin \
@@ -27,6 +29,8 @@ RUN env -i PATH=/usr/local/bin:/usr/bin:/bin \
     DATABASE_URL=postgres://build@localhost/build \
     DJANGO_ALLOWED_HOSTS=build DJANGO_CSRF_TRUSTED_ORIGINS=https://build \
     SMTP_HOST=build SMTP_USER=build SMTP_PASSWORD=build \
+    FRONTEND_URL=https://build \
+    FIELD_ENCRYPTION_KEYS=YnVpbGQtb25seS10aHJvd2F3YXkta2V5LTAwMDAwMDA= \
     /opt/venv/bin/python manage.py collectstatic --noinput
 
 # ---- runtime: small, non-root ------------------------------------------------------------

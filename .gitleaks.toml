@@ -9,6 +9,9 @@ regexes = [
   # Development-only Fernet key (config/settings/base.py); production refuses to start with
   # it unless FIELD_ENCRYPTION_KEYS is set, and tests use it to round-trip encryption.
   '''ZGV2LW9ubHktaW5zZWN1cmUtZmllbGQta2V5LTAwMDA=''',
+  # Throwaway Fernet key of the Docker build step (backend/Dockerfile): only lets collectstatic
+  # import the production settings, never used at run time.
+  '''YnVpbGQtb25seS10aHJvd2F3YXkta2V5LTAwMDAwMDA=''',
 ]
 paths = [
   # Fixed fake keys for settings tests (they only prove start-up validation).

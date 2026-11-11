@@ -1,5 +1,8 @@
 # Checklist delle 17:00: account, chiavi e deploy di staging
 
+**Per il deploy di oggi usa `docs/DEPLOY_STAGING.md`** (versione aggiornata e più corta). Questa checklist resta per
+Stripe, Sentry e la protezione dei branch.
+
 Da eseguire in ordine. Ogni passo dice dove andare, cosa fare e cosa annotare. I valori segreti
 **non** vanno mai nel repository né in chat: si incollano solo nelle variabili d'ambiente di Coolify.
 Al posto di `tuodominio.it` metti il tuo dominio. Contesto e motivazioni sono in `docs/TASKS_SPLIT.md`.

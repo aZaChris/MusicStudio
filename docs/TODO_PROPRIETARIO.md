@@ -1,7 +1,8 @@
 # Cosa devi fare tu (senza il deploy)
 
-Stato al 11 novembre 2026, fine della fase 7. Il **deploy su Coolify aspetta**: i passi di DNS, Coolify,
-webhook Stripe, primo account e protezione dei branch restano in `docs/CHECKLIST_17.md` e non sono qui.
+Stato al 11 novembre 2026, fine della fase 7. Il **deploy di staging** ha la sua guida: `docs/DEPLOY_STAGING.md`
+(DNS, Coolify, variabili, verifiche, primo account). Il webhook Stripe e la protezione dei branch restano in
+`docs/CHECKLIST_17.md`.
 Qui ci sono le azioni che richiedono te e che puoi fare **adesso**, in ordine. I segreti non vanno mai
 nel repository né in chat.
 
