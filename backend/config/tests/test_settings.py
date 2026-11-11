@@ -6,6 +6,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from cryptography.fernet import Fernet
+
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 
 PROD_ENV = {
@@ -18,6 +20,8 @@ PROD_ENV = {
     "SMTP_HOST": "smtp.example.com",
     "SMTP_USER": "u",
     "SMTP_PASSWORD": "p",
+    "FIELD_ENCRYPTION_KEYS": Fernet.generate_key().decode(),
+    "FRONTEND_URL": "https://app.example.com",
 }
 
 
@@ -62,3 +66,18 @@ def test_dev_settings_are_debug():
     dev = importlib.import_module("config.settings.dev")
 
     assert dev.DEBUG is True
+
+
+def test_prod_settings_refuse_missing_or_unsafe_field_keys():
+    without = {k: v for k, v in PROD_ENV.items() if k != "FIELD_ENCRYPTION_KEYS"}
+    dev_key = {**PROD_ENV, "FIELD_ENCRYPTION_KEYS": "ZGV2LW9ubHktaW5zZWN1cmUtZmllbGQta2V5LTAwMDA="}
+    garbage = {**PROD_ENV, "FIELD_ENCRYPTION_KEYS": "not-a-key"}
+
+    for env, message in [
+        (without, "FIELD_ENCRYPTION_KEYS"),
+        (dev_key, "dev-only"),
+        (garbage, "invalid key"),
+    ]:
+        result = _load_prod(env)
+        assert result.returncode != 0
+        assert message in result.stderr

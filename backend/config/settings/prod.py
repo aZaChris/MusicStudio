@@ -7,6 +7,7 @@ insecure and SECURE_SSL_REDIRECT would loop forever.
 
 from .base import *  # noqa: F403
 from .base import env
+from .keys import check_field_keys as _check_field_keys
 
 DEBUG = False
 
@@ -40,6 +41,12 @@ STORAGES = {
     **STORAGES,  # noqa: F405
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
+
+# No default: a deploy without its own key must not start (ADR-030). Each key is checked
+# now, so a typo fails the deploy instead of the first request that touches a note.
+FIELD_ENCRYPTION_KEYS = env.list("FIELD_ENCRYPTION_KEYS")
+_check_field_keys(FIELD_ENCRYPTION_KEYS)
+FRONTEND_URL = env("FRONTEND_URL")
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = env("SMTP_HOST")

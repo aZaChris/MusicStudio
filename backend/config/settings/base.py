@@ -163,6 +163,11 @@ REST_FRAMEWORK = {
         "anon": env("THROTTLE_ANON", default="100/hour"),
         "user": env("THROTTLE_USER", default="1000/hour"),
         "login": env("THROTTLE_LOGIN", default="5/min"),
+        # Anonymous account endpoints (phase 7): each sends an email or checks a secret.
+        "register": env("THROTTLE_REGISTER", default="5/hour"),
+        "password_reset": env("THROTTLE_PASSWORD_RESET", default="5/hour"),
+        "mfa": env("THROTTLE_MFA", default="5/min"),
+        "invitation_accept": env("THROTTLE_INVITATION_ACCEPT", default="10/hour"),
     },
 }
 
@@ -246,6 +251,22 @@ if STRIPE_API_KEY and not STRIPE_API_KEY.startswith(("sk_test_", "rk_test_")):
 
 # Dashboard cache lifetime (ADR-017); data changes invalidate immediately.
 DASHBOARD_CACHE_SECONDS: int = env.int("DASHBOARD_CACHE_SECONDS", default=300)
+
+# --- Accounts and privacy (phase 7, ADR-027..032) ---------------------------------------
+# Field encryption (ADR-030): comma list of Fernet keys; the first encrypts, all decrypt.
+# The default is a public, dev-only key; prod.py requires a real one.
+FIELD_ENCRYPTION_KEYS: list[str] = env.list(
+    "FIELD_ENCRYPTION_KEYS", default=["ZGV2LW9ubHktaW5zZWN1cmUtZmllbGQta2V5LTAwMDA="]
+)
+# Version of the privacy notice (docs/privacy/) that new consents refer to.
+PRIVACY_NOTICE_VERSION: str = env("PRIVACY_NOTICE_VERSION", default="2026-11-draft")
+# Reset links: single use by construction, valid one hour (ADR-028).
+PASSWORD_RESET_TIMEOUT = 60 * 60
+EMAIL_CONFIRM_MAX_AGE_SECONDS: int = 48 * 60 * 60
+INVITATION_DAYS: int = 7
+MFA_TOKEN_MAX_AGE_SECONDS: int = 5 * 60
+# Public URL of the web portal: links in emails point here.
+FRONTEND_URL: str = env("FRONTEND_URL", default="http://localhost:5173")
 
 # Email (reminders) — console backend by default, SMTP in prod.py
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"

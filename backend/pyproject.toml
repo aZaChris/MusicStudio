@@ -5,6 +5,7 @@ description = "MusicStudio REST API: lessons, packages, payments and parent port
 requires-python = ">=3.12"
 dependencies = [
     "celery>=5.6.3",
+    "cryptography>=44",
     "django>=5.2,<5.3",
     "django-cors-headers>=4.9.0",
     "django-environ>=0.14.0",
@@ -75,6 +76,7 @@ django_settings_module = "config.settings.test"
 DJANGO_SETTINGS_MODULE = "config.settings.test"
 python_files = ["tests.py", "test_*.py"]
 filterwarnings = ["ignore:No directory at:UserWarning"]
+markers = ["idor: cross-tenant (object-level authorization) tests, one per endpoint and role pair"]
 addopts = "--cov=apps --cov=config --cov-report=term-missing:skip-covered --cov-fail-under=90"
 
 [tool.coverage.run]

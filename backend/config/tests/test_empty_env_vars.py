@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 
+from cryptography.fernet import Fernet
 from django.conf import settings
 
 
@@ -19,6 +20,8 @@ def test_production_settings_load_with_empty_optional_variables():
         "SMTP_HOST": "x",
         "SMTP_USER": "x",
         "SMTP_PASSWORD": "x",
+        "FIELD_ENCRYPTION_KEYS": Fernet.generate_key().decode(),
+        "FRONTEND_URL": "https://app.example.test",
         # Empty, as Coolify sends them to the worker and beat containers.
         "TRUSTED_PROXY_COUNT": "",
         "JWT_ACCESS_MINUTES": "",
