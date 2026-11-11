@@ -24,6 +24,7 @@ Il sistema serve due app con lo stesso aspetto: l'app mobile (Expo / React Nativ
 Regole:
 - Il testo sopra `orange` è sempre `on-orange` (scuro), mai bianco, perché il bianco non passa il contrasto.
 - L'arancio usato come testo è `orange-text`, più scuro di `orange`.
+- Il contorno delle battute vuote è `beat-edge` (su plum resta `orange`); il bordo dei campi a riposo è `field-border`: entrambi hanno almeno 3:1 su `paper` e `card`.
 - Gli stati hanno coppie dedicate fondo/testo (`ok`, `wait`, `bad`, `plan`, `off`) e non si usano per decorare.
 - Il tema scuro non è il chiaro invertito: il fondo è un marrone quasi nero caldo, l'arancio si schiarisce un poco e `beat-on` diventa lilla per restare visibile.
 
@@ -70,6 +71,7 @@ Movimenti brevi che spiegano da dove arriva una cosa, mai decorazione. Le durate
 - **Token**: `tokens.json` è la fonte; il CSS compilato espone ogni token come variabile (`var(--paper)`, `var(--radius-card)`, `var(--duration-base)`) e cambia tema con `data-theme="light"` o `data-theme="dark"` sull'elemento `html`.
 - **Kit CSS**: `components/bundle.css` contiene i componenti come classi con prefisso `ms-` (`ms-btn ms-btn--primary`, `ms-chip ms-chip--ok`, `ms-beats`). Funziona in qualsiasi progetto web che carichi anche i token.
 - **App mobile**: React Native non legge il CSS. Si usano gli stessi valori di `tokens.json` in un file di tema TypeScript, con le stesse regole di questa guida.
+- **Dati veri**: i moduli per creare e modificare studenti, pacchetti e lezioni usano `Dialog` sul web e `BottomSheet` su mobile, con i campi di `TextField`; il metodo di pagamento è un gruppo di pillole (`ms-radio-pill`). Vedi la scheda **FormFields**.
 - Ogni componente ha la sua scheda con l'anteprima e le regole d'uso.
 
 ## Nel repository
