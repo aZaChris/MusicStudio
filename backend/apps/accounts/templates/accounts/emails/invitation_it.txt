@@ -1,0 +1,11 @@
+{% autoescape off %}Ciao,
+
+lo studio "{{ studio_name }}" ti ha invitato su MusicStudio come {% if role == "teacher" %}insegnante{% elif role == "parent" %}genitore{% else %}allievo{% endif %}.
+
+Per accettare e scegliere la tua password apri questo link (valido {{ days }} giorni, utilizzabile una sola volta):
+
+{{ url }}
+
+Se non aspettavi questo invito, ignora il messaggio.
+
+— MusicStudio{% endautoescape %}

@@ -192,6 +192,72 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/invitations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_invitations_list"];
+        put?: never;
+        post: operations["v1_invitations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/{id}/revoke/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_invitations_revoke_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/accept/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Accept: a new account (with password) or, for a parent, the signed-in account. */
+        post: operations["v1_invitations_accept_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/invitations/lookup/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description What the invitation is for, so the page can show it before asking for a password. */
+        get: operations["v1_invitations_lookup_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/lessons/": {
         parameters: {
             query?: never;
@@ -476,6 +542,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcceptInvitationRequest: {
+            token: string;
+            /** @default  */
+            password: string;
+            /** @default  */
+            first_name: string;
+            /** @default  */
+            last_name: string;
+            accept_terms: boolean;
+            /** @default false */
+            consent: boolean;
+        };
         /** @description Uniform answer of the anonymous account endpoints (no account enumeration). */
         AcceptedResponse: {
             detail: string;
@@ -500,6 +578,37 @@ export interface components {
             /** Format: email */
             email: string;
         };
+        Invitation: {
+            readonly id: number;
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["InvitationRoleEnum"];
+            readonly students: number[];
+            readonly status: string;
+            /** Format: date-time */
+            readonly expires_at: string;
+        };
+        InvitationLookup: {
+            role: string;
+            studio_name: string;
+            /** Format: email */
+            email: string;
+            student_first_names: string[];
+            existing_account: boolean;
+        };
+        InvitationRequest: {
+            /** Format: email */
+            email: string;
+            role: components["schemas"]["InvitationRoleEnum"];
+            student_ids?: number[];
+        };
+        /**
+         * @description * `teacher` - Teacher
+         *     * `parent` - Parent
+         *     * `student` - Student
+         * @enum {string}
+         */
+        InvitationRoleEnum: "teacher" | "parent" | "student";
         /**
          * @description Restrict writable related fields to objects the requesting user may see.
          *
@@ -582,12 +691,20 @@ export interface components {
             readonly id: number;
             /** Format: email */
             email: string;
-            role: components["schemas"]["RoleEnum"];
+            role: components["schemas"]["MeRoleEnum"];
             preferred_language?: components["schemas"]["PreferredLanguageEnum"];
             email_verified?: boolean;
             readonly teacher: components["schemas"]["TeacherProfile"] | null;
             readonly parent_account: components["schemas"]["ParentProfile"] | null;
         };
+        /**
+         * @description * `teacher` - Teacher
+         *     * `studio_owner` - Studio owner
+         *     * `parent` - Parent
+         *     * `student` - Student
+         * @enum {string}
+         */
+        MeRoleEnum: "teacher" | "studio_owner" | "parent" | "student";
         /**
          * @description * `cash` - Cash
          *     * `bank_transfer` - Bank transfer
@@ -637,6 +754,21 @@ export interface components {
             expiry_date?: string | null;
             /** Format: decimal */
             price: string;
+        };
+        PaginatedInvitationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Invitation"][];
         };
         PaginatedLessonList: {
             /** @example 123 */
@@ -857,14 +989,6 @@ export interface components {
             /** @default it */
             preferred_language: components["schemas"]["PreferredLanguageEnum"];
         };
-        /**
-         * @description * `teacher` - Teacher
-         *     * `studio_owner` - Studio owner
-         *     * `parent` - Parent
-         *     * `student` - Student
-         * @enum {string}
-         */
-        RoleEnum: "teacher" | "studio_owner" | "parent" | "student";
         Student: {
             readonly id: number;
             first_name: string;
@@ -898,6 +1022,10 @@ export interface components {
             readonly id: number;
             studio: number;
             is_owner?: boolean;
+        };
+        TokenPair: {
+            access: string;
+            refresh: string;
         };
         TokenRefresh: {
             readonly access: string;
@@ -1446,6 +1574,256 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_invitations_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedInvitationList"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_invitations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvitationRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["InvitationRequest"];
+                "multipart/form-data": components["schemas"]["InvitationRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invitation"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_invitations_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this invitation. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Invitation"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found or outside your studio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_invitations_accept_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInvitationRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AcceptInvitationRequest"];
+                "multipart/form-data": components["schemas"]["AcceptInvitationRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenPair"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_invitations_lookup_retrieve: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationLookup"];
                 };
             };
             /** @description Rate limit exceeded; see Retry-After. */

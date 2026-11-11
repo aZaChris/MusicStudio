@@ -111,6 +111,10 @@ ROUTES = {
     "dashboard/",
     "studio/",
     "studio/teachers/",
+    # Cross-tenant cases for invitations live in apps/accounts/tests/test_invitations.py
+    # (out-of-scope students, other teachers' and other studios' invitations).
+    "invitations/",
+    "invitations/<pk>/revoke/",
 }
 
 

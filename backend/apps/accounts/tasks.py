@@ -1,6 +1,7 @@
 from typing import Any
 
 from celery import shared_task
+from django.conf import settings
 
 from . import emails, services, tokens
 from .models import User
@@ -37,4 +38,29 @@ def send_account_email(kind: str, user_id: int) -> None:
         context["reset_url"] = emails.link("/forgot-password")
     emails.send(
         kind, to=user.email, language=user.preferred_language, context=context, log_id=user_id
+    )
+
+
+@shared_task(**_RETRY)
+def send_invitation_email(invitation_id: int, token: str) -> None:
+    """The plain token exists only here and in the email: the database keeps its hash."""
+    from .models import Invitation
+
+    invitation = (
+        Invitation.objects.select_related("studio", "invited_by").filter(pk=invitation_id).first()
+    )
+    if invitation is None or invitation.status != Invitation.Status.PENDING:
+        return
+    language = getattr(invitation.invited_by, "preferred_language", "it")
+    emails.send(
+        "invitation",
+        to=invitation.email,
+        language=language,
+        context={
+            "studio_name": invitation.studio.name,
+            "role": invitation.role,
+            "days": settings.INVITATION_DAYS,
+            "url": emails.link("/invitations/accept", token=token),
+        },
+        log_id=invitation_id,
     )

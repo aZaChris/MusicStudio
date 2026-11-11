@@ -1,0 +1,11 @@
+{% autoescape off %}Hi,
+
+the studio "{{ studio_name }}" invited you to MusicStudio as a {% if role == "teacher" %}teacher{% elif role == "parent" %}parent{% else %}student{% endif %}.
+
+To accept and choose your password, open this link (valid for {{ days }} days, single use):
+
+{{ url }}
+
+If you were not expecting this invitation, ignore this message.
+
+— MusicStudio{% endautoescape %}

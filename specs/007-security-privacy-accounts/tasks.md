@@ -44,11 +44,11 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 ## Phase 6: US3 — Owners invite teachers and parents (P1)
 
-- [ ] T024 [US3] `Invitation` model (hashed token, partial unique pending constraint, M2M students) + migration in `backend/apps/accounts/models.py`
-- [ ] T025 [US3] New app `apps/privacy` with `ConsentRecord` model + migration in `backend/apps/privacy/`
-- [ ] T026 [US3] Services `create_invitation` (role rules, students validated against the scoped queryset, adult check), `revoke_invitation`, `lookup_invitation`, `accept_invitation` (inviter still active and in scope; new account verified with chosen password, or links added to signed-in existing account; parent consent recorded with `PRIVACY_NOTICE_VERSION`; teacher → `Teacher` row in studio; student → `Student.user`) in `backend/apps/accounts/services.py` and `backend/apps/privacy/services.py`; audit `invitation.*`, `consent.give`, `role.change`
-- [ ] T027 [US3] Endpoints `invitations/` (list/create), `invitations/{id}/revoke/`, `invitations/lookup/`, `invitations/accept/` with scoped querysets, query budget on the list, in `backend/apps/accounts/views.py`; add to IDOR table (T012)
-- [ ] T028 [P] [US3] Tests: owner/teacher permissions per role, out-of-scope student "does not exist", minor refused for student role, 7-day expiry, single use, revoke, inviter removed → refused, existing parent gets links not duplicate, consent recorded, in `backend/apps/accounts/tests/test_invitations.py`
+- [X] T024 [US3] `Invitation` model (hashed token, partial unique pending constraint, M2M students) + migration in `backend/apps/accounts/models.py`
+- [X] T025 [US3] New app `apps/privacy` with `ConsentRecord` model + migration in `backend/apps/privacy/`
+- [X] T026 [US3] Services `create_invitation` (role rules, students validated against the scoped queryset, adult check), `revoke_invitation`, `lookup_invitation`, `accept_invitation` (inviter still active and in scope; new account verified with chosen password, or links added to signed-in existing account; parent consent recorded with `PRIVACY_NOTICE_VERSION`; teacher → `Teacher` row in studio; student → `Student.user`) in `backend/apps/accounts/services.py` and `backend/apps/privacy/services.py`; audit `invitation.*`, `consent.give`, `role.change`
+- [X] T027 [US3] Endpoints `invitations/` (list/create), `invitations/{id}/revoke/`, `invitations/lookup/`, `invitations/accept/` with scoped querysets, query budget on the list, in `backend/apps/accounts/views.py`; add to IDOR table (T012)
+- [X] T028 [P] [US3] Tests: owner/teacher permissions per role, out-of-scope student "does not exist", minor refused for student role, 7-day expiry, single use, revoke, inviter removed → refused, existing parent gets links not duplicate, consent recorded, in `backend/apps/accounts/tests/test_invitations.py`
 - [ ] T029 [US3] Portal: owner `features/team/TeamPage.tsx` (teachers + pending invitations, invite, revoke); teacher "Invita genitore" on `StudentDetail`; `auth/AcceptInvitation.tsx` (lookup, password, consent checkbox with link to notice); tests `frontend/src/features/team/team.test.tsx`
 
 ## Phase 7: US5 — Sign-in that resists guessing and theft (P2)

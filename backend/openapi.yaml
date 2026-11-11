@@ -453,6 +453,214 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/v1/invitations/:
+    get:
+      operationId: v1_invitations_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInvitationList'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      operationId: v1_invitations_create
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InvitationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InvitationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InvitationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/invitations/{id}/revoke/:
+    post:
+      operationId: v1_invitations_revoke_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this invitation.
+        required: true
+      tags:
+      - accounts
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invitation'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/invitations/accept/:
+    post:
+      operationId: v1_invitations_accept_create
+      description: 'Accept: a new account (with password) or, for a parent, the signed-in
+        account.'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AcceptInvitationRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenPair'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/invitations/lookup/:
+    get:
+      operationId: v1_invitations_lookup_retrieve
+      description: What the invitation is for, so the page can show it before asking
+        for a password.
+      parameters:
+      - in: query
+        name: token
+        schema:
+          type: string
+        required: true
+      tags:
+      - accounts
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvitationLookup'
+          description: ''
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/lessons/:
     get:
       operationId: v1_lessons_list
@@ -2160,6 +2368,34 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
+    AcceptInvitationRequest:
+      type: object
+      properties:
+        token:
+          type: string
+          minLength: 1
+          maxLength: 128
+        password:
+          type: string
+          writeOnly: true
+          default: ''
+          maxLength: 128
+        first_name:
+          type: string
+          default: ''
+          maxLength: 150
+        last_name:
+          type: string
+          default: ''
+          maxLength: 150
+        accept_terms:
+          type: boolean
+        consent:
+          type: boolean
+          default: false
+      required:
+      - accept_terms
+      - token
     AcceptedResponse:
       type: object
       description: Uniform answer of the anonymous account endpoints (no account enumeration).
@@ -2219,6 +2455,87 @@ components:
           minLength: 1
       required:
       - email
+    Invitation:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/InvitationRoleEnum'
+        students:
+          type: array
+          items:
+            type: integer
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - email
+      - expires_at
+      - id
+      - role
+      - status
+      - students
+    InvitationLookup:
+      type: object
+      properties:
+        role:
+          type: string
+        studio_name:
+          type: string
+        email:
+          type: string
+          format: email
+        student_first_names:
+          type: array
+          items:
+            type: string
+        existing_account:
+          type: boolean
+      required:
+      - email
+      - existing_account
+      - role
+      - student_first_names
+      - studio_name
+    InvitationRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/InvitationRoleEnum'
+        student_ids:
+          type: array
+          items:
+            type: integer
+          writeOnly: true
+      required:
+      - email
+      - role
+    InvitationRoleEnum:
+      enum:
+      - teacher
+      - parent
+      - student
+      type: string
+      description: |-
+        * `teacher` - Teacher
+        * `parent` - Parent
+        * `student` - Student
     Lesson:
       type: object
       description: |-
@@ -2379,7 +2696,7 @@ components:
           format: email
           maxLength: 254
         role:
-          $ref: '#/components/schemas/RoleEnum'
+          $ref: '#/components/schemas/MeRoleEnum'
         preferred_language:
           $ref: '#/components/schemas/PreferredLanguageEnum'
         email_verified:
@@ -2400,6 +2717,18 @@ components:
       - parent_account
       - role
       - teacher
+    MeRoleEnum:
+      enum:
+      - teacher
+      - studio_owner
+      - parent
+      - student
+      type: string
+      description: |-
+        * `teacher` - Teacher
+        * `studio_owner` - Studio owner
+        * `parent` - Parent
+        * `student` - Student
     MethodEnum:
       enum:
       - cash
@@ -2494,6 +2823,29 @@ components:
       - purchase_date
       - student
       - total_lessons
+    PaginatedInvitationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Invitation'
     PaginatedLessonList:
       type: object
       required:
@@ -2891,18 +3243,6 @@ components:
       - last_name
       - password
       - studio_name
-    RoleEnum:
-      enum:
-      - teacher
-      - studio_owner
-      - parent
-      - student
-      type: string
-      description: |-
-        * `teacher` - Teacher
-        * `studio_owner` - Studio owner
-        * `parent` - Parent
-        * `student` - Student
     Student:
       type: object
       properties:
@@ -3013,6 +3353,16 @@ components:
       required:
       - id
       - studio
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
     TokenRefresh:
       type: object
       properties:

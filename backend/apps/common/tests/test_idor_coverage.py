@@ -20,7 +20,9 @@ NO_TENANT_DATA = {
     "auth/password-reset/",
     "auth/password-reset/confirm/",
     "auth/password/change/",
-    "webhooks/stripe/",  # signed by Stripe, no user (apps/payments/tests)
+    "webhooks/stripe/",
+    "invitations/lookup/",  # anonymous, by secret token
+    "invitations/accept/",  # signed by Stripe, no user (apps/payments/tests)
 }
 
 

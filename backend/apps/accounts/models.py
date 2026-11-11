@@ -34,3 +34,50 @@ class User(AbstractUser):
 
     def __str__(self) -> str:
         return self.email
+
+
+class Invitation(models.Model):
+    """A signed-up user invites someone into their studio (US3, research R2).
+
+    Only the SHA-256 of the token is stored: a database leak does not leak usable links.
+    "Expired" is not stored; it is `expires_at` in the past.
+    """
+
+    class Role(models.TextChoices):
+        TEACHER = "teacher", "Teacher"
+        PARENT = "parent", "Parent"
+        STUDENT = "student", "Student"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        ACCEPTED = "accepted", "Accepted"
+        REVOKED = "revoked", "Revoked"
+
+    studio = models.ForeignKey("studios.Studio", on_delete=models.CASCADE, related_name="+")
+    invited_by = models.ForeignKey(
+        User, null=True, on_delete=models.SET_NULL, related_name="invitations_sent"
+    )
+    email = models.EmailField()
+    role = models.CharField(max_length=20, choices=Role.choices)
+    students = models.ManyToManyField("students.Student", blank=True, related_name="+")
+    token_hash = models.CharField(max_length=64, unique=True)
+    expires_at = models.DateTimeField()
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    accepted_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        constraints = [
+            # One live invitation per person and role in a studio; a new one replaces it.
+            models.UniqueConstraint(
+                fields=["studio", "email", "role"],
+                condition=models.Q(status="pending"),
+                name="one_pending_invitation",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.role} invitation #{self.pk}"
