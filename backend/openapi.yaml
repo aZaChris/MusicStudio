@@ -4,6 +4,86 @@ info:
   version: 1.0.0
   description: REST API for the MusicStudio teacher/parent platform.
 paths:
+  /api/v1/auth/confirm-email/:
+    post:
+      operationId: v1_auth_confirm_email_create
+      description: 'Base for anonymous account endpoints: no JWT parsing, a per-client
+        rate.'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UidTokenRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UidTokenRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UidTokenRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponse'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/auth/confirm-email/resend/:
+    post:
+      operationId: v1_auth_confirm_email_resend_create
+      description: 'Base for anonymous account endpoints: no JWT parsing, a per-client
+        rate.'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EmailOnlyRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EmailOnlyRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EmailOnlyRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponse'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/auth/logout/:
     post:
       operationId: v1_auth_logout_create
@@ -84,6 +164,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      description: 'Base for anonymous account endpoints: no JWT parsing, a per-client
+        rate.'
+      tags:
+      - accounts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - {}
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AcceptedResponse'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/auth/token/:
     post:
       operationId: v1_auth_token_create
@@ -95,21 +215,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TokenObtainPairRequest'
+              $ref: '#/components/schemas/LoginRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/TokenObtainPairRequest'
+              $ref: '#/components/schemas/LoginRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/TokenObtainPairRequest'
+              $ref: '#/components/schemas/LoginRequest'
         required: true
       responses:
         '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenObtainPair'
-          description: ''
+          description: No response body
         '400':
           description: Invalid input.
           content:
@@ -1912,6 +2028,14 @@ paths:
                 $ref: '#/components/schemas/Error'
 components:
   schemas:
+    AcceptedResponse:
+      type: object
+      description: Uniform answer of the anonymous account endpoints (no account enumeration).
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
     Checkout:
       type: object
       description: 'Response of POST /packages/{id}/checkout/: where to send the payer.'
@@ -1954,6 +2078,15 @@ components:
       - pending_payments_count
       - upcoming
       - week
+    EmailOnlyRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+      required:
+      - email
     Lesson:
       type: object
       description: |-
@@ -2067,6 +2200,23 @@ components:
         * `completed` - Completed
         * `cancelled` - Cancelled
         * `no_show` - No-show
+    LoginRequest:
+      type: object
+      description: |-
+        Sign-in. Unconfirmed accounts are refused only after a correct password, so the
+        distinct message reveals nothing an attacker could not already prove.
+      properties:
+        email:
+          type: string
+          writeOnly: true
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - email
+      - password
     LogoutRequest:
       type: object
       properties:
@@ -2100,6 +2250,8 @@ components:
           $ref: '#/components/schemas/RoleEnum'
         preferred_language:
           $ref: '#/components/schemas/PreferredLanguageEnum'
+        email_verified:
+          type: boolean
         teacher:
           allOf:
           - $ref: '#/components/schemas/TeacherProfile'
@@ -2535,6 +2687,43 @@ components:
           type: integer
       required:
       - teacher
+    RegisterRequest:
+      type: object
+      properties:
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        last_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 128
+        studio_name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        accept_terms:
+          type: boolean
+        preferred_language:
+          allOf:
+          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          default: it
+      required:
+      - accept_terms
+      - email
+      - first_name
+      - last_name
+      - password
+      - studio_name
     RoleEnum:
       enum:
       - teacher
@@ -2657,32 +2846,6 @@ components:
       required:
       - id
       - studio
-    TokenObtainPair:
-      type: object
-      properties:
-        access:
-          type: string
-          readOnly: true
-        refresh:
-          type: string
-          readOnly: true
-      required:
-      - access
-      - refresh
-    TokenObtainPairRequest:
-      type: object
-      properties:
-        email:
-          type: string
-          writeOnly: true
-          minLength: 1
-        password:
-          type: string
-          writeOnly: true
-          minLength: 1
-      required:
-      - email
-      - password
     TokenRefresh:
       type: object
       properties:
@@ -2702,6 +2865,20 @@ components:
           minLength: 1
       required:
       - refresh
+    UidTokenRequest:
+      type: object
+      properties:
+        uid:
+          type: string
+          minLength: 1
+          maxLength: 64
+        token:
+          type: string
+          minLength: 1
+          maxLength: 512
+      required:
+      - token
+      - uid
     Error:
       type: object
       properties:

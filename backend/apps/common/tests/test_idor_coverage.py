@@ -14,6 +14,9 @@ NO_TENANT_DATA = {
     "auth/token/refresh/",
     "auth/logout/",
     "auth/me/",
+    "auth/register/",
+    "auth/confirm-email/",
+    "auth/confirm-email/resend/",
     "webhooks/stripe/",  # signed by Stripe, no user (apps/payments/tests)
 }
 

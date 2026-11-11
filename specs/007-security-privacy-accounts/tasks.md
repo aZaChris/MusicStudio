@@ -28,10 +28,10 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 ## Phase 4: US1 — A studio owner signs up alone (P1)
 
-- [ ] T014 [US1] Services `register_owner` (creates user unverified + studio + owner teacher in one transaction; duplicate address → "someone tried" email instead), `confirm_email`, `resend_confirmation` using signed tokens (R1) in `backend/apps/accounts/services.py`; audit `registration`, `email.confirm`
-- [ ] T015 [US1] Endpoints `auth/register/`, `auth/confirm-email/`, `auth/confirm-email/resend/` (uniform 202, throttled) in `backend/apps/accounts/views.py`, `serializers.py`, `urls.py`; sign-in refuses unverified accounts (`code: email_not_confirmed` only after a correct password)
-- [ ] T016 [P] [US1] Tests: uniform responses for new/existing address (body equal), confirmation single-use and expiry (freezegun or `signing` max_age), unverified login refused, password validators with user attributes, throttle, in `backend/apps/accounts/tests/test_registration.py`
-- [ ] T017 [US1] Retention of unconfirmed sign-ups (7 days, deletes user + studio) as part of `apps/privacy` retention (stub task now, completed in T040) — test in `backend/apps/accounts/tests/test_registration.py`
+- [X] T014 [US1] Services `register_owner` (creates user unverified + studio + owner teacher in one transaction; duplicate address → "someone tried" email instead), `confirm_email`, `resend_confirmation` using signed tokens (R1) in `backend/apps/accounts/services.py`; audit `registration`, `email.confirm`
+- [X] T015 [US1] Endpoints `auth/register/`, `auth/confirm-email/`, `auth/confirm-email/resend/` (uniform 202, throttled) in `backend/apps/accounts/views.py`, `serializers.py`, `urls.py`; sign-in refuses unverified accounts (`code: email_not_confirmed` only after a correct password)
+- [X] T016 [P] [US1] Tests: uniform responses for new/existing address (body equal), confirmation single-use and expiry (freezegun or `signing` max_age), unverified login refused, password validators with user attributes, throttle, in `backend/apps/accounts/tests/test_registration.py`
+- [X] T017 [US1] Retention of unconfirmed sign-ups (7 days, deletes user + studio) as part of `apps/privacy` retention (stub task now, completed in T040) — test in `backend/apps/accounts/tests/test_registration.py`
 - [ ] T018 [US1] Portal: `Register`, `ConfirmEmail` (reads `uid`/`token` from URL), "resend" on login when unconfirmed; routes in `frontend/src/App.tsx`; i18n IT/EN; regenerate `openapi.yaml` + `npm run api:types`
 - [ ] T019 [P] [US1] Portal tests: register success/validation errors, confirm ok/expired, login unconfirmed shows resend, in `frontend/src/auth/register.test.tsx`
 

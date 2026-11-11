@@ -4,6 +4,40 @@
  */
 
 export interface paths {
+    "/api/v1/auth/confirm-email/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Base for anonymous account endpoints: no JWT parsing, a per-client rate. */
+        post: operations["v1_auth_confirm_email_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/confirm-email/resend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Base for anonymous account endpoints: no JWT parsing, a per-client rate. */
+        post: operations["v1_auth_confirm_email_resend_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/logout/": {
         parameters: {
             query?: never;
@@ -31,6 +65,23 @@ export interface paths {
         get: operations["v1_auth_me_retrieve"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/register/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Base for anonymous account endpoints: no JWT parsing, a per-client rate. */
+        post: operations["v1_auth_register_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -374,6 +425,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** @description Uniform answer of the anonymous account endpoints (no account enumeration). */
+        AcceptedResponse: {
+            detail: string;
+        };
         /** @description Response of POST /packages/{id}/checkout/: where to send the payer. */
         Checkout: {
             /** Format: uuid */
@@ -389,6 +444,10 @@ export interface components {
             pending_payments_count: number;
             active_students_count: number;
             low_package_students: components["schemas"]["LowPackageStudent"][];
+        };
+        EmailOnlyRequest: {
+            /** Format: email */
+            email: string;
         };
         /**
          * @description Restrict writable related fields to objects the requesting user may see.
@@ -453,6 +512,14 @@ export interface components {
          * @enum {string}
          */
         LessonStatusEnum: "scheduled" | "completed" | "cancelled" | "no_show";
+        /**
+         * @description Sign-in. Unconfirmed accounts are refused only after a correct password, so the
+         *     distinct message reveals nothing an attacker could not already prove.
+         */
+        LoginRequest: {
+            email: string;
+            password: string;
+        };
         LogoutRequest: {
             refresh: string;
         };
@@ -466,6 +533,7 @@ export interface components {
             email: string;
             role: components["schemas"]["RoleEnum"];
             preferred_language?: components["schemas"]["PreferredLanguageEnum"];
+            email_verified?: boolean;
             readonly teacher: components["schemas"]["TeacherProfile"] | null;
             readonly parent_account: components["schemas"]["ParentProfile"] | null;
         };
@@ -718,6 +786,17 @@ export interface components {
         ReassignStudentRequest: {
             teacher: number;
         };
+        RegisterRequest: {
+            first_name: string;
+            last_name: string;
+            /** Format: email */
+            email: string;
+            password: string;
+            studio_name: string;
+            accept_terms: boolean;
+            /** @default it */
+            preferred_language: components["schemas"]["PreferredLanguageEnum"];
+        };
         /**
          * @description * `teacher` - Teacher
          *     * `studio_owner` - Studio owner
@@ -760,20 +839,16 @@ export interface components {
             studio: number;
             is_owner?: boolean;
         };
-        TokenObtainPair: {
-            readonly access: string;
-            readonly refresh: string;
-        };
-        TokenObtainPairRequest: {
-            email: string;
-            password: string;
-        };
         TokenRefresh: {
             readonly access: string;
             refresh: string;
         };
         TokenRefreshRequest: {
             refresh: string;
+        };
+        UidTokenRequest: {
+            uid: string;
+            token: string;
         };
         Error: {
             detail: string;
@@ -793,6 +868,92 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    v1_auth_confirm_email_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UidTokenRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["UidTokenRequest"];
+                "multipart/form-data": components["schemas"]["UidTokenRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptedResponse"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_auth_confirm_email_resend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EmailOnlyRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EmailOnlyRequest"];
+                "multipart/form-data": components["schemas"]["EmailOnlyRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptedResponse"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     v1_auth_logout_create: {
         parameters: {
             query?: never;
@@ -899,6 +1060,49 @@ export interface operations {
             };
         };
     };
+    v1_auth_register_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RegisterRequest"];
+                "multipart/form-data": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AcceptedResponse"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     v1_auth_token_create: {
         parameters: {
             query?: never;
@@ -908,19 +1112,18 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["TokenObtainPairRequest"];
-                "application/x-www-form-urlencoded": components["schemas"]["TokenObtainPairRequest"];
-                "multipart/form-data": components["schemas"]["TokenObtainPairRequest"];
+                "application/json": components["schemas"]["LoginRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LoginRequest"];
+                "multipart/form-data": components["schemas"]["LoginRequest"];
             };
         };
         responses: {
+            /** @description No response body */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["TokenObtainPair"];
-                };
+                content?: never;
             };
             /** @description Invalid input. */
             400: {
