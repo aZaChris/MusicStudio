@@ -15,3 +15,15 @@ paths = [
   '''backend/config/tests/test_settings\.py''',
   '''backend/config/tests/test_prod_settings\.py''',
 ]
+
+# Passwords typed into tests ("PASSWORD = ..." in a fixture) look like API keys to the generic
+# rule. Only that rule, only test files: a real key anywhere else, or matched by another rule,
+# still fails the build.
+[[allowlists]]
+description = "Fake passwords in test files"
+targetRules = ["generic-api-key"]
+paths = [
+  '''backend/.*/tests/.*\.py''',
+  '''frontend/src/.*\.test\.tsx?''',
+  '''src/.*/__tests__/.*\.tsx?''',
+]
