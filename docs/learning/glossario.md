@@ -269,3 +269,34 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **Web Locks API.** Un'API del browser che permette a più schede della stessa origine di fare un'operazione una alla volta. La usiamo perché due schede non rinnovino insieme lo stesso refresh token.
 
 **XSS (Cross-Site Scripting).** Uno script estraneo che gira nella pagina con i poteri dell'utente.
+
+## Termini aggiunti nella fase 7
+
+**Account lockout (blocco dell'account).** Dopo un certo numero di password sbagliate di fila l'account si rifiuta di far entrare per un po'. Da noi: cinque errori, 15 minuti, poi il doppio a ogni blocco, fino a 24 ore.
+
+**Anonimizzazione.** Togliere da un dato ciò che identifica una persona (nome, email, note), tenendo il resto (importi e date). Diverso dal cancellare la riga.
+
+**Append-only.** Un registro in cui si aggiunge soltanto: le voci esistenti non si modificano e non si cancellano una per una.
+
+**Audit log.** Il registro di chi ha fatto cosa e quando, per le azioni delicate.
+
+**Consenso.** L'accettazione esplicita di un genitore al trattamento dei dati del figlio, che registriamo con data e versione dell'informativa.
+
+**Enumerazione degli account.** Scoprire quali email sono registrate da come risponde un servizio. Si evita rispondendo sempre allo stesso modo.
+
+**Fernet.** Uno schema di cifratura autenticata della libreria `cryptography`: se un solo byte cambia, la decifratura fallisce.
+
+**GDPR.** Il regolamento europeo sulla protezione dei dati personali. Dà alle persone diritti di accesso, portabilità e cancellazione.
+
+**MFA / verifica in due passaggi.** Oltre alla password serve un secondo elemento, per esempio un codice dal telefono.
+
+**Minimizzazione.** Raccogliere solo i dati che servono davvero. Per questo non chiediamo la data di nascita.
+
+**MultiFernet.** Un portachiavi di chiavi Fernet: la prima cifra, tutte decifrano. Permette di ruotare le chiavi.
+
+**PII (dati personali).** Nome, email e ogni dato che identifica una persona. Non devono finire nei log.
+
+**Retention (conservazione).** Per quanto tempo si tengono i dati prima di cancellarli o anonimizzarli.
+
+**TOTP.** Il codice di sei cifre che cambia ogni 30 secondi, calcolato da un segreto e dall'ora (RFC 6238).
+

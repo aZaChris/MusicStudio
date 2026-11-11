@@ -238,6 +238,38 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Punto debole.** In locale non avevo Docker: la prova dell'immagine l'ho affidata alla CI invece di farla sul mio computer.
 
+## Fase 7: sicurezza, privacy e account
+
+### 38. Come eviti che qualcuno scopra quali email sono registrate?
+
+**Risposta modello.** Registrazione, reinvio della conferma e reset rispondono sempre `202` con lo stesso corpo. L'email parte da un task Celery fuori dalla richiesta, quindi anche il tempo di risposta è uguale. Se qualcuno registra un indirizzo già usato, il proprietario riceve una email che lo avvisa. Il login dà la stessa `401` per password sbagliata, email sconosciuta e account bloccato.
+
+**Punto debole.** Il blocco per account può essere usato contro una persona. L'ho limitato a 24 ore e al reset via email, ma non l'ho eliminato.
+
+### 39. Perché hai scritto il TOTP a mano invece di usare una libreria?
+
+**Risposta modello.** Sono circa quaranta righe di libreria standard per un algoritmo completamente specificato, e le verifico con i vettori di test ufficiali della RFC 6238. Una dipendenza in meno da controllare. Ricordo l'ultimo passo usato, per impedire che un codice si riusi, e il segreto è cifrato.
+
+**Punto debole.** Per cose più ampie (HOTP, WebAuthn) userei una libreria. E nessun test dimostra che il mio codice sia corretto oltre i vettori ufficiali.
+
+### 40. Come hai gestito la cancellazione GDPR senza rompere la contabilità?
+
+**Risposta modello.** Anonimizzo sul posto invece di cancellare a cascata. Nome ed email diventano valori inutilizzabili, le note si svuotano, e lezioni e pagamenti restano con importi e date. Se un figlio ha due genitori, resta. Un test cerca nome ed email in tutte le colonne del database. Un task notturno applica i tempi di conservazione.
+
+**Punto debole.** I tempi (24 mesi, 10 anni) sono una mia bozza: vanno confermati da un professionista.
+
+### 41. Come cifri i dati sensibili e come ruoti le chiavi?
+
+**Risposta modello.** Un campo Django cifra con Fernet al salvataggio e decifra alla lettura. Le chiavi sono una lista con MultiFernet: la prima cifra, tutte decifrano. Per ruotare aggiungo la chiave nuova in testa, faccio il deploy, lancio un comando che ricifra tutto in blocchi, e tolgo la vecchia.
+
+**Punto debole.** Un campo cifrato non si cerca né si ordina; e se si perdono tutte le chiavi si perdono le note.
+
+### 42. Racconta un bug che hai trovato con un test.
+
+**Risposta modello.** Ho scritto un test che esegue registrazione, reset, inviti e MFA catturando tutti i log e cerca ogni valore sensibile. Ha trovato il token d'invito in chiaro: Celery mette gli argomenti del task nel log di fine task e il mio formatter JSON stampa ogni campo extra. L'ho chiuso con un filtro sul logger di Celery.
+
+**Punto debole.** Il test copre i flussi che ho pensato io: un flusso nuovo con un segreto passato a un task richiede di essere aggiunto al test.
+
 ## Domanda finale tipica
 
 ### 19. Cosa faresti diversamente o cosa miglioreresti per primo?

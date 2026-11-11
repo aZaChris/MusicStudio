@@ -77,6 +77,12 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-024-tipi-del-portale-dal-contratto.md` — tipi del portale generati da `backend/openapi.yaml`.
 - `adr/ADR-025-container-del-portale.md` — nginx senza privilegi, niente porte, intestazioni di sicurezza, prova in CI.
 - `adr/ADR-026-backup-gestiti-dal-server.md` — i backup li fa chi amministra il server; i servizi dello stack diventano opzionali.
+- `adr/ADR-027-principi-sicurezza-e-privacy.md` — il principio X della constitution; PBKDF2 resta, Argon2 come miglioramento.
+- `adr/ADR-028-link-senza-tabella.md` — link di conferma e reset firmati, a uso singolo senza tabella.
+- `adr/ADR-029-mfa-totp-con-la-libreria-standard.md` — TOTP in quaranta righe, vettori ufficiali, codici di recupero.
+- `adr/ADR-030-cifratura-dei-campi.md` — Fernet, MultiFernet e rotazione delle chiavi.
+- `adr/ADR-031-audit-log-dai-service.md` — registro append-only scritto dai service.
+- `adr/ADR-032-cancellazione-come-anonimizzazione.md` — anonimizzare sul posto e tempi di conservazione.
 
 ### Concetti (fase 1)
 
@@ -118,7 +124,20 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/sicurezza-di-una-spa.md` — XSS, CSP, dove tenere i token nel browser.
 - `concetti/deploy-di-una-spa-con-nginx.md` — fallback delle rotte, cache, intestazioni, utente non root.
 
+### Concetti (fase 7)
+
+- `concetti/account-e-token-monouso.md` — risposte uguali, link a uso singolo, inviti con hash, blocco dell'account.
+- `concetti/mfa-totp.md` — il codice a sei cifre, perché non si riusa, codici di recupero.
+- `concetti/cifratura-dei-campi.md` — Fernet, rotazione delle chiavi, cosa non si può cercare.
+- `concetti/gdpr-per-sviluppatori.md` — consenso, esportazione, cancellazione per anonimizzazione, conservazione.
+- `concetti/audit-log.md` — chi ha fatto cosa, voci che non si riscrivono.
+
+### Bozze legali (da validare)
+
+- `../privacy/registro-trattamenti.md`, `../privacy/informativa-famiglie.md`, `../privacy/informativa-insegnanti.md`.
+
 ### Operazioni
+
 
 - `../operations/runbook.md` — primo deploy, verifiche, rollback, rotazione dei segreti, Sentry, backup off-site, ripristino.
 - `../operations/restore-drill.md` — registro delle prove di ripristino.
@@ -127,7 +146,7 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 ### Ripasso
 
 - `glossario.md` — ogni termine tecnico in italiano semplice.
-- `colloquio/domande-e-risposte.md` — 37 domande con risposta modello e punto debole.
+- `colloquio/domande-e-risposte.md` — 42 domande con risposta modello e punto debole.
 
 ## Formato dei documenti di concetto
 
@@ -135,7 +154,7 @@ Ogni documento in `concetti/` ha da 800 a 1500 parole e sempre le stesse sezioni
 
 ## Prossime fasi (concetti previsti)
 
-- **Fase 5, rifinitura**: versioning e deprecazione delle API, rafforzamento dell'admin, export dei dati (GDPR), presentazione del progetto per il portfolio.
+- **Fase 5, rifinitura**: versioning e deprecazione delle API, rafforzamento dell'admin, presentazione del progetto per il portfolio. L'export dei dati (GDPR) è stato anticipato nella fase 7.
 
 Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap".
 
@@ -190,3 +209,15 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Qualità:** TypeScript strict attivato, oxlint senza avvisi, Prettier, da 3 a 48 test, CI dedicata, README per la review, verifica end-to-end 10 su 10.
 - **Dopo la review (10 novembre):** l'amico ha approvato tutto tranne i backup, che gestisce lui sul suo server: i servizi di backup sono diventati opzionali (ADR-026). Il primo deploy avverrà su un dominio di staging.
 - **Aperto (serve il proprietario):** deploy in staging; prova dell'immagine in locale quando Docker sarà attivo in WSL; refresh token in cookie httpOnly come passo successivo.
+
+## Riepilogo della fase 7 (sicurezza, privacy e account)
+
+- **Prova prima di cambiare:** una suite IDOR di 322 casi su ogni endpoint non ha trovato falle; un test di guardia fallisce se una rotta nuova non è coperta.
+- **Account:** registrazione con conferma email, reset della password e cambio password che chiudono le sessioni, inviti per insegnanti, genitori e studenti adulti, ruolo studente in sola lettura, risposte che non rivelano se un'email esiste.
+- **Accesso:** blocco progressivo dopo cinque password sbagliate, verifica in due passaggi TOTP (circa quaranta righe, vettori ufficiali) per titolari e insegnanti, comandi per l'operatore (`unlock_account`, `reset_mfa`).
+- **Dati:** note delle lezioni e segreto TOTP cifrati con Fernet e chiavi ruotabili; registro delle azioni per il titolare; esportazione e cancellazione per le famiglie (anonimizzazione sul posto); conservazione automatica ogni notte.
+- **Bug trovato dai test:** Celery scriveva il token d'invito nei log; corretto con un filtro (knowledge base).
+- **CI:** il passo `check --deploy` mancava delle variabili nuove; corretto. Nuovo job con gitleaks sulla cronologia.
+- **Qualità:** 740 test del backend, copertura circa 96%, ruff, mypy, migrazioni e contratto OpenAPI verdi.
+- **Aperto:** le schermate del portale (T018, T019, T023, T029, T035, T041, T043, T046) e il passo finale della fase; la scansione gitleaks mai eseguita in locale; le bozze legali da far validare (T057); la prova delle email con un fornitore SMTP vero (T058); l'app mobile (nota in `specs/007-security-privacy-accounts/mobile-followup.md`).
+

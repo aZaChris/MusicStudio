@@ -71,7 +71,7 @@ Una richiesta tipica, per esempio "crea una lezione", passa così: la view ricev
 
 ## Come è protetto
 
-La regola più importante del progetto è l'isolamento tra tenant: un utente non deve mai leggere o scrivere i dati di un altro studio o di un'altra famiglia. Il tenant è lo **studio**: ogni insegnante e ogni allievo ne ha uno, e un insegnante solista ha uno studio personale. A ogni richiesta un contesto (ruolo, studio, profilo) viene calcolato una volta, e tutti i queryset passano da un unico modulo: `backend/apps/common/scoping.py`. Sopra la visibilità, un permesso per oggetto decide chi può modificare cosa. Ogni endpoint di scrittura ha un test che prova a violarla. Il resto della sicurezza (rate limiting, configurazione di produzione, OWASP) è in `docs/learning/concetti/sicurezza-api-owasp.md`.
+La regola più importante del progetto è l'isolamento tra tenant: un utente non deve mai leggere o scrivere i dati di un altro studio o di un'altra famiglia. Il tenant è lo **studio**: ogni insegnante e ogni allievo ne ha uno, e un insegnante solista ha uno studio personale. A ogni richiesta un contesto (ruolo, studio, profilo) viene calcolato una volta, e tutti i queryset passano da un unico modulo: `backend/apps/common/scoping.py`. Sopra la visibilità, un permesso per oggetto decide chi può modificare cosa. Ogni endpoint di scrittura ha un test che prova a violarla. Dalla fase 7 ci sono account veri: registrazione con conferma email, reset della password, inviti per insegnanti, genitori e studenti adulti, blocco dopo password sbagliate e verifica in due passaggi per titolari e insegnanti. Le note delle lezioni sono cifrate nel database, ogni azione delicata finisce in un registro che il titolare può leggere, e una famiglia può scaricare i suoi dati o cancellarli. Il resto della sicurezza (rate limiting, configurazione di produzione, OWASP) è in `docs/learning/concetti/sicurezza-api-owasp.md`.
 
 ## Come si osserva in produzione
 
@@ -88,6 +88,8 @@ A ogni push GitHub Actions esegue lint, formattazione, tipi, controllo delle mig
 - **La coerenza dello studio** tra un allievo e il suo insegnante è garantita dai service, non da un vincolo del database.
 - **Il refresh token del portale web sta in `localStorage`**: uno script iniettato potrebbe leggerlo. È un rischio accettato e documentato (ADR-023); il passo successivo è un cookie httpOnly.
 - **Docker non è stato eseguito** nell'ambiente di sviluppo. Le impostazioni di produzione sono state provate con gunicorn, anche sotto carico; l'immagine del portale la costruisce e la prova la CI. Il primo deploy reale su Coolify è ancora da fare.
+- **I testi legali sono bozze.** Il registro dei trattamenti e le informative (`docs/privacy/`) vanno validati da un professionista prima di usare l'app con famiglie vere, e i tempi di conservazione sono una proposta.
+- **Il blocco dell'account si può usare contro una persona**: chi conosce un'email può bloccarla. Il tetto di 24 ore e il reset via email lo limitano.
 - **I numeri del load test** vengono da un portatile, con client e server sulla stessa CPU. Servono a trovare problemi, non a promettere prestazioni.
 
 ## Dove andare dopo

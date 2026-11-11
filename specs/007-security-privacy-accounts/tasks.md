@@ -91,8 +91,8 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 - [X] T051 [P] Italian drafts marked "BOZZA — da validare", versioned with `PRIVACY_NOTICE_VERSION`: `docs/privacy/registro-trattamenti.md`, `docs/privacy/informativa-famiglie.md`, `docs/privacy/informativa-insegnanti.md`; portal links them (the portal links to the drafts: with T041)
 - [X] T052 [P] ADR-028 (link senza tabella), ADR-030 (cifratura campi), ADR-031 (audit log dai service) in `docs/learning/adr/`
-- [ ] T053 [P] Concept docs (800–1500 words, format in CLAUDE.md): `account-e-token-monouso.md`, `mfa-totp.md`, `cifratura-dei-campi.md`, `gdpr-per-sviluppatori.md`, `audit-log.md` in `docs/learning/concetti/`
-- [ ] T054 OWASP API Top 10 walk updated (BOLA results from US4, broken auth, sensitive data) in `docs/learning/concetti/sicurezza-api-owasp.md`; glossary, interview Q&A, overview, `00-indice.md` ("Riepilogo della fase 7")
+- [X] T053 [P] Concept docs (800–1500 words, format in CLAUDE.md): `account-e-token-monouso.md`, `mfa-totp.md`, `cifratura-dei-campi.md`, `gdpr-per-sviluppatori.md`, `audit-log.md` in `docs/learning/concetti/`
+- [X] T054 OWASP API Top 10 walk updated (BOLA results from US4, broken auth, sensitive data) in `docs/learning/concetti/sicurezza-api-owasp.md`; glossary, interview Q&A, overview, `00-indice.md` ("Riepilogo della fase 7")
 
 ## Phase 13: Polish
 

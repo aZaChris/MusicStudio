@@ -22,7 +22,7 @@ Ecco lo stato alla fine della fase 4, voce per voce.
 
 **API1 — Broken Object Level Authorization.** *Coperto.* Letture e scritture sono filtrate per tenant (`backend/apps/common/scoping.py`, `TenantContext`). Ogni endpoint di scrittura ha un test cross-tenant. Il nuovo logout rifiuta il refresh token di un altro utente con lo stesso errore di un token malformato, così non rivela niente.
 
-**API2 — Broken Authentication.** *Coperto* (era parziale). Il refresh token ruota, e quello vecchio finisce in una lista nera: chi ne riusa una copia riceve 401. Il logout rende subito inutilizzabile il refresh token del dispositivo. Un operatore può revocare tutte le sessioni di un account. Il token di accesso dura 15 minuti invece di 60, perché non viene controllato contro la lista (ADR-018). Login limitato a 5 tentativi al minuto. Resta fuori, per scelta, l'autenticazione a due fattori.
+**API2 — Broken Authentication.** *Coperto* (era parziale). Il refresh token ruota, e quello vecchio finisce in una lista nera: chi ne riusa una copia riceve 401. Il logout rende subito inutilizzabile il refresh token del dispositivo. Un operatore può revocare tutte le sessioni di un account. Il token di accesso dura 15 minuti invece di 60, perché non viene controllato contro la lista (ADR-018). Login limitato a 5 tentativi al minuto. L'autenticazione a due fattori è arrivata nella fase 7 (vedi l'aggiornamento più sotto).
 
 **API3 — Broken Object Property Level Authorization.** *Coperto.* I campi derivati (`lessons_remaining`, `end_time`, studio, insegnante) sono in sola lettura. Lo stato di un pagamento segue una macchina a stati.
 
@@ -51,6 +51,26 @@ Il test `test_forged_forwarded_for_cannot_reset_the_login_throttle` manda sei te
 **API10 — Unsafe Consumption of APIs.** *Coperto.* I webhook di Stripe passano due controlli: l'indirizzo deve essere nella lista pubblicata da Stripe, e la firma deve essere valida. L'indirizzo è quello vero, calcolato contando i proxy fidati da destra di `X-Forwarded-For` (ADR-021). Un test prova che un'origine falsificata a sinistra viene rifiutata.
 
 **Il portale web.** Dal 10 novembre 2026 il giro copre anche la SPA in `frontend/`. Contro l'XSS: React mostra i dati come testo, e una Content-Security-Policy stretta permette script solo dal portale e connessioni solo verso le API. Il token di accesso sta in memoria; il refresh token in `localStorage` è un rischio accettato e documentato (ADR-023), con il cookie httpOnly come passo successivo. Le API accettano chiamate dal browser solo dall'origine del portale. Dettagli in `concetti/sicurezza-di-una-spa.md`.
+
+## Aggiornamento della fase 7: account, privacy e sicurezza
+
+La fase 7 ha aggiunto account veri (registrazione, reset, inviti), quindi il giro cambia in più punti. Lo stato è questo.
+
+**API1 — BOLA. Coperto, ora con la prova.** Prima di toccare l'autenticazione abbiamo scritto una suite sistematica: 11 coppie attaccante/vittima (altro insegnante dello stesso studio, altro studio, altra famiglia, uno studente adulto contro i compagni) contro ogni lettura, scrittura e azione. Sono 322 casi, e **non ha trovato nessuna falla**. Un test di guardia percorre le rotte di `/api/v1/` e fallisce se ne compare una nuova che non è nella suite o dichiarata senza dati di tenant. Le rotte nuove (privacy, audit, MFA, inviti) sono state aggiunte con i loro test sulle famiglie e sugli studi diversi.
+
+**API2 — Broken Authentication. Rafforzato.** Blocco dell'account dopo cinque password sbagliate, con durata che raddoppia fino a 24 ore. Verifica in due passaggi TOTP per titolari e insegnanti. Risposte uguali per email esistente e non esistente, in registrazione, reinvio e reset. Link di conferma e reset a uso singolo. Nuova password o reset: tutte le sessioni finiscono. Un test verifica che l'account non confermato non possa accedere.
+
+**API3 — Property level. Coperto.** `has_account` è in sola lettura. `is_adult` si può togliere solo se l'allievo non ha ancora un account, così un minore non ne ottiene uno.
+
+**API4 — Risorse. Coperto.** Le rotte nuove hanno i loro limiti di frequenza (`register`, `password_reset`, `mfa`, `privacy`, `invitation_accept`).
+
+**API5 — Funzioni. Coperto.** Il registro delle azioni lo legge solo il titolare. L'esportazione e la cancellazione sono per genitori e studenti adulti. Un titolare può cancellarsi solo con lo studio vuoto.
+
+**API8 — Configurazione. Coperto, con un bug trovato.** Un test ora esegue i flussi di account catturando tutti i log e cerca ogni valore digitato o spedito. Ha trovato che **Celery scriveva il token d'invito in chiaro** nel log di fine task, e che il nostro formatter JSON lo avrebbe stampato in produzione. Corretto con un filtro sul logger di Celery (vedi `docs/knowledge-base/celery-scrive-i-token-nei-log.md`). Altri test fissano HSTS, cookie sicuri e il rifiuto di partire senza la chiave di cifratura. Una scansione dei segreti su tutta la cronologia è in CI (gitleaks, versione e checksum fissati). Durante la fase, il passo `check --deploy` della CI mancava delle due nuove variabili obbligatorie: corretto prima che bloccasse la build.
+
+**Dati sensibili.** Le note delle lezioni e il segreto TOTP sono cifrati nel database (ADR-030). Il registro delle azioni contiene solo identificativi (ADR-031). Un test cerca nome ed email di una persona cancellata in tutte le colonne di testo.
+
+**Ancora aperto.** Il refresh token del portale in cookie httpOnly. La prova della scansione dei segreti in locale: nel mio ambiente non ho potuto eseguire il binario di gitleaks, quindi la prima esecuzione la farà la CI.
 
 ## Alternative considerate
 
