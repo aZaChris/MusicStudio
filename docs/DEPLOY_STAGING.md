@@ -51,11 +51,17 @@ Coolify blocca il deploy finché mancano quelle **obbligatorie**.
 | `SENTRY_DSN` | il DSN del progetto Sentry | Facoltativa. Lasciala vuota se non hai fatto Sentry. |
 | `FRONTEND_URL` | `https://app-staging.christianseminerio.dev` | Consigliata (default dal dominio del servizio `web`). I link nelle email partono da qui. |
 | `TRUSTED_PROXY_COUNT` | `1` | Già il default. Non toccare. |
+| `ANDROID_APK_URL` | il link alla build Android (vedi sotto) | Facoltativa. Se è vuota, la vetrina dice "la versione per Android arriva a breve". Cambiarla **ricostruisce** il portale. |
 
 **Se oggi non hai ancora la password per app di Gmail:** metti comunque `SMTP_HOST=smtp.gmail.com`, il tuo
 indirizzo in `SMTP_USER` e `DEFAULT_FROM_EMAIL`, e un segnaposto in `SMTP_PASSWORD` (per esempio
 `da-impostare`). Il deploy parte. Registrazione, invito e reset **non** manderanno email finché non
 metti la password vera e fai redeploy. Il resto funziona.
+
+**Link per scaricare l'app (facoltativo):** apri la build Android su expo.dev (progetto `musicstudio-app`, scheda
+Builds), copia il link di installazione e mettilo in `ANDROID_APK_URL`. Prima di fidarti, aprilo **in una finestra
+anonima** del browser: deve scaricare o mostrare la pagina di installazione senza chiederti di accedere a Expo.
+Deve iniziare con `https://`. Ricorda che l'APK attuale è puntato sull'API di staging.
 
 **Stripe: lascialo vuoto oggi** (`STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`,
 `STRIPE_WEBHOOK_ALLOWED_IPS`). Il pagamento online risponde "non disponibile" (503) e tutto il resto

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import { useAuth } from '../../auth/useAuth'
+import { AppDownload } from '../../components/AppDownload'
 import { QueryState } from '../../components/QueryState'
 import { Beats, Icon, Logo, StatusChip } from '../../components/ui'
 import { lessonTone, paymentTone } from '../../components/tones'
@@ -181,6 +182,7 @@ export function ParentPortal() {
             </section>
           </div>
         </QueryState>
+        <AppDownload />
       </main>
     </>
   )

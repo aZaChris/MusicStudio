@@ -376,5 +376,13 @@
     },
     "finalTitle": "Pronti a cominciare?",
     "finalHint": "Ci vogliono pochi minuti. Ti serve solo un indirizzo email."
+  },
+  "app": {
+    "title": "L'app per il telefono",
+    "text": "Lezioni, pacchetti e pagamenti anche sul telefono, con lo stesso accesso del sito.",
+    "downloadAndroid": "Scarica per Android",
+    "installHint": "Android ti chiederà di consentire l'installazione da questa fonte: è normale, perché l'app non è ancora sul Play Store.",
+    "comingSoon": "La versione per Android arriva a breve.",
+    "iphone": "La versione per iPhone non è ancora disponibile."
   }
 }

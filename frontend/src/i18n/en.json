@@ -376,5 +376,13 @@
     },
     "finalTitle": "Ready to start?",
     "finalHint": "It takes a few minutes. You only need an email address."
+  },
+  "app": {
+    "title": "The phone app",
+    "text": "Lessons, packages and payments on your phone too, with the same login as the website.",
+    "downloadAndroid": "Download for Android",
+    "installHint": "Android will ask you to allow installing from this source: that is normal, because the app is not on the Play Store yet.",
+    "comingSoon": "The Android version is coming soon.",
+    "iphone": "The iPhone version is not available yet."
   }
 }

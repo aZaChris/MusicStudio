@@ -19,6 +19,9 @@ FROM base AS build
 ARG VITE_API_BASE_URL
 RUN test -n "$VITE_API_BASE_URL" || { echo "VITE_API_BASE_URL build arg is required" >&2; exit 1; }
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+# Optional: where to download the Android app (shown on the landing and after sign-in).
+ARG VITE_ANDROID_APK_URL=
+ENV VITE_ANDROID_APK_URL=$VITE_ANDROID_APK_URL
 COPY . .
 RUN npm run build
 

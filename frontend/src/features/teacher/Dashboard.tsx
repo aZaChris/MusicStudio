@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
 import type { Lesson } from '../../api/types'
+import { AppDownload } from '../../components/AppDownload'
 import { AppShell } from '../../components/AppShell'
 import { QueryState } from '../../components/QueryState'
 import { Icon, StatusChip } from '../../components/ui'
@@ -152,6 +153,8 @@ export function Dashboard() {
           </>
         )}
       </QueryState>
+
+      <AppDownload />
 
       {activeLesson && (
         <LessonCompleteModal

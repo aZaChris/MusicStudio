@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 
+import { AppDownload } from '../components/AppDownload'
 import { Beats, Icon, Logo, type IconName } from '../components/ui'
 import { useTheme } from '../theme/useTheme'
 
@@ -82,6 +83,10 @@ export function Landing() {
             ))}
           </div>
         </section>
+
+        <div className="landing-section">
+          <AppDownload showWhenEmpty />
+        </div>
 
         <section className="landing-section" aria-labelledby="landing-steps">
           <h2 id="landing-steps">{t('landing.stepsTitle')}</h2>
