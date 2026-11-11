@@ -22,18 +22,17 @@ Branch in gioco: `staging/backend` (backend e portale, nel worktree `~/MusicStud
    - `frontend`, `web-image` e la CI mobile.
 5. Se qualcosa è rosso, incolla l'errore e lo sistemo.
 
-## 2. Genera e custodisci la chiave di cifratura (obbligatoria)
+## 2. Chiave di cifratura (obbligatoria) — FATTO, resta l'incolla al deploy
 
 L'app **non parte in produzione** senza `FIELD_ENCRYPTION_KEYS`: cifra le note sugli allievi e i segreti
 della verifica in due passaggi. **Se la perdi, perdi le note.**
 
-1. Genera una chiave: `cd ~/MusicStudio-web/backend && uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
-2. Salvala **subito in un gestore di password** (e una copia fuori dal tuo computer). Non nel repository,
-   non nei messaggi.
-3. Alla fase di deploy: incollala nella variabile `FIELD_ENCRYPTION_KEYS` di Coolify.
-4. Per ruotarla in futuro: `docs/learning/concetti/cifratura-dei-campi.md`, sezione "La rotazione".
+1. La chiave è stata generata e salvata nel gestore di password (fatto). Se serve rigenerarla:
+   `cd ~/MusicStudio-web/backend && uv run python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`
+2. Alla fase di deploy: incollala nella variabile `FIELD_ENCRYPTION_KEYS` di Coolify.
+3. Per ruotarla in futuro: `docs/learning/concetti/cifratura-dei-campi.md`, sezione "La rotazione".
 
-## 3. Controllo dell'APK e dell'app
+## 3. Controllo dell'APK e dell'app — FATTO
 
 1. Apri https://expo.dev/accounts/azachris/projects/musicstudio-app?tab=activity e guarda lo stato
    dell'ultima build. Se è fallita, incolla qui le ultime righe del log.
@@ -44,7 +43,7 @@ della verifica in due passaggi. **Se la perdi, perdi le note.**
    funzionerà **solo dopo il deploy**. Prima del deploy, per provarla davvero, avvia il backend in locale
    e usa `EXPO_PUBLIC_API_BASE_URL=http://<IP-del-tuo-PC>:8000/api/v1` con `npx expo start`.
 
-## 4. Decisioni da prendere con Elio (puoi chiederle ora)
+## 4. Decisioni da prendere con Elio — LASCIATO STARE per ora
 
 Le domande sono in `docs/operations/postgresql-16-vs-18.md`, sezione "Cosa chiedere a Elio". In breve:
 
@@ -71,7 +70,7 @@ Tre file in `docs/privacy/`: `registro-trattamenti.md`, `informativa-famiglie.md
 4. Quando i testi sono approvati, cambia il valore di `PRIVACY_NOTICE_VERSION` (oggi `2026-11-draft`):
    i nuovi consensi registreranno la versione giusta.
 
-## 6. Email vere (dopo il deploy, ma prepara adesso)
+## 6. Email vere e Sentry (dopo il deploy, ma prepara adesso)
 
 Preparare adesso fa risparmiare il giorno del deploy: `docs/CHECKLIST_17.md`, passo 2 (account SMTP,
 dominio mittente, record DNS SPF/DKIM). La prova che conferma, reset e inviti **arrivano davvero** (task

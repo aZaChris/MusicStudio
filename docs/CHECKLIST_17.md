@@ -33,6 +33,9 @@ Senza questo i test del backend non partono su questo computer.
 4. Prendi le credenziali **SMTP** (non la chiave API): host, porta 587, utente, password.
 5. Annota, senza la password: `SMTP_HOST`, `SMTP_USER`, e `DEFAULT_FROM_EMAIL` (per esempio
    `noreply@tuodominio.it`).
+6. Dopo il deploy, prova l'invio dal terminale del `backend`:
+   `python manage.py shell -c "from django.core.mail import send_mail; send_mail('prova', 'funziona', None, ['tuonome+prova@proton.me'])"`
+   Deve stampare `1`; controlla anche lo spam.
 
 ## 3. Stripe (solo modalità test)
 
@@ -98,7 +101,8 @@ Dal terminale del container `backend` in Coolify:
 ## 7. Sentry (facoltativo, 5 minuti)
 
 1. sentry.io, account gratuito, nuovo progetto **Django**.
-2. Copia il DSN in `SENTRY_DSN` su Coolify, redeploy.
+2. Copia il DSN in `SENTRY_DSN` su Coolify, redeploy. **Non incollare lo snippet `sentry_sdk.init` della
+   pagina di Sentry**: il backend si collega già da solo, con la ripulitura dei dati personali.
 3. Dal terminale del `backend`: `python manage.py raise_test_error`. L'errore deve comparire in
    Sentry entro un minuto.
 

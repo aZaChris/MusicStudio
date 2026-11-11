@@ -83,7 +83,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 ## Phase 11: Cross-cutting security
 
 - [X] T047 PII-free logs: test running register, reset, invitation, MFA and login flows under `caplog` and Sentry `before_send`, asserting no email, name, password, code or token in any record, in `backend/config/tests/test_no_pii_in_logs.py`; fix any leak
-- [ ] T048 Secret scanning: `secrets` job in `.github/workflows/ci.yml` (checkout `fetch-depth: 0`, pinned gitleaks binary with checksum, `gitleaks git --redact`), `.gitleaks.toml` allow-list for known fake test keys; run it locally over the full history and record the result
+- [X] T048 (the scan ran in CI on the whole history: five generic-api-key matches, all fake passwords in test files, now allow-listed for that rule and those paths only; not run locally) Secret scanning: `secrets` job in `.github/workflows/ci.yml` (checkout `fetch-depth: 0`, pinned gitleaks binary with checksum, `gitleaks git --redact`), `.gitleaks.toml` allow-list for known fake test keys; run it locally over the full history and record the result
 - [X] T049 Prod settings test: SSL redirect, HSTS, secure cookies, nosniff, refuses start without `FIELD_ENCRYPTION_KEYS`, in `backend/config/tests/test_prod_settings.py`
 - [X] T050 Mobile follow-up note: list of endpoints and screens the app needs, in `specs/007-security-privacy-accounts/mobile-followup.md` (implemented later on `staging/mobile`)
 

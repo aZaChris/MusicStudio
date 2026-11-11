@@ -51,7 +51,7 @@ Questo registro descrive che dati tratta MusicStudio, perché, per quanto tempo 
 - **Hosting**: il server dell'operatore. [DA COMPLETARE: fornitore e Paese]
 - **Stripe**: pagamenti online (oggi in modalità di prova).
 - **Fornitore SMTP**: invio delle email. [DA COMPLETARE]
-- **Sentry**: segnalazione errori, opzionale. [DA COMPLETARE se attivato]
+- **Sentry**: segnalazione errori, opzionale. Riceve gli errori con nomi, email, token e cookie già rimossi dall'applicazione; i log e le metriche di Sentry restano disattivati. [DA COMPLETARE: confermare la regione dei dati (UE) nelle impostazioni dell'organizzazione e i tempi di conservazione di Sentry]
 
 ## Misure di sicurezza
 
