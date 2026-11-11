@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.lessons",
     "apps.payments",
     "apps.notifications",
+    "apps.audit",
     "apps.common",
 ]
 
