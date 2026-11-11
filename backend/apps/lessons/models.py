@@ -4,6 +4,7 @@ from django.contrib.postgres.constraints import ExclusionConstraint
 from django.contrib.postgres.fields import DateTimeRangeField, RangeBoundary, RangeOperators
 from django.db import models
 
+from apps.common.fields import EncryptedTextField
 from apps.packages.models import Package
 from apps.students.models import Student
 from apps.studios.models import Teacher
@@ -39,7 +40,8 @@ class Lesson(models.Model):
     # cannot appear in the exclusion constraint's index expression (ADR-009).
     end_time = models.DateTimeField()
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.SCHEDULED)
-    notes = models.TextField(blank=True)
+    # Free text about a (often minor) student: encrypted at rest (ADR-030).
+    notes = EncryptedTextField(blank=True)
     reminder_sent_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
