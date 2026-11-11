@@ -7,9 +7,22 @@ import { installFakeApi, offline, page } from '../test/fake-api'
 import { dashboard, parentMe, teacherMe } from '../test/fixtures'
 import { renderApp, signedInAs } from '../test/utils'
 
-test('without a session the portal opens on the login page', async () => {
+test('without a session the portal opens on the landing page, with a way in', async () => {
   installFakeApi()
   renderApp('/')
+  expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
+    'The register of your music school',
+  )
+  expect(screen.getAllByRole('link', { name: 'Create your studio account' })[0]).toHaveAttribute(
+    'href',
+    '/register',
+  )
+  expect(screen.getAllByRole('link', { name: 'Log in' })[0]).toHaveAttribute('href', '/login')
+})
+
+test('a protected page without a session still goes to the login page', async () => {
+  installFakeApi()
+  renderApp('/students')
   expect(await screen.findByLabelText('Email')).toBeInTheDocument()
 })
 

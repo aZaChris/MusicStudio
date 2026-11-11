@@ -323,5 +323,58 @@
     "passwordToConfirm": "La tua password (serve per ritirare il consenso o chiudere l'account)",
     "eraseConfirm": "Ho capito che non si può annullare",
     "erase": "Chiudi il mio account"
+  },
+  "landing": {
+    "nav": "Navigazione",
+    "heroTitle": "Il registro della tua scuola di musica, in un posto solo.",
+    "heroText": "Lezioni, pacchetti e pagamenti per insegnanti e piccole scuole. I genitori vedono le lezioni dei figli, in sola lettura.",
+    "start": "Crea l'account del tuo studio",
+    "inviteHint": "Sei un genitore, un'insegnante o uno studente adulto? Si entra su invito: apri il link che hai ricevuto per email.",
+    "sampleLabel": "Un pacchetto da 8 lezioni",
+    "sampleRemaining": "5 rimanenti",
+    "featuresTitle": "Cosa fa",
+    "features": {
+      "lessons": {
+        "title": "Lezioni",
+        "text": "Programma le lezioni di ogni allievo. Non puoi fissarne due nello stesso orario: lo controlla il sistema."
+      },
+      "packages": {
+        "title": "Pacchetti",
+        "text": "Ogni pacchetto è una fila di battute. Segni una lezione come completata e una battuta si riempie. Quando ne restano poche, te lo dice."
+      },
+      "payments": {
+        "title": "Pagamenti",
+        "text": "Registra contanti e bonifici e vedi subito chi deve ancora pagare."
+      },
+      "parents": {
+        "title": "Genitori",
+        "text": "Inviti i genitori con un'email. Vedono le lezioni, i pacchetti e i pagamenti dei figli, e non possono cambiare nulla."
+      }
+    },
+    "stepsTitle": "Come si comincia",
+    "steps": {
+      "account": {
+        "title": "Crea l'account",
+        "text": "Scrivi il nome dello studio e conferma la tua email."
+      },
+      "students": {
+        "title": "Aggiungi allievi e pacchetti",
+        "text": "Inserisci gli allievi e i loro pacchetti. Puoi invitare anche altri insegnanti."
+      },
+      "parents": {
+        "title": "Invita i genitori",
+        "text": "Ogni genitore riceve un invito e dà il consenso per i suoi figli."
+      }
+    },
+    "safetyTitle": "Pensato per i dati dei bambini",
+    "safetyText": "In uno studio di musica ci sono i nomi e le note di ragazzi, spesso minorenni. Per questo:",
+    "safety": {
+      "studios": "Ogni studio vede solo i propri dati.",
+      "notes": "Le note degli insegnanti sono cifrate.",
+      "rights": "Un genitore può scaricare i suoi dati o cancellarli.",
+      "twoStep": "Titolari e insegnanti possono attivare la verifica in due passaggi."
+    },
+    "finalTitle": "Pronti a cominciare?",
+    "finalHint": "Ci vogliono pochi minuti. Ti serve solo un indirizzo email."
   }
 }

@@ -12,6 +12,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<Me | null>(null)
   const [status, setStatus] = useState<AuthStatus>('loading')
   const [notice, setNotice] = useState<AuthState['notice']>(null)
+  const [returning, setReturning] = useState(false)
 
   // Page load: never trust a cached user; ask the server who we are.
   const check = useCallback(async (): Promise<CheckResult> => {
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const apply = useCallback((result: CheckResult) => {
     setUser(result.user)
     setStatus(result.status)
+    if (result.status === 'signed-in') setReturning(true)
   }, [])
 
   useEffect(() => {
@@ -44,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session.onExpired(() => {
         queryClient.clear()
         setUser(null)
+        setReturning(true)
         setNotice('auth.sessionExpired')
         setStatus('signed-out')
       }),
@@ -57,6 +60,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       queryClient.clear() // nothing from a previous user survives a sign-in
       setUser(me)
       setNotice(null)
+      setReturning(true)
       setStatus('signed-in')
     },
     [queryClient],
@@ -116,7 +120,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [check, apply])
 
   return (
-    <AuthContext.Provider value={{ user, status, notice, login, verifyMfa, logout, retry }}>
+    <AuthContext.Provider value={{ user, status, notice, login, verifyMfa, logout, retry, returning }}>
       {children}
     </AuthContext.Provider>
   )

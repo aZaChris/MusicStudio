@@ -1,9 +1,10 @@
-import { Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes } from 'react-router-dom'
 
 import { useAuth } from './auth/useAuth'
 import { AcceptInvitation } from './auth/AcceptInvitation'
 import { ConfirmEmail } from './auth/ConfirmEmail'
 import { ForgotPassword } from './auth/ForgotPassword'
+import { Landing } from './auth/Landing'
 import { Login } from './auth/Login'
 import { Register } from './auth/Register'
 import { ResetPassword } from './auth/ResetPassword'
@@ -22,7 +23,10 @@ const teacherOnly = ['teacher', 'studio_owner'] as const
 const familyRoles = ['parent', 'student'] as const
 
 function Home() {
-  const { user } = useAuth()
+  const { user, status, returning } = useAuth()
+  // A first-time visitor sees the landing; someone who just signed out (or whose session ended)
+  // goes back to the login, where the reason is shown.
+  if (status === 'signed-out') return returning ? <Navigate to="/login" replace /> : <Landing />
   if (user?.role === 'parent' || user?.role === 'student') return <ParentPortal />
   return (
     <RequireRole roles={[...teacherOnly]}>

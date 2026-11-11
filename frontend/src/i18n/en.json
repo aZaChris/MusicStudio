@@ -323,5 +323,58 @@
     "passwordToConfirm": "Your password (needed to withdraw consent or close the account)",
     "eraseConfirm": "I understand this cannot be undone",
     "erase": "Close my account"
+  },
+  "landing": {
+    "nav": "Navigation",
+    "heroTitle": "The register of your music school, in one place.",
+    "heroText": "Lessons, packages and payments for teachers and small schools. Parents see their children's lessons, read-only.",
+    "start": "Create your studio account",
+    "inviteHint": "A parent, a teacher or an adult student? You join by invitation: open the link you received by email.",
+    "sampleLabel": "A package of 8 lessons",
+    "sampleRemaining": "5 left",
+    "featuresTitle": "What it does",
+    "features": {
+      "lessons": {
+        "title": "Lessons",
+        "text": "Schedule each student's lessons. You cannot book two at the same time: the system checks it."
+      },
+      "packages": {
+        "title": "Packages",
+        "text": "A package is a row of beats. Mark a lesson as complete and a beat fills in. When only a few are left, it tells you."
+      },
+      "payments": {
+        "title": "Payments",
+        "text": "Record cash and bank transfers and see at once who still has to pay."
+      },
+      "parents": {
+        "title": "Parents",
+        "text": "Invite parents by email. They see their children's lessons, packages and payments, and cannot change anything."
+      }
+    },
+    "stepsTitle": "How to start",
+    "steps": {
+      "account": {
+        "title": "Create the account",
+        "text": "Enter the studio name and confirm your email."
+      },
+      "students": {
+        "title": "Add students and packages",
+        "text": "Enter your students and their packages. You can invite other teachers too."
+      },
+      "parents": {
+        "title": "Invite the parents",
+        "text": "Each parent gets an invitation and gives consent for their children."
+      }
+    },
+    "safetyTitle": "Made for children's data",
+    "safetyText": "A music studio holds the names and notes of young people, often minors. So:",
+    "safety": {
+      "studios": "Each studio sees only its own data.",
+      "notes": "Teachers' notes are encrypted.",
+      "rights": "A parent can download their data or erase it.",
+      "twoStep": "Owners and teachers can turn on two-step verification."
+    },
+    "finalTitle": "Ready to start?",
+    "finalHint": "It takes a few minutes. You only need an email address."
   }
 }

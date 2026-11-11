@@ -16,6 +16,8 @@ export interface AuthState {
   verifyMfa: (mfaToken: string, code: string) => Promise<void>
   logout: () => Promise<void>
   retry: () => void
+  /** True once someone was signed in during this visit: they go back to the login, not the landing. */
+  returning: boolean
 }
 
 export const AuthContext = createContext<AuthState | null>(null)
