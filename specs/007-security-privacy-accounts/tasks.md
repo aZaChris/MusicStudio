@@ -37,9 +37,9 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 ## Phase 5: US2 — Recover a forgotten password safely (P1)
 
-- [ ] T020 [US2] Services `request_password_reset` (uniform, email via task), `reset_password` (token check, set password, revoke all refresh tokens via existing `revoke_sessions` logic, clear lock, "password changed" email), `change_password` (current password, revoke other sessions) in `backend/apps/accounts/services.py`; audit `password.reset`, `password.change`
-- [ ] T021 [US2] Endpoints `auth/password-reset/`, `auth/password-reset/confirm/`, `auth/password/change/` in `backend/apps/accounts/views.py`
-- [ ] T022 [P] [US2] Tests: uniform body, link valid 1 h and single-use, older link invalid after newer use, sessions revoked (old refresh rejected), lock cleared, emails sent, in `backend/apps/accounts/tests/test_password_reset.py`
+- [X] T020 [US2] Services `request_password_reset` (uniform, email via task), `reset_password` (token check, set password, revoke all refresh tokens via existing `revoke_sessions` logic, clear lock, "password changed" email), `change_password` (current password, revoke other sessions) in `backend/apps/accounts/services.py`; audit `password.reset`, `password.change`
+- [X] T021 [US2] Endpoints `auth/password-reset/`, `auth/password-reset/confirm/`, `auth/password/change/` in `backend/apps/accounts/views.py`
+- [X] T022 [P] [US2] Tests: uniform body, link valid 1 h and single-use, older link invalid after newer use, sessions revoked (old refresh rejected), lock cleared, emails sent, in `backend/apps/accounts/tests/test_password_reset.py`
 - [ ] T023 [US2] Portal: `ForgotPassword`, `ResetPassword`, password change in `frontend/src/features/account/AccountPage.tsx` + tests `frontend/src/auth/reset.test.tsx`
 
 ## Phase 6: US3 — Owners invite teachers and parents (P1)

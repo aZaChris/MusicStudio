@@ -18,6 +18,8 @@ from .serializers import (
     LoginSerializer,
     LogoutSerializer,
     MeSerializer,
+    PasswordChangeSerializer,
+    PasswordResetConfirmSerializer,
     RegisterSerializer,
     UidTokenSerializer,
 )
@@ -104,3 +106,46 @@ class LogoutView(APIView):
         serializer.is_valid(raise_exception=True)
         services.logout(request.user, serializer.validated_data["refresh"])  # type: ignore[arg-type]
         return Response(status=status.HTTP_205_RESET_CONTENT)
+
+
+class PasswordResetRequestView(AnonymousAccountView):
+    throttle_scope = "password_reset"
+
+    @extend_schema(request=EmailOnlySerializer, responses={202: AcceptedResponseSerializer})
+    def post(self, request: Request) -> Response:
+        serializer = EmailOnlySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        services.request_password_reset(serializer.validated_data["email"])
+        return Response(CHECK_EMAIL, status=status.HTTP_202_ACCEPTED)
+
+
+class PasswordResetConfirmView(AnonymousAccountView):
+    throttle_scope = "password_reset"
+
+    @extend_schema(
+        request=PasswordResetConfirmSerializer, responses={200: AcceptedResponseSerializer}
+    )
+    def post(self, request: Request) -> Response:
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        services.reset_password(data["uid"], data["token"], data["new_password"])
+        return Response({"detail": "password_changed"})
+
+
+class PasswordChangeView(APIView):
+    """Change the password; every session of the account ends (sign in again)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=PasswordChangeSerializer, responses={200: AcceptedResponseSerializer})
+    def post(self, request: Request) -> Response:
+        serializer = PasswordChangeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        services.change_password(
+            request.user,  # type: ignore[arg-type]
+            data["current_password"],
+            data["new_password"],
+        )
+        return Response({"detail": "password_changed"})

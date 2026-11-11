@@ -105,6 +105,43 @@ def resend_confirmation(email: str) -> None:
         _send_later("confirm_email", user.pk)
 
 
+def request_password_reset(email: str) -> None:
+    """Uniform: the caller answers the same whatever happens here (research R3)."""
+    user = User.objects.filter(email__iexact=normalize_email(email), is_active=True).first()
+    if user is not None and user.has_usable_password():
+        _send_later("password_reset", user.pk)
+
+
+@transaction.atomic
+def _set_new_password(user: User, password: str, action: str) -> None:
+    check_new_password(
+        password, email=user.email, first_name=user.first_name, last_name=user.last_name
+    )
+    user.set_password(password)
+    # A new password also clears a lock: the owner of the mailbox proved who they are.
+    user.failed_logins = 0
+    user.lock_level = 0
+    user.locked_until = None
+    user.save(update_fields=["password", "failed_logins", "lock_level", "locked_until"])
+    revoke_all_sessions(user)
+    audit.record(action, actor=user, target=user, studio_id=_studio_id(user))
+    _send_later("password_changed", user.pk)
+
+
+def reset_password(uid: str, token: str, new_password: str) -> None:
+    user = tokens.user_for_reset_token(uid, token)
+    if user is None:
+        raise ValidationError({"token": "invalid_or_expired"})
+    _set_new_password(user, new_password, audit.Action.PASSWORD_RESET)
+
+
+def change_password(user: User, current_password: str, new_password: str) -> None:
+    """Signed-in change. Every session ends, including this one: the client signs in again."""
+    if not user.check_password(current_password):
+        raise ValidationError({"current_password": "Wrong password."})
+    _set_new_password(user, new_password, audit.Action.PASSWORD_CHANGE)
+
+
 def purge_unconfirmed(cutoff: datetime) -> int:
     """Retention: self-registered accounts never confirmed since `cutoff`, with their studio."""
     from apps.studios.models import Studio

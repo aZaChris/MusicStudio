@@ -92,3 +92,12 @@ class LoginSerializer(TokenObtainPairSerializer):
         if self.user is not None and not self.user.email_verified:
             raise EmailNotConfirmed("Confirm your email address before signing in.")
         return data
+
+
+class PasswordResetConfirmSerializer(UidTokenSerializer):
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False, max_length=128)
+
+
+class PasswordChangeSerializer(serializers.Serializer[None]):
+    current_password = serializers.CharField(write_only=True, trim_whitespace=False)
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False, max_length=128)
