@@ -122,5 +122,8 @@ whenever serializers/views change.
   (more workers failed to start on a 2.7 GB machine).
 - Docker is not enabled in this WSL distro; the `web-image` CI job builds and checks the
   portal image instead.
+- On a machine where PostgreSQL has a role named after the Linux user (peer auth), use
+  `DATABASE_URL=postgres://$USER@/musicstudio` (empty host = Unix socket). `localhost` goes
+  over TCP and asks for a password; a URL-encoded socket path is read as a hostname.
 - Never print or read credential files (`.env.local`, `.pgpass`); `.env.local` on the main
   machine holds real Neon credentials from the old `app` branch and is git-ignored.
