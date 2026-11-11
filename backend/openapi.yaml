@@ -2652,8 +2652,9 @@ components:
     LoginRequest:
       type: object
       description: |-
-        Sign-in. Unconfirmed accounts are refused only after a correct password, so the
-        distinct message reveals nothing an attacker could not already prove.
+        Sign-in with a per-account lockout. Wrong, unknown and locked all answer with the
+        same generic 401, so the response never says whether the address exists or is locked.
+        Unconfirmed accounts are refused only after a correct password.
       properties:
         email:
           type: string

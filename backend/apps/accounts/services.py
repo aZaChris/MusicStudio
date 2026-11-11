@@ -8,12 +8,13 @@ same whether or not an address is registered: same response, same work on the re
 path (a password hash is computed in both branches), emails sent later by a task.
 """
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.db import transaction
+from django.db.models import F
 from django.utils import timezone
 from rest_framework_simplejwt.exceptions import TokenBackendError, TokenError
 from rest_framework_simplejwt.settings import api_settings
@@ -194,3 +195,38 @@ def purge_expired_tokens() -> int:
     """Delete expired outstanding tokens (their blacklist rows cascade)."""
     deleted, _ = OutstandingToken.objects.filter(expires_at__lte=timezone.now()).delete()
     return deleted
+
+
+# --- Per-account lockout (research R4, ADR-028) -------------------------------------------
+LOCK_AFTER_FAILURES = 5
+BASE_LOCK = timedelta(minutes=15)
+MAX_LOCK = timedelta(hours=24)
+
+
+def is_locked(user: User) -> bool:
+    return user.locked_until is not None and user.locked_until > timezone.now()
+
+
+def register_login_failure(user: User) -> None:
+    """Count a wrong password. The F() update takes the row lock, so parallel attempts
+    are counted one by one; the fifth failure locks for 15 min x 2^level (cap 24 h)."""
+    with transaction.atomic():
+        User.objects.filter(pk=user.pk).update(failed_logins=F("failed_logins") + 1)
+        fresh = User.objects.select_for_update().get(pk=user.pk)
+        locked = fresh.failed_logins >= LOCK_AFTER_FAILURES
+        if locked:
+            duration = min(BASE_LOCK * 2**fresh.lock_level, MAX_LOCK)
+            fresh.locked_until = timezone.now() + duration
+            fresh.lock_level = min(fresh.lock_level + 1, 10)
+            fresh.failed_logins = 0
+            fresh.save(update_fields=["locked_until", "lock_level", "failed_logins"])
+        audit.record(
+            "login.locked" if locked else "login.failure",
+            actor=fresh,
+            outcome=audit.Outcome.DENIED if locked else audit.Outcome.FAILURE,
+        )
+
+
+def register_login_success(user: User) -> None:
+    if user.failed_logins or user.lock_level or user.locked_until:
+        User.objects.filter(pk=user.pk).update(failed_logins=0, lock_level=0, locked_until=None)

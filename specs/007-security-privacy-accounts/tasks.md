@@ -53,7 +53,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 ## Phase 7: US5 — Sign-in that resists guessing and theft (P2)
 
-- [ ] T030 [US5] Lockout in a custom `TokenObtainPairSerializer`: generic 401 for wrong/unknown/locked, `F()` counter updates, lock 15 min × 2^level capped 24 h, reset on success; audit `login.success|failure|locked`, in `backend/apps/accounts/serializers.py` + tests (parallel attempts counted, 6th correct attempt refused, unknown email same body) in `backend/apps/accounts/tests/test_lockout.py`
+- [X] T030 [US5] Lockout in a custom `TokenObtainPairSerializer`: generic 401 for wrong/unknown/locked, `F()` counter updates, lock 15 min × 2^level capped 24 h, reset on success; audit `login.success|failure|locked`, in `backend/apps/accounts/serializers.py` + tests (parallel attempts counted, 6th correct attempt refused, unknown email same body) in `backend/apps/accounts/tests/test_lockout.py`
 - [ ] T031 [US5] `totp.py` (RFC 6238 stdlib: secret generation, `otpauth://` URI, verify with ±1 step and `last_used_step`) + tests with the RFC 6238 SHA-1 vectors in `backend/apps/accounts/totp.py`, `backend/apps/accounts/tests/test_totp.py`; ADR-029
 - [ ] T032 [US5] `MfaDevice` (secret encrypted), `RecoveryCode` models + migration; services setup/confirm/disable/regenerate codes/verify login; two-step login (`mfa_required` + signed `mfa_token` 5 min) and `auth/mfa/*` endpoints in `backend/apps/accounts/`; audit `mfa.*`
 - [ ] T033 [P] [US5] Tests: owners/teachers only, confirm required, login without code gives no tokens, replayed code refused, recovery code single use, disable requires password+code, expired `mfa_token`, throttle, in `backend/apps/accounts/tests/test_mfa.py`

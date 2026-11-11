@@ -1,12 +1,16 @@
 from typing import Any
 
+from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
+from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
+from apps.audit import services as audit
 from apps.common.exceptions import DomainError
 from apps.students.models import ParentAccount
 from apps.studios.models import Teacher
 
+from . import services
 from .models import User
 
 
@@ -84,14 +88,34 @@ class EmailNotConfirmed(DomainError):
 
 
 class LoginSerializer(TokenObtainPairSerializer):
-    """Sign-in. Unconfirmed accounts are refused only after a correct password, so the
-    distinct message reveals nothing an attacker could not already prove."""
+    """Sign-in with a per-account lockout. Wrong, unknown and locked all answer with the
+    same generic 401, so the response never says whether the address exists or is locked.
+    Unconfirmed accounts are refused only after a correct password."""
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, str]:
-        data = super().validate(attrs)
-        if self.user is not None and not self.user.email_verified:
+        email = services.normalize_email(str(attrs.get(self.username_field, "")))
+        user = User.objects.filter(email__iexact=email).first()
+        if user is not None and services.is_locked(user):
+            audit.record("login.failure", actor=user, outcome=audit.Outcome.DENIED)
+            raise self._generic_failure()
+        try:
+            data = super().validate(attrs)
+        except AuthenticationFailed:
+            if user is None:
+                make_password("x")  # same work as a real check, so timing does not leak
+                audit.record("login.failure", outcome=audit.Outcome.FAILURE)
+            else:
+                services.register_login_failure(user)
+            raise
+        assert self.user is not None  # noqa: S101 - set by super().validate on success
+        services.register_login_success(self.user)
+        if not self.user.email_verified:
             raise EmailNotConfirmed("Confirm your email address before signing in.")
+        audit.record("login.success", actor=self.user)
         return data
+
+    def _generic_failure(self) -> AuthenticationFailed:
+        return AuthenticationFailed(self.error_messages["no_active_account"], "no_active_account")
 
 
 class PasswordResetConfirmSerializer(UidTokenSerializer):
