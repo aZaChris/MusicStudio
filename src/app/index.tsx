@@ -30,7 +30,7 @@ export default function Index() {
     );
   }
   if (!user) return <Redirect href="/login" />;
-  if (user.role === "parent") return <Redirect href="/(parent)/portal" />;
+  if (user.role === "parent" || user.role === "student") return <Redirect href="/(parent)/portal" />;
   return <Redirect href="/(teacher)/home" />;
 }
 

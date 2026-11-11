@@ -1,7 +1,9 @@
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { Beats } from "@/components/Beats";
+import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import { FilterChips } from "@/components/FilterChips";
 import { Icon } from "@/components/Icon";
@@ -20,6 +22,7 @@ export default function ParentPortalScreen() {
   const c = useTheme();
   const t = useT();
   const locale = useLocale();
+  const router = useRouter();
   const students = useStudents();
   const [activeId, setActiveId] = useState<number | null>(null);
 
@@ -39,7 +42,15 @@ export default function ParentPortalScreen() {
 
   return (
     <Screen>
-      <ScreenHeader title={t("parent.portalTitle")} right={<LogoutButton />} />
+      <ScreenHeader
+        title={t("parent.portalTitle")}
+        right={
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+            <Button title={t("nav.privacy")} variant="ghost" onPress={() => router.push("/(parent)/privacy")} />
+            <LogoutButton />
+          </View>
+        }
+      />
       <QueryState query={students} isEmpty={children.length === 0} emptyText={t("parent.noStudents")}>
         {children.length > 1 && (
           <FilterChips

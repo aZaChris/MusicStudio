@@ -4,7 +4,7 @@ import type { components } from "./schema";
 type Schemas = components["schemas"];
 
 export type Me = Schemas["Me"];
-export type Role = Schemas["RoleEnum"];
+export type Role = Schemas["MeRoleEnum"];
 export type Dashboard = Schemas["Dashboard"];
 export type Lesson = Schemas["Lesson"];
 export type LessonStatus = Schemas["LessonStatusEnum"];
@@ -18,7 +18,7 @@ export type Payment = Schemas["Payment"];
 export type PaymentRequest = Schemas["PaymentRequest"];
 export type PaymentMethod = Schemas["MethodEnum"];
 export type PaymentStatus = Schemas["PaymentStatusEnum"];
-export type TokenPair = Schemas["TokenObtainPair"];
+export type TokenPair = Schemas["TokenPair"];
 
 /** DRF page envelope (PageNumberPagination). */
 export interface Page<T> {
@@ -27,3 +27,4 @@ export interface Page<T> {
   previous: string | null;
   results: T[];
 }
+export type LoginResponse = Schemas["LoginResponse"];

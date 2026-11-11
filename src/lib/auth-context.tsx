@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { ApiError, apiFetch, session } from "./api/client";
-import type { Me, TokenPair } from "./api/types";
+import type { LoginResponse, Me, TokenPair } from "./api/types";
 import type { TranslationKey } from "./i18n";
 
 /** "unreachable": a session is stored but the server could not confirm it (offline). */
@@ -13,7 +13,9 @@ interface AuthState {
   status: AuthStatus;
   /** Why the user is on the login screen, e.g. the session expired. */
   notice: TranslationKey | null;
-  login: (email: string, password: string) => Promise<void>;
+  /** Resolves with an `mfaToken` when a second step is due, otherwise signs in. */
+  login: (email: string, password: string) => Promise<{ mfaToken: string | null }>;
+  verifyMfa: (mfaToken: string, code: string) => Promise<void>;
   logout: () => Promise<void>;
   retry: () => void;
 }
@@ -64,13 +66,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [queryClient],
   );
 
-  const login = useCallback(
-    async (email: string, password: string) => {
-      const tokens = await apiFetch<TokenPair>("/auth/token/", {
-        method: "POST",
-        body: { email, password },
-        auth: false,
-      });
+  const finishSignIn = useCallback(
+    async (tokens: { access: string; refresh: string }) => {
       await session.start(tokens);
       const me = await apiFetch<Me>("/auth/me/");
       queryClient.clear(); // nothing from a previous user survives a sign-in
@@ -79,6 +76,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setStatus("signed-in");
     },
     [queryClient],
+  );
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      const answer = await apiFetch<LoginResponse>("/auth/token/", { method: "POST", body: { email, password }, auth: false });
+      // Owners and teachers with MFA on get a short-lived token instead of the token pair.
+      if (answer.mfa_required && answer.mfa_token) return { mfaToken: answer.mfa_token };
+      await finishSignIn(answer as TokenPair);
+      return { mfaToken: null };
+    },
+    [finishSignIn],
+  );
+
+  const verifyMfa = useCallback(
+    async (mfaToken: string, code: string) => {
+      const tokens = await apiFetch<TokenPair>("/auth/mfa/verify/", {
+        method: "POST",
+        body: { mfa_token: mfaToken, code },
+        auth: false,
+      });
+      await finishSignIn(tokens);
+    },
+    [finishSignIn],
   );
 
   const logout = useCallback(async () => {
@@ -108,7 +128,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [check, apply]);
 
   return (
-    <AuthContext.Provider value={{ user, status, notice, login, logout, retry }}>
+    <AuthContext.Provider value={{ user, status, notice, login, verifyMfa, logout, retry }}>
       {children}
     </AuthContext.Provider>
   );

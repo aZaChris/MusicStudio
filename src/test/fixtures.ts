@@ -32,6 +32,8 @@ export const student = (id: number, over: Partial<Student> = {}): Student => ({
   teacher: 10,
   studio: 100,
   is_active: true,
+  is_adult: false,
+  has_account: false,
   active_package: {
     id: 100 + id,
     student: id,

@@ -17,6 +17,8 @@ export const teacherMe: Me = {
   preferred_language: "en",
   teacher: { id: 10, studio: 100, is_owner: false },
   parent_account: null,
+  email_verified: true,
+  mfa_enabled: false,
 };
 
 export const parentMe: Me = {
@@ -26,7 +28,22 @@ export const parentMe: Me = {
   preferred_language: "en",
   teacher: null,
   parent_account: { id: 20 },
+  email_verified: true,
+  mfa_enabled: false,
 };
+
+export const studentMe: Me = {
+  id: 4,
+  email: "luca@example.com",
+  role: "student",
+  preferred_language: "en",
+  teacher: null,
+  parent_account: null,
+  email_verified: true,
+  mfa_enabled: false,
+};
+
+export const ownerMe: Me = { ...teacherMe, id: 3, email: "titolare@example.com", role: "studio_owner", teacher: { id: 11, studio: 100, is_owner: true } };
 
 /** A stored session that the startup check (/auth/me/) confirms as `me`. */
 export async function signedInAs(me: Me, routes: Parameters<typeof installFakeApi>[0] = {}): Promise<FakeApi> {

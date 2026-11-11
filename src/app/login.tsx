@@ -1,4 +1,4 @@
-import { Redirect } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from "react-native";
 import Svg, { Ellipse, Line } from "react-native-svg";
@@ -10,7 +10,7 @@ import { LogoMark } from "@/components/Logo";
 import { TextField } from "@/components/TextField";
 import { Radii, shadow, Type } from "@/constants/theme";
 import { useScheme, useTheme } from "@/hooks/use-theme";
-import { ApiError } from "@/lib/api/client";
+import { ApiError, apiFetch } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth-context";
 import { errorMessage } from "@/lib/errors";
 import { useT } from "@/lib/i18n";
@@ -27,24 +27,50 @@ export default function LoginScreen() {
   const c = useTheme();
   const scheme = useScheme();
   const t = useT();
-  const { user, notice, login } = useAuth();
+  const router = useRouter();
+  const { user, notice, login, verifyMfa } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [mfaToken, setMfaToken] = useState<string | null>(null);
+  const [code, setCode] = useState("");
+  const [unconfirmed, setUnconfirmed] = useState(false);
+  const [resent, setResent] = useState(false);
 
   if (user) return <Redirect href="/" />;
 
   const handleSubmit = async () => {
     setError(null);
+    setUnconfirmed(false);
     setLoading(true);
     try {
-      await login(email, password);
+      if (mfaToken) {
+        await verifyMfa(mfaToken, code);
+        return;
+      }
+      const result = await login(email, password);
+      if (result.mfaToken) setMfaToken(result.mfaToken);
     } catch (err) {
-      // 401 on login = wrong credentials; anything else (offline, throttled) says what it is.
-      setError(err instanceof ApiError && err.status === 401 ? t("auth.invalidCredentials") : errorMessage(err, t));
+      if (err instanceof ApiError && err.code === "email_not_confirmed") {
+        setUnconfirmed(true); // the server says so only after a correct password
+      } else if (mfaToken && err instanceof ApiError && err.status === 401) {
+        setError(t("auth.mfaInvalid"));
+      } else {
+        // 401 on login = wrong credentials; anything else (offline, throttled) says what it is.
+        setError(err instanceof ApiError && err.status === 401 ? t("auth.invalidCredentials") : errorMessage(err, t));
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resend = async () => {
+    try {
+      await apiFetch("/auth/confirm-email/resend/", { method: "POST", body: { email }, auth: false });
+      setResent(true);
+    } catch (err) {
+      setError(errorMessage(err, t));
     }
   };
 
@@ -69,26 +95,48 @@ export default function LoginScreen() {
           </SafeAreaView>
 
           <View style={[styles.form, { backgroundColor: c.card }, shadow("card", scheme)]}>
-            <TextField
-              label={t("auth.email")}
-              value={email}
-              onChangeText={setEmail}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
-              textContentType="username"
-            />
-            <TextField
-              label={t("auth.password")}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              autoComplete="password"
-              textContentType="password"
-            />
+            {mfaToken ? (
+              <TextField
+                label={t("auth.mfaCode")}
+                value={code}
+                onChangeText={setCode}
+                autoCapitalize="none"
+                autoComplete="one-time-code"
+              />
+            ) : (
+              <>
+                <TextField
+                  label={t("auth.email")}
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                  textContentType="username"
+                />
+                <TextField
+                  label={t("auth.password")}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoComplete="password"
+                  textContentType="password"
+                />
+              </>
+            )}
             <Button title={t("auth.login")} large block onPress={handleSubmit} loading={loading} />
+            {unconfirmed ? (
+              <Alert kind="warning">{resent ? t("auth.confirmationSent") : t("auth.notConfirmed")}</Alert>
+            ) : null}
+            {unconfirmed && !resent ? <Button title={t("auth.resendConfirmation")} variant="secondary" onPress={resend} /> : null}
             {notice && !error ? <Alert kind="warning">{t(notice)}</Alert> : null}
             {error ? <Alert kind="error">{error}</Alert> : null}
+            {!mfaToken ? (
+              <>
+                <Button title={t("auth.forgotPassword")} variant="ghost" onPress={() => router.push("/forgot-password")} />
+                <Button title={t("invitation.have")} variant="ghost" onPress={() => router.push("/accept-invitation")} />
+              </>
+            ) : null}
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

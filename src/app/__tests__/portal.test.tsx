@@ -29,12 +29,12 @@ test("a parent with two children switches between them; payments are filtered by
   expect(api.callsTo("GET /payments/").map((c) => c.path)).toEqual(["/payments/?student=7", "/payments/?student=8"]);
 });
 
-test("the portal is read-only: the only action is logging out", async () => {
+test("the portal is read-only: the only actions are privacy and logging out", async () => {
   await signedInAs(parentMe, routes);
   await renderApp("/portal");
   await screen.findByText("Bravissima");
 
-  expect(screen.getAllByRole("button").map((b) => b.props.accessibilityLabel)).toEqual(["Log out"]);
+  expect(screen.getAllByRole("button").map((b) => b.props.accessibilityLabel)).toEqual(["Privacy", "Log out"]);
 });
 
 test("a parent with no linked children sees a clear message", async () => {

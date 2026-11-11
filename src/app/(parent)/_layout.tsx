@@ -7,7 +7,7 @@ export default function ParentLayout() {
 
   if (status === "loading") return null;
   if (!user) return <Redirect href="/login" />;
-  if (user.role !== "parent") return <Redirect href="/(teacher)/home" />;
+  if (user.role !== "parent" && user.role !== "student") return <Redirect href="/(teacher)/home" />;
 
   return <Stack screenOptions={{ headerShown: false }} />;
 }

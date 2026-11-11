@@ -29,7 +29,7 @@ export default function TeacherLayout() {
 
   if (status === "loading") return null;
   if (!user) return <Redirect href="/login" />;
-  if (user.role === "parent") return <Redirect href="/(parent)/portal" />;
+  if (user.role === "parent" || user.role === "student") return <Redirect href="/(parent)/portal" />;
 
   const tab = (title: string, icon: IconName) => ({
     title,
@@ -48,6 +48,7 @@ export default function TeacherLayout() {
       <Tabs.Screen name="home" options={tab(t("nav.home"), "home")} />
       <Tabs.Screen name="roster" options={tab(t("nav.students"), "students")} />
       <Tabs.Screen name="payments" options={tab(t("nav.payments"), "payments")} />
+      <Tabs.Screen name="account" options={tab(t("nav.account"), "check")} />
     </Tabs>
   );
 }
