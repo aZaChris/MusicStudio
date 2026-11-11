@@ -1,0 +1,7 @@
+{% autoescape off %}Hi {{ first_name }},
+
+a parent of {{ student_name }} closed their MusicStudio account.
+The other linked parent is still active and the student's data was not touched.
+
+The MusicStudio team
+{% endautoescape %}

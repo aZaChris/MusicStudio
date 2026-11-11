@@ -115,6 +115,13 @@ ROUTES = {
     # (out-of-scope students, other teachers' and other studios' invitations).
     "invitations/",
     "invitations/<pk>/revoke/",
+    # Privacy endpoints act on the signed-in family only; the cross-family cases (export has
+    # none of another family's data, another parent's consent is a 404) are in
+    # apps/privacy/tests/test_privacy.py.
+    "privacy/export/",
+    "privacy/erase/",
+    "privacy/consents/",
+    "privacy/consents/<pk>/withdraw/",
 }
 
 

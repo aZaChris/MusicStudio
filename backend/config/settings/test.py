@@ -31,6 +31,7 @@ REST_FRAMEWORK = {
         "register": "5/min",
         "password_reset": "5/min",
         "mfa": "5/min",
+        "privacy": "50/min",
         "invitation_accept": "5/min",
     },
 }

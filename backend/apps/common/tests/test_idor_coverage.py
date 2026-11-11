@@ -45,7 +45,7 @@ def _api_routes() -> set[str]:
                 route = text.removeprefix("api/v1/").replace("^", "").replace("$", "")
                 if "format" in route:
                     continue  # DRF's ".json" suffix variants of the same views
-                found.add(re.sub(r"\(\?P<pk>[^)]*\)", "<pk>", route))
+                found.add(re.sub(r"\(\?P<pk>[^)]*\)|<int:pk>", "<pk>", route))
 
     walk(get_resolver().url_patterns, "")
     return found

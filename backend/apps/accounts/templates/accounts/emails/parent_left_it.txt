@@ -1,0 +1,7 @@
+{% autoescape off %}Ciao {{ first_name }},
+
+un genitore di {{ student_name }} ha chiuso il proprio account su MusicStudio.
+L'altro genitore collegato resta attivo e i dati dell'allievo non sono stati toccati.
+
+Il team di MusicStudio
+{% endautoescape %}

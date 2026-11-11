@@ -12,6 +12,7 @@ urlpatterns = [
     path(settings.ADMIN_URL, admin.site.urls),
     path("api/v1/auth/", include("apps.accounts.urls")),
     path("api/v1/", include("apps.accounts.invitation_urls")),
+    path("api/v1/privacy/", include("apps.privacy.urls")),
     path("api/v1/", include("apps.studios.urls")),
     path("api/v1/", include("apps.students.urls")),
     path("api/v1/", include("apps.packages.urls")),

@@ -169,6 +169,8 @@ REST_FRAMEWORK = {
         "register": env("THROTTLE_REGISTER", default="5/hour"),
         "password_reset": env("THROTTLE_PASSWORD_RESET", default="5/hour"),
         "mfa": env("THROTTLE_MFA", default="5/min"),
+        # Export, erasure and consent withdrawal: password checks and heavy reads.
+        "privacy": env("THROTTLE_PRIVACY", default="10/hour"),
         "invitation_accept": env("THROTTLE_INVITATION_ACCEPT", default="10/hour"),
     },
 }
