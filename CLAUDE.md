@@ -57,7 +57,7 @@ Open items carried over are listed at the end of `docs/learning/00-indice.md`.
 ```bash
 cd backend && uv sync
 git config core.hooksPath .githooks        # once per clone: pre-commit via versioned hooks
-export DATABASE_URL=postgres://USER@localhost:5432/musicstudio   # PostgreSQL 16 required
+export DATABASE_URL=postgres://USER@localhost:5432/musicstudio   # PostgreSQL 16 in production; CI also runs the suite on 18
 uv run ruff check . && uv run ruff format --check .
 uv run mypy .
 uv run python manage.py makemigrations --check --dry-run --settings=config.settings.test --noinput

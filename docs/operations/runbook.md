@@ -6,7 +6,7 @@ Questo documento dice cosa fare, passo per passo, per mettere in produzione Musi
 
 Il file `docker-compose.coolify.yml` avvia sei servizi:
 
-- `db`: PostgreSQL 16, con i dati in un volume.
+- `db`: PostgreSQL 16 (immagine fissata alla versione provata, `16.15`), con i dati in un volume. Per 16 contro 18 vedi `postgresql-16-vs-18.md`.
 - `redis`: cache, contatori del rate limiting e coda di Celery.
 - `backend`: l'API (gunicorn). È l'unico servizio con un dominio.
 - `worker`: esegue i task Celery (promemoria, webhook Stripe).

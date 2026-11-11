@@ -14,7 +14,9 @@
 
 services:
   db:
-    image: postgres:16-alpine
+    # Pinned to the minor the suite was run against (docs/operations/postgresql-16-vs-18.md).
+    # Bump it on purpose, after reading the minor's release notes; do not let it float.
+    image: postgres:16.15-alpine
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-musicstudio}
       POSTGRES_USER: ${SERVICE_USER_POSTGRES}

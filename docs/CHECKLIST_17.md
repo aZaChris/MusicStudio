@@ -57,6 +57,7 @@ Segui `docs/operations/runbook.md`, sezioni "Staging" e "Primo deploy". In breve
 4. Variabili da impostare (le chiavi Django e JWT e la password del database le genera Coolify, non
    inventarle):
    - `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, `DEFAULT_FROM_EMAIL` (passo 2)
+   - `FIELD_ENCRYPTION_KEYS` = una chiave nuova (vedi `docs/TODO_PROPRIETARIO.md`, passo 4): **obbligatoria**, senza l'app non parte
    - `STRIPE_API_KEY` = la `rk_test_` del passo 3
    - `STRIPE_WEBHOOK_ALLOWED_IPS` = la lista del passo 3
    - `API_PUBLIC_URL=https://stagingapimusic.christianseminerio.dev`

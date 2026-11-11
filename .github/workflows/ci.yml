@@ -16,15 +16,22 @@ permissions:
 
 jobs:
   backend:
+    # The whole suite runs on PostgreSQL 16 (what production uses) and on 18 (the next major),
+    # so a future upgrade is a known quantity (docs/operations/postgresql-16-vs-18.md).
+    name: backend (postgres ${{ matrix.pg }})
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        pg: ["16.15", "18.6"]
     defaults:
       run:
         working-directory: backend
 
     services:
       postgres:
-        image: postgres:16-alpine
+        image: postgres:${{ matrix.pg }}-alpine
         env:
           POSTGRES_DB: musicstudio
           POSTGRES_USER: musicstudio
