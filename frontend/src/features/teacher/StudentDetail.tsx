@@ -9,6 +9,7 @@ import { lessonTone, packageTone } from '../../components/tones'
 import { formatDateTime, formatDay } from '../../lib/dates'
 import { useCancelLesson } from './api/lessons'
 import { useStudent, useStudentLessons } from './api/students'
+import { InviteDialog } from './InviteDialog'
 import { LessonFormDialog } from './LessonFormDialog'
 import { PackageFormDialog } from './PackageFormDialog'
 import { StudentFormDialog } from './StudentFormDialog'
@@ -21,7 +22,9 @@ export function StudentDetail() {
   const lessons = useStudentLessons(studentId)
   const pkg = student.data?.active_package
   const cancelLesson = useCancelLesson()
-  const [dialog, setDialog] = useState<'edit' | 'package' | 'lesson' | null>(null)
+  const [dialog, setDialog] = useState<
+    'edit' | 'package' | 'lesson' | 'inviteParent' | 'inviteStudent' | null
+  >(null)
 
   return (
     <AppShell>
@@ -44,6 +47,22 @@ export function StudentDetail() {
             <button type="button" className="ms-btn ms-btn--secondary" onClick={() => setDialog('edit')}>
               {t('student.edit')}
             </button>
+            <button
+              type="button"
+              className="ms-btn ms-btn--secondary"
+              onClick={() => setDialog('inviteParent')}
+            >
+              {t('invite.parentButton')}
+            </button>
+            {student.data?.is_adult && !student.data.has_account && (
+              <button
+                type="button"
+                className="ms-btn ms-btn--secondary"
+                onClick={() => setDialog('inviteStudent')}
+              >
+                {t('invite.studentButton')}
+              </button>
+            )}
             <button type="button" className="ms-btn ms-btn--secondary" onClick={() => setDialog('package')}>
               {t('package.new')}
             </button>
@@ -135,6 +154,13 @@ export function StudentDetail() {
         </div>
       </QueryState>
 
+      {(dialog === 'inviteParent' || dialog === 'inviteStudent') && (
+        <InviteDialog
+          studentId={studentId}
+          role={dialog === 'inviteParent' ? 'parent' : 'student'}
+          onClose={() => setDialog(null)}
+        />
+      )}
       {dialog === 'edit' && student.data && (
         <StudentFormDialog student={student.data} onClose={() => setDialog(null)} />
       )}

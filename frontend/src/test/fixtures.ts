@@ -83,3 +83,22 @@ export const payment = (id: number, over: Partial<Payment> = {}): Payment => ({
   checkout: null,
   ...over,
 })
+
+export const ownerMe: Me = {
+  ...teacherMe,
+  id: 3,
+  email: 'titolare@example.com',
+  role: 'studio_owner',
+  teacher: { id: 11, studio: 100, is_owner: true },
+}
+
+export const studentMe: Me = {
+  id: 4,
+  email: 'luca@example.com',
+  role: 'student',
+  preferred_language: 'en',
+  teacher: null,
+  parent_account: null,
+  email_verified: true,
+  mfa_enabled: false,
+}

@@ -13,12 +13,17 @@ import { Payments } from './features/teacher/Payments'
 import { Roster } from './features/teacher/Roster'
 import { StudentDetail } from './features/teacher/StudentDetail'
 import { ParentPortal } from './features/parent/ParentPortal'
+import { AccountPage } from './features/account/AccountPage'
+import { AuditPage } from './features/audit/AuditPage'
+import { PrivacyPage } from './features/privacy/PrivacyPage'
+import { TeamPage } from './features/team/TeamPage'
 
 const teacherOnly = ['teacher', 'studio_owner'] as const
+const familyRoles = ['parent', 'student'] as const
 
 function Home() {
   const { user } = useAuth()
-  if (user?.role === 'parent') return <ParentPortal />
+  if (user?.role === 'parent' || user?.role === 'student') return <ParentPortal />
   return (
     <RequireRole roles={[...teacherOnly]}>
       <Dashboard />
@@ -49,6 +54,38 @@ function App() {
         element={
           <RequireRole roles={[...teacherOnly]}>
             <StudentDetail />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/account"
+        element={
+          <RequireRole roles={[...teacherOnly]}>
+            <AccountPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/team"
+        element={
+          <RequireRole roles={['studio_owner']}>
+            <TeamPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/audit"
+        element={
+          <RequireRole roles={['studio_owner']}>
+            <AuditPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/privacy"
+        element={
+          <RequireRole roles={[...familyRoles]}>
+            <PrivacyPage />
           </RequireRole>
         }
       />

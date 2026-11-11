@@ -40,7 +40,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 - [X] T020 [US2] Services `request_password_reset` (uniform, email via task), `reset_password` (token check, set password, revoke all refresh tokens via existing `revoke_sessions` logic, clear lock, "password changed" email), `change_password` (current password, revoke other sessions) in `backend/apps/accounts/services.py`; audit `password.reset`, `password.change`
 - [X] T021 [US2] Endpoints `auth/password-reset/`, `auth/password-reset/confirm/`, `auth/password/change/` in `backend/apps/accounts/views.py`
 - [X] T022 [P] [US2] Tests: uniform body, link valid 1 h and single-use, older link invalid after newer use, sessions revoked (old refresh rejected), lock cleared, emails sent, in `backend/apps/accounts/tests/test_password_reset.py`
-- [ ] T023 [US2] (ForgotPassword and ResetPassword done; password change in AccountPage open) Portal: `ForgotPassword`, `ResetPassword`, password change in `frontend/src/features/account/AccountPage.tsx` + tests `frontend/src/auth/reset.test.tsx`
+- [X] T023 [US2] Portal: `ForgotPassword`, `ResetPassword`, password change in `frontend/src/features/account/AccountPage.tsx` + tests `frontend/src/auth/reset.test.tsx`
 
 ## Phase 6: US3 — Owners invite teachers and parents (P1)
 
@@ -49,7 +49,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 - [X] T026 [US3] Services `create_invitation` (role rules, students validated against the scoped queryset, adult check), `revoke_invitation`, `lookup_invitation`, `accept_invitation` (inviter still active and in scope; new account verified with chosen password, or links added to signed-in existing account; parent consent recorded with `PRIVACY_NOTICE_VERSION`; teacher → `Teacher` row in studio; student → `Student.user`) in `backend/apps/accounts/services.py` and `backend/apps/privacy/services.py`; audit `invitation.*`, `consent.give`, `role.change`
 - [X] T027 [US3] Endpoints `invitations/` (list/create), `invitations/{id}/revoke/`, `invitations/lookup/`, `invitations/accept/` with scoped querysets, query budget on the list, in `backend/apps/accounts/views.py`; add to IDOR table (T012)
 - [X] T028 [P] [US3] Tests: owner/teacher permissions per role, out-of-scope student "does not exist", minor refused for student role, 7-day expiry, single use, revoke, inviter removed → refused, existing parent gets links not duplicate, consent recorded, in `backend/apps/accounts/tests/test_invitations.py`
-- [ ] T029 [US3] (AcceptInvitation done; TeamPage and "Invita genitore" open) Portal: owner `features/team/TeamPage.tsx` (teachers + pending invitations, invite, revoke); teacher "Invita genitore" on `StudentDetail`; `auth/AcceptInvitation.tsx` (lookup, password, consent checkbox with link to notice); tests `frontend/src/features/team/team.test.tsx`
+- [X] T029 [US3] Portal: owner `features/team/TeamPage.tsx` (teachers + pending invitations, invite, revoke); teacher "Invita genitore" on `StudentDetail`; `auth/AcceptInvitation.tsx` (lookup, password, consent checkbox with link to notice); tests `frontend/src/features/team/team.test.tsx`
 
 ## Phase 7: US5 — Sign-in that resists guessing and theft (P2)
 
@@ -58,7 +58,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 - [X] T032 [US5] `MfaDevice` (secret encrypted), `RecoveryCode` models + migration; services setup/confirm/disable/regenerate codes/verify login; two-step login (`mfa_required` + signed `mfa_token` 5 min) and `auth/mfa/*` endpoints in `backend/apps/accounts/`; audit `mfa.*`
 - [X] T033 [P] [US5] Tests: owners/teachers only, confirm required, login without code gives no tokens, replayed code refused, recovery code single use, disable requires password+code, expired `mfa_token`, throttle, in `backend/apps/accounts/tests/test_mfa.py`
 - [X] T034 [US5] Commands `unlock_account`, `reset_mfa` (audited) in `backend/apps/accounts/management/commands/` + tests; runbook section in `docs/operations/runbook.md`
-- [ ] T035 [US5] (MFA step in Login done; MfaSetup open) Portal: MFA step in `auth/Login.tsx` (code or recovery code), `features/account/MfaSetup.tsx` (secret shown for manual entry, `otpauth` link, confirm, recovery codes shown once with copy/download); locked/generic messages; tests `frontend/src/features/account/mfa.test.tsx`
+- [X] T035 [US5] Portal: MFA step in `auth/Login.tsx` (code or recovery code), `features/account/MfaSetup.tsx` (secret shown for manual entry, `otpauth` link, confirm, recovery codes shown once with copy/download); locked/generic messages; tests `frontend/src/features/account/mfa.test.tsx`
 
 ## Phase 8: US6 — Families control their data (P2)
 
@@ -67,18 +67,18 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 - [X] T038 [US6] Consents list and withdraw (password; triggers erase of affected children) endpoints `privacy/consents/`, `privacy/consents/{id}/withdraw/`, in `backend/apps/privacy/views.py`; add privacy endpoints to the IDOR table
 - [X] T039 [P] [US6] Tests: export contains 100% own data and 0 of the other family (seeded world), erased person's name/email not found anywhere in the database, studio payment totals unchanged, two-parent child kept, open checkout 409, owner with active studio 409, sign-in fails after erasure, in `backend/apps/privacy/tests/`
 - [X] T040 [US6] Retention: `privacy.tasks.run_retention` (archived students 24 months → anonymise; payments > 10 years → delete; audit > 12 months → delete; unconfirmed sign-ups > 7 days → delete) + command `run_retention` + daily beat entry in `backend/config/celery.py`; tests with frozen time
-- [ ] T041 [US6] Portal: `features/privacy/PrivacyPage.tsx` (consents with withdraw, download export, erase account with password and clear warning) for parent and adult student; tests `frontend/src/features/privacy/privacy.test.tsx`
+- [X] T041 [US6] Portal: `features/privacy/PrivacyPage.tsx` (consents with withdraw, download export, erase account with password and clear warning) for parent and adult student; tests `frontend/src/features/privacy/privacy.test.tsx`
 
 ## Phase 9: US7 — Adult students see their own lessons (P3)
 
 - [X] T042 [US7] `is_adult` writable and `has_account` read-only on the student serializer; student role read-only on students/lessons/packages/payments (permissions unchanged for writes; tests that every write is 403 and reads are self-only) in `backend/apps/students/serializers.py`, `backend/apps/common/tests/test_student_role.py`; add student role to the IDOR table
-- [ ] T043 [US7] Portal: "Maggiorenne" toggle in `StudentFormDialog`, "Invita allievo" for adult students, `features/student/StudentHome.tsx` read-only, role routing in `auth/RequireRole.tsx`; tests
+- [X] T043 [US7] (the student role reuses ParentPortal instead of a separate StudentHome) Portal: "Maggiorenne" toggle in `StudentFormDialog`, "Invita allievo" for adult students, `features/student/StudentHome.tsx` read-only, role routing in `auth/RequireRole.tsx`; tests
 
 ## Phase 10: US8 — The owner can see who did what (P3)
 
 - [X] T044 [US8] Audit list endpoint `audit/` (owner only, own studio, filters action/since/until, paginated, query budget) in `backend/apps/audit/selectors.py`, `views.py`; tests incl. teacher/parent 403 and other studio invisible; add to IDOR table
 - [X] T045 [US8] Check every action in the data-model list is recorded by its service (one test per action) in `backend/apps/audit/tests/test_coverage.py`; record `payment.record` in `backend/apps/payments/services.py`
-- [ ] T046 [US8] Portal: `features/audit/AuditPage.tsx` (table, action/date filters, translated action names) + tests
+- [X] T046 [US8] Portal: `features/audit/AuditPage.tsx` (table, action/date filters, translated action names) + tests
 
 ## Phase 11: Cross-cutting security
 

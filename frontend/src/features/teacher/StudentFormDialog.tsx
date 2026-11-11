@@ -24,6 +24,7 @@ export function StudentFormDialog({
   const [lastName, setLastName] = useState(student?.last_name ?? '')
   const [instrument, setInstrument] = useState(student?.instrument ?? '')
   const [active, setActive] = useState(student?.is_active ?? true)
+  const [adult, setAdult] = useState(student?.is_adult ?? false)
   const create = useCreateStudent()
   const update = useUpdateStudent(student?.id ?? 0)
   const mutation = student ? update : create
@@ -34,6 +35,7 @@ export function StudentFormDialog({
       first_name: firstName.trim(),
       last_name: lastName.trim(),
       instrument: instrument.trim(),
+      is_adult: adult,
       ...(student ? { is_active: active } : {}),
     }
     mutation.mutate(data, {
@@ -78,6 +80,15 @@ export function StudentFormDialog({
             maxLength={100}
             required
           />
+        </label>
+        <label className="ms-check">
+          <input
+            type="checkbox"
+            checked={adult}
+            disabled={student?.has_account}
+            onChange={(e) => setAdult(e.target.checked)}
+          />
+          {t('student.isAdult')}
         </label>
         {student && (
           <label className="ms-check">

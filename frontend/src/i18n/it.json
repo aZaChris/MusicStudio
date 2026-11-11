@@ -3,7 +3,11 @@
     "dashboard": "Home",
     "students": "Studenti",
     "payments": "Pagamenti",
-    "label": "Principale"
+    "label": "Principale",
+    "team": "Squadra",
+    "audit": "Registro attività",
+    "account": "Account",
+    "privacy": "Privacy"
   },
   "dashboard": {
     "greeting": "Ciao, {{name}}",
@@ -161,7 +165,8 @@
     "firstName": "Nome",
     "lastName": "Cognome",
     "instrument": "Strumento",
-    "active": "Studente attivo (se lo togli, sparisce dagli elenchi)"
+    "active": "Studente attivo (se lo togli, sparisce dagli elenchi)",
+    "isAdult": "L'allievo è maggiorenne (può avere un account suo)"
   },
   "package": {
     "statusName": {
@@ -223,5 +228,100 @@
       "parent": "genitore",
       "student": "studente"
     }
+  },
+  "invite": {
+    "parentButton": "Invita genitore",
+    "studentButton": "Invita allievo",
+    "parentTitle": "Invita un genitore",
+    "studentTitle": "Invita l'allievo",
+    "sent": "Invito inviato a {{email}}. Vale 7 giorni.",
+    "done": "Fatto"
+  },
+  "account": {
+    "changePassword": "Cambia password",
+    "changePasswordHint": "Dopo il cambio verrai disconnesso ovunque e dovrai accedere di nuovo.",
+    "currentPassword": "Password attuale",
+    "changePasswordSubmit": "Cambia password"
+  },
+  "mfa": {
+    "title": "Verifica in due passaggi",
+    "off": "Disattivata. Aggiungi un codice da un'app di autenticazione per proteggere il tuo account.",
+    "enable": "Attiva",
+    "on": "Attiva. Codici di recupero rimasti: {{count}}.",
+    "setupHint": "Aggiungi questo segreto alla tua app di autenticazione, poi inserisci il codice di 6 cifre.",
+    "secret": "Segreto",
+    "openApp": "Apri nell'app di autenticazione",
+    "confirm": "Conferma",
+    "recoveryTitle": "I tuoi codici di recupero",
+    "recoveryHint": "Conservali in un posto sicuro. Ognuno vale una volta sola e li vedi solo adesso.",
+    "savedCodes": "Li ho salvati",
+    "newCodes": "Genera nuovi codici di recupero",
+    "disable": "Disattiva"
+  },
+  "team": {
+    "teachers": "Insegnanti",
+    "invite": "Invita qualcuno",
+    "role": "Ruolo",
+    "send": "Invia invito",
+    "parentHint": "Per invitare il genitore di un allievo usa la pagina dell'allievo.",
+    "pending": "Inviti",
+    "noInvitations": "Nessun invito.",
+    "revoke": "Revoca",
+    "status": {
+      "pending": "in attesa",
+      "accepted": "accettato",
+      "revoked": "revocato",
+      "expired": "scaduto"
+    }
+  },
+  "audit": {
+    "action": "Azione",
+    "allActions": "Tutte le azioni",
+    "since": "Dal giorno",
+    "when": "Quando",
+    "who": "Chi",
+    "outcome": "Esito",
+    "empty": "Ancora nulla di registrato.",
+    "previous": "Precedente",
+    "next": "Successiva",
+    "outcomes": {
+      "success": "ok",
+      "failure": "fallito",
+      "denied": "rifiutato"
+    },
+    "actions": {
+      "login.success": "Accesso",
+      "login.failure": "Accesso fallito",
+      "login.locked": "Account bloccato",
+      "password.reset": "Password reimpostata",
+      "password.change": "Password cambiata",
+      "mfa.enable": "Due passaggi attivati",
+      "mfa.disable": "Due passaggi disattivati",
+      "invitation.send": "Invito inviato",
+      "invitation.accept": "Invito accettato",
+      "invitation.revoke": "Invito revocato",
+      "consent.give": "Consenso dato",
+      "consent.withdraw": "Consenso ritirato",
+      "privacy.export": "Dati esportati",
+      "privacy.erase": "Account cancellato",
+      "payment.record": "Pagamento registrato"
+    }
+  },
+  "privacy": {
+    "title": "Privacy e account",
+    "back": "Indietro",
+    "consents": "I tuoi consensi",
+    "noConsents": "Nessun consenso registrato.",
+    "givenOn": "Dato il {{date}} (informativa {{version}})",
+    "withdrawn": "Ritirato",
+    "withdraw": "Ritira il consenso",
+    "exportTitle": "I tuoi dati",
+    "exportHint": "Scarica un file con tutto ciò che abbiamo su di te e sui tuoi figli.",
+    "download": "Scarica i miei dati",
+    "eraseTitle": "Chiudi il mio account",
+    "eraseWarning": "Non si può annullare. Il tuo account viene chiuso e i dati dei tuoi figli cancellati o resi anonimi. I pagamenti restano, senza nomi.",
+    "passwordToConfirm": "La tua password (serve per ritirare il consenso o chiudere l'account)",
+    "eraseConfirm": "Ho capito che non si può annullare",
+    "erase": "Chiudi il mio account"
   }
 }

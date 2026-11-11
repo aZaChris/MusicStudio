@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
+import { Link } from 'react-router-dom'
+
 import { useAuth } from '../../auth/useAuth'
 import { QueryState } from '../../components/QueryState'
 import { Beats, Icon, Logo, StatusChip } from '../../components/ui'
@@ -39,7 +41,9 @@ export function ParentPortal() {
       <header className="portal-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <Logo size={40} />
-          <span className="ms-role-tag">{t('parent.role')}</span>
+          <span className="ms-role-tag">
+            {t(user?.role === 'student' ? 'auth.role.student' : 'parent.role')}
+          </span>
         </div>
         <div className="portal-header__tools">
           <span className="muted" style={{ color: 'var(--plum-soft)', fontSize: 14 }}>
@@ -62,6 +66,9 @@ export function ParentPortal() {
           >
             {isItalian ? 'EN' : 'IT'}
           </button>
+          <Link to="/privacy" className="ms-btn ms-btn--on-plum">
+            {t('nav.privacy')}
+          </Link>
           <button type="button" className="ms-btn ms-btn--on-plum" onClick={logout}>
             {t('auth.logout')}
           </button>

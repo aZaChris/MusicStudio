@@ -34,6 +34,7 @@ describe('adding a student', () => {
       first_name: 'Anna',
       last_name: 'Verdi',
       instrument: 'Violin',
+      is_adult: false,
     })
     expect(await screen.findByRole('heading', { name: 'Anna Verdi' })).toBeInTheDocument()
   })

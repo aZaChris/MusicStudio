@@ -3,7 +3,11 @@
     "dashboard": "Home",
     "students": "Students",
     "payments": "Payments",
-    "label": "Main"
+    "label": "Main",
+    "team": "Team",
+    "audit": "Activity log",
+    "account": "Account",
+    "privacy": "Privacy"
   },
   "dashboard": {
     "greeting": "Hi, {{name}}",
@@ -161,7 +165,8 @@
     "firstName": "First name",
     "lastName": "Last name",
     "instrument": "Instrument",
-    "active": "Active student (untick to hide from the lists)"
+    "active": "Active student (untick to hide from the lists)",
+    "isAdult": "This student is an adult (can have their own account)"
   },
   "package": {
     "statusName": {
@@ -223,5 +228,100 @@
       "parent": "a parent",
       "student": "a student"
     }
+  },
+  "invite": {
+    "parentButton": "Invite parent",
+    "studentButton": "Invite student",
+    "parentTitle": "Invite a parent",
+    "studentTitle": "Invite the student",
+    "sent": "Invitation sent to {{email}}. It is valid for 7 days.",
+    "done": "Done"
+  },
+  "account": {
+    "changePassword": "Change password",
+    "changePasswordHint": "After changing it you will be signed out everywhere and need to sign in again.",
+    "currentPassword": "Current password",
+    "changePasswordSubmit": "Change password"
+  },
+  "mfa": {
+    "title": "Two-step verification",
+    "off": "Off. Add a code from an authenticator app to protect your account.",
+    "enable": "Turn on",
+    "on": "On. {{count}} recovery codes left.",
+    "setupHint": "Add this secret to your authenticator app, then enter the 6-digit code.",
+    "secret": "Secret",
+    "openApp": "Open in the authenticator app",
+    "confirm": "Confirm",
+    "recoveryTitle": "Your recovery codes",
+    "recoveryHint": "Keep them somewhere safe. Each works once and they are shown only now.",
+    "savedCodes": "I saved them",
+    "newCodes": "Get new recovery codes",
+    "disable": "Turn off"
+  },
+  "team": {
+    "teachers": "Teachers",
+    "invite": "Invite someone",
+    "role": "Role",
+    "send": "Send invitation",
+    "parentHint": "To invite the parent of a student, use the student's page.",
+    "pending": "Invitations",
+    "noInvitations": "No invitations yet.",
+    "revoke": "Revoke",
+    "status": {
+      "pending": "waiting",
+      "accepted": "accepted",
+      "revoked": "revoked",
+      "expired": "expired"
+    }
+  },
+  "audit": {
+    "action": "Action",
+    "allActions": "All actions",
+    "since": "From day",
+    "when": "When",
+    "who": "Who",
+    "outcome": "Outcome",
+    "empty": "Nothing recorded yet.",
+    "previous": "Previous",
+    "next": "Next",
+    "outcomes": {
+      "success": "ok",
+      "failure": "failed",
+      "denied": "refused"
+    },
+    "actions": {
+      "login.success": "Sign-in",
+      "login.failure": "Failed sign-in",
+      "login.locked": "Account locked",
+      "password.reset": "Password reset",
+      "password.change": "Password changed",
+      "mfa.enable": "Two-step turned on",
+      "mfa.disable": "Two-step turned off",
+      "invitation.send": "Invitation sent",
+      "invitation.accept": "Invitation accepted",
+      "invitation.revoke": "Invitation revoked",
+      "consent.give": "Consent given",
+      "consent.withdraw": "Consent withdrawn",
+      "privacy.export": "Data exported",
+      "privacy.erase": "Account erased",
+      "payment.record": "Payment recorded"
+    }
+  },
+  "privacy": {
+    "title": "Privacy and account",
+    "back": "Back",
+    "consents": "Your consents",
+    "noConsents": "No consents recorded.",
+    "givenOn": "Given on {{date}} (notice {{version}})",
+    "withdrawn": "Withdrawn",
+    "withdraw": "Withdraw consent",
+    "exportTitle": "Your data",
+    "exportHint": "Download a file with everything we hold about you and your children.",
+    "download": "Download my data",
+    "eraseTitle": "Close my account",
+    "eraseWarning": "This cannot be undone. Your account is closed and your children's data is erased or made anonymous. Payment records stay, without names.",
+    "passwordToConfirm": "Your password (needed to withdraw consent or close the account)",
+    "eraseConfirm": "I understand this cannot be undone",
+    "erase": "Close my account"
   }
 }
