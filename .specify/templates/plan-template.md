@@ -49,6 +49,7 @@
 - [ ] VII. CI (ruff, mypy, migrations check, pytest) green
 - [ ] VIII. ADRs for non-trivial decisions; Italian study docs + index update planned
 - [ ] IX. Security impact considered (OWASP API Top 10)
+- [ ] X. Privacy: minimal data, minors via parent, export/erasure, encrypted free text, audit, no PII in logs
 
 ## Project Structure
 

@@ -1,5 +1,17 @@
 <!--
 Sync Impact Report
+Version change: 3.0.1 → 3.1.0 (MINOR: Principle X added — privacy by design for minors' data)
+Modified principles: none
+Added principles: X. Privacy by Design for Minors' Data
+Added sections: none
+Removed sections: none
+Templates requiring updates:
+  ✅ .specify/templates/plan-template.md (gate X added)
+  ✅ .specify/templates/spec-template.md (generic, compatible as-is)
+  ✅ .specify/templates/tasks-template.md (generic, compatible as-is)
+Follow-up TODOs: privacy drafts in docs/privacy/ must be validated by a professional (owner).
+
+Previous report (3.0.1):
 Version change: 3.0.0 → 3.0.1 (PATCH: branches `web`/`app` archived as tags; work moved to
   `staging/backend` and `staging/mobile`; no principle changed)
 
@@ -150,6 +162,29 @@ when required configuration is missing. From the web client's re-opening, the wa
 covers the SPA (XSS exposure, token storage, what the browser bundle contains).
 Rationale: security reviewed once at the end is security never reviewed.
 
+### X. Privacy by Design for Minors' Data
+The product holds data about children and families; privacy is a default, not an option.
+- **Minimisation**: collect only what a feature uses. No date of birth (an "adult" flag is
+  enough), no phone, no address, no card data — card data never reaches the backend.
+- **Minors only through a parent**: a minor never has an account; their parent signs in for
+  them, and the parent's consent (who, when, notice version) is recorded before the parent sees
+  the child's data.
+- **Rights built in**: a family can export all its data and request erasure from the product.
+  Erasure anonymises in place what the law requires the studio to keep (payment amounts and
+  dates) and removes the rest; retention periods are enforced by a scheduled job.
+- **Encryption of free text about students**: notes and similar free text are encrypted at the
+  application level with a key from the environment that can be rotated.
+- **Audit**: sensitive actions (authentication, credentials, invitations, roles, consent,
+  export, erasure, payments) are recorded append-only with actor, target, time and request id.
+- **No personal data in logs or error reports**: identifiers only; a test proves it on the
+  authentication flows.
+- **Secrets**: never in the repository or its history; CI scans the full history and blocks
+  on a finding.
+- **No account enumeration**: anonymous account endpoints answer the same whether or not an
+  address is registered.
+Rationale: a leak of children's data or an unanswerable GDPR request ends the product; these
+rules are cheap when built in and very expensive to retrofit.
+
 ## Additional Constraints
 
 - **Stack**: Python 3.12, Django (current LTS), Django REST Framework (API-only), PostgreSQL,
@@ -191,4 +226,4 @@ materially expanded; PATCH: wording). Every change is self-reviewed against Prin
 and V before it is considered done; violations are fixed or justified in the plan's
 Complexity Tracking table.
 
-**Version**: 3.0.1 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-10
+**Version**: 3.1.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-11

@@ -13,7 +13,7 @@ experience, English B1, and studies everything that is built here.
   `refactor/production-standards`, which started from the Django commit `4be062d` (see
   `docs/learning/adr/ADR-001-*`). The earlier rewrites `web` (Next.js) and `app` (Expo) are no
   longer branches: they are archived as tags `archive/web` and `archive/app`. There is no `main`.
-- Principles: `.specify/memory/constitution.md` (v3.0.1). They override habits; re-read the
+- Principles: `.specify/memory/constitution.md` (v3.1.0). They override habits; re-read the
   relevant principle before deciding.
 
 ## Roadmap and status

@@ -62,6 +62,8 @@ Django backend (console in dev, SMTP in prod), 2.7 GB dev machine (Vitest ≤ 2 
   ADR-027..032 and concept docs listed below.
 - [x] IX. Security impact considered — this phase is the security work; OWASP walk updated at
   the end.
+- [x] X. Privacy (added by T001) — minimal data, minors via parent, export/erasure, encrypted
+  notes, audit, no PII in logs: this phase implements it.
 
 Post-design re-check: still all green. One amendment: Principle X added via
 `/speckit-constitution` (MINOR → 3.1.0) as the first task.
