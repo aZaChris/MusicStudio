@@ -1,0 +1,9 @@
+{% autoescape off %}Hi {{ first_name }},
+
+to finish signing up to MusicStudio, confirm your email address by opening this link (valid for 48 hours):
+
+{{ url }}
+
+If you did not sign up, ignore this message: unconfirmed accounts are deleted after 7 days.
+
+— MusicStudio{% endautoescape %}

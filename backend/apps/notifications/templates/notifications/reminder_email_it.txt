@@ -1,5 +1,5 @@
-Ciao,
+{% autoescape off %}Ciao,
 
 ti ricordiamo che la lezione di {{ student_name }} è in programma per {{ start_time }}.
 
-— MusicStudio
+— MusicStudio{% endautoescape %}

@@ -1,0 +1,9 @@
+{% autoescape off %}Ciao {{ first_name }},
+
+per completare la registrazione su MusicStudio conferma il tuo indirizzo email aprendo questo link (valido 48 ore):
+
+{{ url }}
+
+Se non sei stato tu a registrarti, ignora questo messaggio: senza conferma l'account viene cancellato dopo 7 giorni.
+
+— MusicStudio{% endautoescape %}

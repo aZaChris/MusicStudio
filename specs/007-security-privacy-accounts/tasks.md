@@ -8,7 +8,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 - [X] T001 Constitution: add Principle X "Privacy by Design for Minors' Data" via `/speckit-constitution` (3.0.1 → 3.1.0, Sync Impact Report, plan template gate X) in `.specify/memory/constitution.md`; ADR-027 `docs/learning/adr/ADR-027-principi-sicurezza-e-privacy.md` (incl. PBKDF2 kept, Argon2 as upgrade path, GDPR export moved from phase 5)
 - [X] T002 Add `cryptography` with `uv add` in `backend/pyproject.toml`; settings `FIELD_ENCRYPTION_KEYS` (list; test/dev fixed Fernet key; prod required and validated at start-up), `PRIVACY_NOTICE_VERSION`, `PASSWORD_RESET_TIMEOUT=3600`, `EMAIL_CONFIRM_MAX_AGE`, `INVITATION_DAYS=7`, `FRONTEND_URL` (links in emails), throttle scopes `register`, `password_reset`, `mfa`, `invitation_accept` in `config/settings/base.py`, `prod.py`, `test.py`; document all in `.env.example` and `docker-compose.coolify.yml`
-- [ ] T003 [P] Register pytest marker `idor` in `backend/pyproject.toml`; email templates base layout (IT/EN, plain text + HTML) in `backend/templates/emails/`
+- [X] T003 [P] Register pytest marker `idor` in `backend/pyproject.toml`; email templates base layout (IT/EN, plain text + HTML) in `backend/templates/emails/`
 
 ## Phase 2: Foundational (blocks all stories)
 
@@ -18,7 +18,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 - [X] T007 New app `apps/audit`: `AuditEntry` model (append-only `save`/`delete` guards, index `(studio, created_at)`), `services.record(...)` taking actor/action/target/studio/outcome/metadata and the request id from `apps/common/logging.py`, read-only admin, in `backend/apps/audit/`; tests (append-only, request id captured, no extra fields accepted)
 - [X] T008 `TenantContext.student_id` + `User.Role.STUDENT` + `Student.is_adult`, `Student.user`, `Student.anonymised_at` (schema migration) + `TenantPaths.student` and student branch in `scope()` in `backend/apps/common/tenancy.py`, `backend/apps/common/scoping.py`, `backend/apps/accounts/models.py`, `backend/apps/students/models.py`; tests for the new branch (student sees only self)
 - [X] T009 `User` fields `email_verified`, `failed_logins`, `lock_level`, `locked_until`, `terms_accepted_at`: schema migration, then data migration setting `email_verified=True` for existing users, in `backend/apps/accounts/migrations/`
-- [ ] T010 Email sending helper: Celery task `send_account_email(kind, user_id|email, context)` rendering the templates in the user's language, logging only kind + user id, in `backend/apps/accounts/emails.py` and `backend/apps/accounts/tasks.py` + tests (locmem outbox, language)
+- [X] T010 Email sending helper: Celery task `send_account_email(kind, user_id|email, context)` rendering the templates in the user's language, logging only kind + user id, in `backend/apps/accounts/emails.py` and `backend/apps/accounts/tasks.py` + tests (locmem outbox, language)
 
 ## Phase 3: US4 — Nobody sees what is not theirs (P1) 🎯 baseline first
 

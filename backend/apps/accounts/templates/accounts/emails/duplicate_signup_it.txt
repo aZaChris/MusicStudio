@@ -1,0 +1,10 @@
+{% autoescape off %}Ciao {{ first_name }},
+
+qualcuno ha provato a creare un nuovo account MusicStudio con questo indirizzo email, che ne ha già uno.
+
+Se eri tu, puoi accedere qui: {{ login_url }}
+Se hai dimenticato la password: {{ reset_url }}
+
+Se non eri tu, non devi fare niente: il tuo account non è cambiato.
+
+— MusicStudio{% endautoescape %}
