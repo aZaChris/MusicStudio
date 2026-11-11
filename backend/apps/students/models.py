@@ -21,6 +21,18 @@ class Student(models.Model):
     # Always equal to teacher.studio; set by students.services (ADR-010).
     studio = models.ForeignKey(Studio, on_delete=models.PROTECT, related_name="students")
     is_active = models.BooleanField(default=True)
+    # Set by the teacher. Only adults may get an account of their own; minors are reached
+    # through a parent. A flag, not a birth date: minimisation (constitution X).
+    is_adult = models.BooleanField(default=False, db_default=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="student_profile",
+    )
+    # Set when erasure or retention replaced the personal data (ADR-032).
+    anonymised_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

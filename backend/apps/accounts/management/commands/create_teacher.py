@@ -28,7 +28,7 @@ class Command(BaseCommand):
             raise CommandError(f"{email} already exists.")
         studio_name = options["studio_name"]
         role = User.Role.STUDIO_OWNER if studio_name else User.Role.TEACHER
-        user = User(email=email, username=email, role=role)
+        user = User(email=email, username=email, role=role, email_verified=True)
         user.set_password(read_password(email))
         user.save()
         teacher = create_solo_teacher(user, studio_name=studio_name)

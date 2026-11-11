@@ -75,7 +75,15 @@ class Command(BaseCommand):
                 owner = t == 0
                 email = f"lt-owner-{s}@example.com" if owner else f"lt-teacher-{s}-{t}@example.com"
                 role = User.Role.STUDIO_OWNER if owner else User.Role.TEACHER
-                users.append(User(email=email, username=email, role=role, password=hashed))
+                users.append(
+                    User(
+                        email=email,
+                        username=email,
+                        role=role,
+                        password=hashed,
+                        email_verified=True,
+                    )
+                )
                 teacher_specs.append((studio, owner))
         users = User.objects.bulk_create(users)
         teachers = Teacher.objects.bulk_create(
@@ -108,6 +116,7 @@ class Command(BaseCommand):
                     username=f"lt-parent-{n}@example.com",
                     role=User.Role.PARENT,
                     password=hashed,
+                    email_verified=True,
                 )
                 for n in range(len(students))
             ]

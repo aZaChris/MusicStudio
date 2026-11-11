@@ -116,7 +116,7 @@ class Command(BaseCommand):
 
     def _get_or_create_user(self, email: str, role: str) -> User:
         user, created = User.objects.get_or_create(
-            email=email, defaults={"username": email, "role": role}
+            email=email, defaults={"username": email, "role": role, "email_verified": True}
         )
         if created:
             user.set_password("password123")

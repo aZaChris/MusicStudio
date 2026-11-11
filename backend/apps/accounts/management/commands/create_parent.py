@@ -32,7 +32,7 @@ class Command(BaseCommand):
 
         user = User.objects.filter(email__iexact=email).first()
         if user is None:
-            user = User(email=email, username=email, role=User.Role.PARENT)
+            user = User(email=email, username=email, role=User.Role.PARENT, email_verified=True)
             user.set_password(read_password(email))
             user.save()
             created = True

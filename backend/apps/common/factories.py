@@ -18,6 +18,7 @@ class UserFactory(factory.django.DjangoModelFactory[User]):
     username = factory.Sequence(lambda n: f"user{n}")
     email = factory.Sequence(lambda n: f"user{n}@example.com")
     role = User.Role.TEACHER
+    email_verified = True
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
@@ -92,3 +93,12 @@ class ParentAccountFactory(factory.django.DjangoModelFactory[ParentAccount]):
 
 def link_parent_to_student(parent: ParentAccount, student: Student) -> ParentStudentLink:
     return ParentStudentLink.objects.create(parent=parent, student=student)
+
+
+def make_student_account(student: Student) -> User:
+    """Give an adult student their own read-only account (phase 7)."""
+    user = UserFactory(role=User.Role.STUDENT)
+    student.is_adult = True
+    student.user = user
+    student.save(update_fields=["is_adult", "user"])
+    return user

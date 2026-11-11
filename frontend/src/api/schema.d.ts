@@ -722,9 +722,10 @@ export interface components {
          * @description * `teacher` - Teacher
          *     * `studio_owner` - Studio owner
          *     * `parent` - Parent
+         *     * `student` - Student
          * @enum {string}
          */
-        RoleEnum: "teacher" | "studio_owner" | "parent";
+        RoleEnum: "teacher" | "studio_owner" | "parent" | "student";
         Student: {
             readonly id: number;
             first_name: string;

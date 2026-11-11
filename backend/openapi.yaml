@@ -2540,11 +2540,13 @@ components:
       - teacher
       - studio_owner
       - parent
+      - student
       type: string
       description: |-
         * `teacher` - Teacher
         * `studio_owner` - Studio owner
         * `parent` - Parent
+        * `student` - Student
     Student:
       type: object
       properties:

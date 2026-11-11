@@ -7,6 +7,7 @@ filtered here from the request's `TenantContext`, for reads (view querysets) and
 - studio owner: everything whose studio is the owner's studio;
 - teacher: everything attached to the teacher (a teacher belongs to exactly one studio);
 - parent: everything about their linked children (children may be in different studios);
+- student (adult, read-only): their own record and what hangs off it;
 - anyone else: nothing.
 
 Each model declares, once, how to reach studio / teacher / parent from it (`TenantPaths`).
@@ -26,21 +27,30 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class TenantPaths:
-    """ORM lookup paths from a model to its studio, teacher and parent account."""
+    """ORM lookup paths from a model to its studio, teacher, parent account and student."""
 
     studio: str
     teacher: str
     parent: str
+    student: str
 
 
-STUDENT_PATHS = TenantPaths(studio="studio", teacher="teacher", parent="parent_accounts")
+STUDENT_PATHS = TenantPaths(
+    studio="studio", teacher="teacher", parent="parent_accounts", student="id"
+)
 # A lesson belongs to the teacher who gives it (kept when the student is reassigned).
 LESSON_PATHS = TenantPaths(
-    studio="student__studio", teacher="teacher", parent="student__parent_accounts"
+    studio="student__studio",
+    teacher="teacher",
+    parent="student__parent_accounts",
+    student="student",
 )
 # Packages and payments follow the student's current teacher.
 STUDENT_CHILD_PATHS = TenantPaths(
-    studio="student__studio", teacher="student__teacher", parent="student__parent_accounts"
+    studio="student__studio",
+    teacher="student__teacher",
+    parent="student__parent_accounts",
+    student="student",
 )
 
 
@@ -52,6 +62,8 @@ def scope[M: Model](qs: QuerySet[M], ctx: TenantContext, paths: TenantPaths) -> 
     if ctx.is_parent:
         # Only this path crosses a many-to-many, which can duplicate rows.
         return qs.filter(**{paths.parent: ctx.parent_id}).distinct()
+    if ctx.is_student:
+        return qs.filter(**{paths.student: ctx.student_id})
     return qs.none()
 
 

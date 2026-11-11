@@ -23,6 +23,7 @@ class TenantContext:
     studio_id: int | None = None
     teacher_id: int | None = None
     parent_id: int | None = None
+    student_id: int | None = None
 
     @property
     def is_owner(self) -> bool:
@@ -36,6 +37,10 @@ class TenantContext:
     def is_parent(self) -> bool:
         return self.role == User.Role.PARENT and self.parent_id is not None
 
+    @property
+    def is_student(self) -> bool:
+        return self.role == User.Role.STUDENT and self.student_id is not None
+
 
 ANONYMOUS = TenantContext(user_id=None, role=None)
 
@@ -47,7 +52,7 @@ def resolve_tenant(user: Any) -> TenantContext:
     if user is None or not getattr(user, "is_authenticated", False):
         return ANONYMOUS
 
-    from apps.students.models import ParentAccount
+    from apps.students.models import ParentAccount, Student
     from apps.studios.models import Teacher
 
     role = getattr(user, "role", None)
@@ -63,6 +68,10 @@ def resolve_tenant(user: Any) -> TenantContext:
         )
         if parent_id is not None:
             return TenantContext(user_id=user.pk, role=role, parent_id=parent_id)
+    elif role == User.Role.STUDENT:
+        student_id = Student.objects.filter(user_id=user.pk).values_list("id", flat=True).first()
+        if student_id is not None:
+            return TenantContext(user_id=user.pk, role=role, student_id=student_id)
     return TenantContext(user_id=user.pk, role=role)
 
 
