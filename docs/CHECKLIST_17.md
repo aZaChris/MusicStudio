@@ -20,9 +20,9 @@ Senza questo i test del backend non partono su questo computer.
 
 1. Chiedi al tuo amico l'indirizzo IP del server Coolify.
 2. Nel pannello del registrar, aggiungi due record **A**:
-   - `api-staging` verso l'IP del server;
+   - `stagingapimusic` (sul dominio `christianseminerio.dev`) verso l'IP del server;
    - `app-staging` verso l'IP del server.
-3. Controllo (anche dopo qualche minuto): `dig +short api-staging.tuodominio.it` deve stampare l'IP.
+3. Controllo (anche dopo qualche minuto): `dig +short stagingapimusic.christianseminerio.dev` deve stampare l'IP.
 
 ## 2. Email (SMTP)
 
@@ -52,29 +52,29 @@ Segui `docs/operations/runbook.md`, sezioni "Staging" e "Primo deploy". In breve
 
 1. Nuova risorsa **Docker Compose** dal repository GitHub, branch `staging/backend`, file
    `docker-compose.coolify.yml`.
-2. Dominio del servizio `backend`: `https://api-staging.tuodominio.it:8000`.
+2. Dominio del servizio `backend`: `https://stagingapimusic.christianseminerio.dev:8000`.
 3. Dominio del servizio `web`: `https://app-staging.tuodominio.it:8080`.
 4. Variabili da impostare (le chiavi Django e JWT e la password del database le genera Coolify, non
    inventarle):
    - `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, `DEFAULT_FROM_EMAIL` (passo 2)
    - `STRIPE_API_KEY` = la `rk_test_` del passo 3
    - `STRIPE_WEBHOOK_ALLOWED_IPS` = la lista del passo 3
-   - `API_PUBLIC_URL=https://api-staging.tuodominio.it`
+   - `API_PUBLIC_URL=https://stagingapimusic.christianseminerio.dev`
    - `CHECKOUT_SUCCESS_URL=https://app-staging.tuodominio.it/payments/success`
    - `CHECKOUT_CANCEL_URL=https://app-staging.tuodominio.it/payments/cancel`
    - `TRUSTED_PROXY_COUNT=1`
    - `SENTRY_ENVIRONMENT=staging` (e `SENTRY_DSN` se fai il passo 7)
 5. Lancia il deploy. Il primo build impiega qualche minuto.
 6. Verifiche (runbook, "Verifiche dopo ogni deploy"):
-   - `https://api-staging.tuodominio.it/health/live/` risponde `{"status": "ok"}`;
-   - `https://api-staging.tuodominio.it/health/ready/` risponde 200;
+   - `https://stagingapimusic.christianseminerio.dev/health/live/` risponde `{"status": "ok"}`;
+   - `https://stagingapimusic.christianseminerio.dev/health/ready/` risponde 200;
    - in Coolify tutti i servizi sono "healthy";
    - il portale `https://app-staging.tuodominio.it` si apre.
 
 ## 5. Webhook di Stripe
 
 1. Nella sandbox Stripe: Developers, Webhooks, **Add endpoint**.
-2. URL: `https://api-staging.tuodominio.it/api/v1/webhooks/stripe/` (con la barra finale).
+2. URL: `https://stagingapimusic.christianseminerio.dev/api/v1/webhooks/stripe/` (con la barra finale).
 3. Eventi, solo questi quattro:
    - `checkout.session.completed`
    - `checkout.session.async_payment_succeeded`
