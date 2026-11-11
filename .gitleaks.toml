@@ -1,9 +1,9 @@
-# Secret scanning (constitution X). Starts from gitleaks' default rules; the allow-list below
-# holds only values that are public on purpose. Add a value here only with a reason.
+# Secret scanning (constitution X). Starts from gitleaks' default rules; the allow-lists below
+# hold only values that are public on purpose. Add a value here only with a reason.
 [extend]
 useDefault = true
 
-[allowlist]
+[[allowlists]]
 description = "Known fake keys used by development and tests"
 regexes = [
   # Development-only Fernet key (config/settings/base.py); production refuses to start with
