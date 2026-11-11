@@ -34,8 +34,8 @@ si aggiornano sostituendo i programmi e riavviando, senza dump e ripristino (doc
   stesse opzioni del backup di produzione (`pg_dump -Z1 --no-owner --no-privileges`) e ripristinato con
   `scripts/restore-drill.sh`: 30 tabelle, 198 righe, **0 differenze**, nessuna migrazione in sospeso, i due
   vincoli `lesson_no_student_overlap` e `lesson_no_teacher_overlap` presenti.
-- **Provato su 16.15, ma solo fino alla fase 6**: le fasi 1-6 (172 test e il restore drill, la prova di
-  carico) sono state eseguite su 16.15.
+- **Provato su 16.15, ma solo fino alla fase 6**: le fasi 1-6 (la suite di allora, il restore drill e la prova di
+  carico, come scritto nei loro documenti) girarono su PostgreSQL 16 (16.15).
 - **NON provato su 16**: **i test della fase 7** non sono mai stati eseguiti su PostgreSQL 16. Su questo
   computer non c'è un PostgreSQL 16 con le estensioni `contrib`, quindi ho usato il 18. La prova su 16 la
   darà la CI al primo push (job `backend (postgres 16.15)`). **Finché quel job non è verde, la fase 7 non va
