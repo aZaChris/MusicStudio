@@ -26,12 +26,16 @@ PROD_ENV = {
 
 
 def _load_prod(env: dict[str, str]) -> subprocess.CompletedProcess[str]:
-    """Import prod settings in a clean interpreter (settings are module-level state)."""
     code = (
         "from config.settings import prod as s;"
         "print(s.SECURE_PROXY_SSL_HEADER, s.DEBUG, sorted(s.ALLOWED_HOSTS),"
         " s.STORAGES['staticfiles']['BACKEND'])"
     )
+    return _load_prod_code(env, code)
+
+
+def _load_prod_code(env: dict[str, str], code: str) -> subprocess.CompletedProcess[str]:
+    """Run `code` in a clean interpreter with the prod env (settings are module-level state)."""
     clean_env = {k: v for k, v in os.environ.items() if not k.startswith(("DJANGO_", "JWT_"))}
     return subprocess.run(  # noqa: S603 - fixed interpreter and code, test-only
         [sys.executable, "-c", code],

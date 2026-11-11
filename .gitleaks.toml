@@ -1,0 +1,17 @@
+# Secret scanning (constitution X). Starts from gitleaks' default rules; the allow-list below
+# holds only values that are public on purpose. Add a value here only with a reason.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known fake keys used by development and tests"
+regexes = [
+  # Development-only Fernet key (config/settings/base.py); production refuses to start with
+  # it unless FIELD_ENCRYPTION_KEYS is set, and tests use it to round-trip encryption.
+  '''ZGV2LW9ubHktaW5zZWN1cmUtZmllbGQta2V5LTAwMDA=''',
+]
+paths = [
+  # Fixed fake keys for settings tests (they only prove start-up validation).
+  '''backend/config/tests/test_settings\.py''',
+  '''backend/config/tests/test_prod_settings\.py''',
+]
