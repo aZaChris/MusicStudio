@@ -219,5 +219,5 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Bug trovato dai test:** Celery scriveva il token d'invito nei log; corretto con un filtro (knowledge base).
 - **CI:** il passo `check --deploy` mancava delle variabili nuove; corretto. Nuovo job con gitleaks sulla cronologia.
 - **Qualità:** 740 test del backend, copertura circa 96%, ruff, mypy, migrazioni e contratto OpenAPI verdi.
-- **Aperto:** le schermate del portale (T018, T019, T023, T029, T035, T041, T043, T046) e il passo finale della fase; la scansione gitleaks mai eseguita in locale; le bozze legali da far validare (T057); la prova delle email con un fornitore SMTP vero (T058); l'app mobile (nota in `specs/007-security-privacy-accounts/mobile-followup.md`).
+- **Aperto:** le schermate del portale ancora mancanti (cambio password, squadra e inviti, impostazione dell'MFA, privacy, area studente, registro delle azioni: T023, T029, T035, T041, T043, T046) e il passo finale della fase; la scansione gitleaks mai eseguita in locale; le bozze legali da far validare (T057); la prova delle email con un fornitore SMTP vero (T058); l'app mobile (nota in `specs/007-security-privacy-accounts/mobile-followup.md`).
 

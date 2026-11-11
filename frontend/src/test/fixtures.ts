@@ -7,6 +7,8 @@ export const teacherMe: Me = {
   preferred_language: 'en',
   teacher: { id: 10, studio: 100, is_owner: false },
   parent_account: null,
+  email_verified: true,
+  mfa_enabled: false,
 }
 
 export const parentMe: Me = {
@@ -16,6 +18,8 @@ export const parentMe: Me = {
   preferred_language: 'en',
   teacher: null,
   parent_account: { id: 20 },
+  email_verified: true,
+  mfa_enabled: false,
 }
 
 export const lesson = (over: Partial<Lesson> = {}): Lesson => ({
@@ -50,6 +54,8 @@ export const student = (id: number, over: Partial<Student> = {}): Student => ({
   teacher: 10,
   studio: 100,
   is_active: true,
+  is_adult: false,
+  has_account: false,
   active_package: {
     id: 100 + id,
     student: id,

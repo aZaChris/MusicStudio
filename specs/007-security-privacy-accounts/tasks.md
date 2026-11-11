@@ -32,15 +32,15 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 - [X] T015 [US1] Endpoints `auth/register/`, `auth/confirm-email/`, `auth/confirm-email/resend/` (uniform 202, throttled) in `backend/apps/accounts/views.py`, `serializers.py`, `urls.py`; sign-in refuses unverified accounts (`code: email_not_confirmed` only after a correct password)
 - [X] T016 [P] [US1] Tests: uniform responses for new/existing address (body equal), confirmation single-use and expiry (freezegun or `signing` max_age), unverified login refused, password validators with user attributes, throttle, in `backend/apps/accounts/tests/test_registration.py`
 - [X] T017 [US1] Retention of unconfirmed sign-ups (7 days, deletes user + studio) as part of `apps/privacy` retention (stub task now, completed in T040) — test in `backend/apps/accounts/tests/test_registration.py`
-- [ ] T018 [US1] Portal: `Register`, `ConfirmEmail` (reads `uid`/`token` from URL), "resend" on login when unconfirmed; routes in `frontend/src/App.tsx`; i18n IT/EN; regenerate `openapi.yaml` + `npm run api:types`
-- [ ] T019 [P] [US1] Portal tests: register success/validation errors, confirm ok/expired, login unconfirmed shows resend, in `frontend/src/auth/register.test.tsx`
+- [X] T018 [US1] Portal: `Register`, `ConfirmEmail` (reads `uid`/`token` from URL), "resend" on login when unconfirmed; routes in `frontend/src/App.tsx`; i18n IT/EN; regenerate `openapi.yaml` + `npm run api:types`
+- [X] T019 [P] [US1] Portal tests: register success/validation errors, confirm ok/expired, login unconfirmed shows resend, in `frontend/src/auth/register.test.tsx`
 
 ## Phase 5: US2 — Recover a forgotten password safely (P1)
 
 - [X] T020 [US2] Services `request_password_reset` (uniform, email via task), `reset_password` (token check, set password, revoke all refresh tokens via existing `revoke_sessions` logic, clear lock, "password changed" email), `change_password` (current password, revoke other sessions) in `backend/apps/accounts/services.py`; audit `password.reset`, `password.change`
 - [X] T021 [US2] Endpoints `auth/password-reset/`, `auth/password-reset/confirm/`, `auth/password/change/` in `backend/apps/accounts/views.py`
 - [X] T022 [P] [US2] Tests: uniform body, link valid 1 h and single-use, older link invalid after newer use, sessions revoked (old refresh rejected), lock cleared, emails sent, in `backend/apps/accounts/tests/test_password_reset.py`
-- [ ] T023 [US2] Portal: `ForgotPassword`, `ResetPassword`, password change in `frontend/src/features/account/AccountPage.tsx` + tests `frontend/src/auth/reset.test.tsx`
+- [ ] T023 [US2] (ForgotPassword and ResetPassword done; password change in AccountPage open) Portal: `ForgotPassword`, `ResetPassword`, password change in `frontend/src/features/account/AccountPage.tsx` + tests `frontend/src/auth/reset.test.tsx`
 
 ## Phase 6: US3 — Owners invite teachers and parents (P1)
 
@@ -49,7 +49,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 - [X] T026 [US3] Services `create_invitation` (role rules, students validated against the scoped queryset, adult check), `revoke_invitation`, `lookup_invitation`, `accept_invitation` (inviter still active and in scope; new account verified with chosen password, or links added to signed-in existing account; parent consent recorded with `PRIVACY_NOTICE_VERSION`; teacher → `Teacher` row in studio; student → `Student.user`) in `backend/apps/accounts/services.py` and `backend/apps/privacy/services.py`; audit `invitation.*`, `consent.give`, `role.change`
 - [X] T027 [US3] Endpoints `invitations/` (list/create), `invitations/{id}/revoke/`, `invitations/lookup/`, `invitations/accept/` with scoped querysets, query budget on the list, in `backend/apps/accounts/views.py`; add to IDOR table (T012)
 - [X] T028 [P] [US3] Tests: owner/teacher permissions per role, out-of-scope student "does not exist", minor refused for student role, 7-day expiry, single use, revoke, inviter removed → refused, existing parent gets links not duplicate, consent recorded, in `backend/apps/accounts/tests/test_invitations.py`
-- [ ] T029 [US3] Portal: owner `features/team/TeamPage.tsx` (teachers + pending invitations, invite, revoke); teacher "Invita genitore" on `StudentDetail`; `auth/AcceptInvitation.tsx` (lookup, password, consent checkbox with link to notice); tests `frontend/src/features/team/team.test.tsx`
+- [ ] T029 [US3] (AcceptInvitation done; TeamPage and "Invita genitore" open) Portal: owner `features/team/TeamPage.tsx` (teachers + pending invitations, invite, revoke); teacher "Invita genitore" on `StudentDetail`; `auth/AcceptInvitation.tsx` (lookup, password, consent checkbox with link to notice); tests `frontend/src/features/team/team.test.tsx`
 
 ## Phase 7: US5 — Sign-in that resists guessing and theft (P2)
 
@@ -58,7 +58,7 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 - [X] T032 [US5] `MfaDevice` (secret encrypted), `RecoveryCode` models + migration; services setup/confirm/disable/regenerate codes/verify login; two-step login (`mfa_required` + signed `mfa_token` 5 min) and `auth/mfa/*` endpoints in `backend/apps/accounts/`; audit `mfa.*`
 - [X] T033 [P] [US5] Tests: owners/teachers only, confirm required, login without code gives no tokens, replayed code refused, recovery code single use, disable requires password+code, expired `mfa_token`, throttle, in `backend/apps/accounts/tests/test_mfa.py`
 - [X] T034 [US5] Commands `unlock_account`, `reset_mfa` (audited) in `backend/apps/accounts/management/commands/` + tests; runbook section in `docs/operations/runbook.md`
-- [ ] T035 [US5] Portal: MFA step in `auth/Login.tsx` (code or recovery code), `features/account/MfaSetup.tsx` (secret shown for manual entry, `otpauth` link, confirm, recovery codes shown once with copy/download); locked/generic messages; tests `frontend/src/features/account/mfa.test.tsx`
+- [ ] T035 [US5] (MFA step in Login done; MfaSetup open) Portal: MFA step in `auth/Login.tsx` (code or recovery code), `features/account/MfaSetup.tsx` (secret shown for manual entry, `otpauth` link, confirm, recovery codes shown once with copy/download); locked/generic messages; tests `frontend/src/features/account/mfa.test.tsx`
 
 ## Phase 8: US6 — Families control their data (P2)
 

@@ -119,8 +119,18 @@
     "role": {
       "teacher": "Teacher",
       "studio_owner": "Studio owner",
-      "parent": "Parent"
-    }
+      "parent": "Parent",
+      "student": "Student"
+    },
+    "backToLogin": "Back to sign in",
+    "forgotPassword": "Forgot your password?",
+    "createAccount": "Create a studio account",
+    "mfaCode": "Verification code",
+    "mfaHint": "The 6-digit code from your authenticator app, or a recovery code.",
+    "mfaInvalid": "The code is not valid. Try again.",
+    "notConfirmed": "Confirm your email address first. We sent you a link.",
+    "confirmationSent": "We sent you a new confirmation link.",
+    "resendConfirmation": "Send the link again"
   },
   "theme": {
     "toggle": "Toggle light/dark theme",
@@ -167,5 +177,51 @@
     "expiryDate": "Expires on (optional)",
     "boughtOn": "Bought on {{date}}",
     "expiresOn": "expires on {{date}}"
+  },
+  "register": {
+    "title": "Create your studio account",
+    "hint": "For studio owners. Teachers and parents join by invitation.",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "studioName": "Studio name",
+    "acceptTerms": "I accept the terms and the privacy notice",
+    "submit": "Create account",
+    "haveAccount": "I already have an account",
+    "checkEmailTitle": "Check your email",
+    "checkEmail": "If the address can be used, we sent a link to confirm it. It is valid for 48 hours."
+  },
+  "confirm": {
+    "title": "Confirm your email",
+    "working": "Checking the link…",
+    "done": "Your email is confirmed. You can sign in.",
+    "failed": "This link is not valid or has expired. Sign in to receive a new one."
+  },
+  "forgot": {
+    "title": "Forgot your password?",
+    "hint": "Enter your email and we will send you a link.",
+    "submit": "Send the link",
+    "sent": "If the address is registered, we sent a link to choose a new password. It is valid for one hour."
+  },
+  "reset": {
+    "title": "Choose a new password",
+    "hint": "After this, you will need to sign in again everywhere.",
+    "newPassword": "New password",
+    "submit": "Save password",
+    "done": "Your password was changed. You can sign in.",
+    "linkInvalid": "This link is not valid or has expired. Ask for a new one."
+  },
+  "invitation": {
+    "title": "Join MusicStudio",
+    "hint": "{{studio}} invites you as {{role}}.",
+    "invalid": "This invitation is not valid, has expired or was already used.",
+    "signInFirst": "This invitation is for {{email}}, which already has an account. Sign in with it, then open the link again.",
+    "forStudents": "For: {{names}}",
+    "consent": "I consent to the processing of my child's data as described in the privacy notice",
+    "accept": "Accept invitation",
+    "role": {
+      "teacher": "a teacher",
+      "parent": "a parent",
+      "student": "a student"
+    }
   }
 }

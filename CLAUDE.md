@@ -26,7 +26,7 @@ experience, English B1, and studies everything that is built here.
 | 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (owner tasks open: real Coolify deploy T018, bucket drill T024) |
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
 | Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (owner: Coolify deploy + friend's review T017; image run locally once Docker works in WSL) |
-| 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | in progress (backend done: T001–T017, T020–T022, T024–T047, T049–T054; open: portal screens T018 T019 T023 T029 T035 T041 T043 T046, T048 local gitleaks run, T055–T058) |
+| 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | in progress (backend done: T001–T022, T024–T047, T049–T054; open: portal T023 (password change), T029 (TeamPage, invite parent), T035 (MfaSetup), T041, T043, T046, T048 local gitleaks run, T055–T058) |
 
 The mobile app is on branch `staging/mobile` (own CLAUDE.md and constitution); it reads the
 backend contract from `staging/backend`. The `refactor/*` branches are kept as they were on

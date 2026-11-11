@@ -11,7 +11,9 @@ export interface AuthState {
   status: AuthStatus
   /** Why the user is on the login page, e.g. the session expired (an i18n key). */
   notice: Parameters<TFunction>[0] | null
-  login: (email: string, password: string) => Promise<void>
+  /** Resolves with an `mfaToken` when a second step is due, otherwise signs in. */
+  login: (email: string, password: string) => Promise<{ mfaToken: string | null }>
+  verifyMfa: (mfaToken: string, code: string) => Promise<void>
   logout: () => Promise<void>
   retry: () => void
 }

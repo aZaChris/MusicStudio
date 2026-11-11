@@ -119,8 +119,18 @@
     "role": {
       "teacher": "Insegnante",
       "studio_owner": "Titolare dello studio",
-      "parent": "Genitore"
-    }
+      "parent": "Genitore",
+      "student": "Studente"
+    },
+    "backToLogin": "Torna all'accesso",
+    "forgotPassword": "Password dimenticata?",
+    "createAccount": "Crea l'account del tuo studio",
+    "mfaCode": "Codice di verifica",
+    "mfaHint": "Il codice di 6 cifre della tua app di autenticazione, oppure un codice di recupero.",
+    "mfaInvalid": "Il codice non è valido. Riprova.",
+    "notConfirmed": "Prima conferma il tuo indirizzo email. Ti abbiamo mandato un link.",
+    "confirmationSent": "Ti abbiamo mandato un nuovo link di conferma.",
+    "resendConfirmation": "Manda di nuovo il link"
   },
   "theme": {
     "toggle": "Cambia tema chiaro/scuro",
@@ -167,5 +177,51 @@
     "expiryDate": "Scade il (facoltativo)",
     "boughtOn": "Acquistato il {{date}}",
     "expiresOn": "scade il {{date}}"
+  },
+  "register": {
+    "title": "Crea l'account del tuo studio",
+    "hint": "Per i titolari di uno studio. Insegnanti e genitori entrano su invito.",
+    "firstName": "Nome",
+    "lastName": "Cognome",
+    "studioName": "Nome dello studio",
+    "acceptTerms": "Accetto i termini e l'informativa sulla privacy",
+    "submit": "Crea account",
+    "haveAccount": "Ho già un account",
+    "checkEmailTitle": "Controlla la tua email",
+    "checkEmail": "Se l'indirizzo è utilizzabile, ti abbiamo mandato un link per confermarlo. Vale 48 ore."
+  },
+  "confirm": {
+    "title": "Conferma la tua email",
+    "working": "Controllo il link…",
+    "done": "Il tuo indirizzo è confermato. Puoi accedere.",
+    "failed": "Il link non è valido o è scaduto. Prova ad accedere per riceverne uno nuovo."
+  },
+  "forgot": {
+    "title": "Password dimenticata?",
+    "hint": "Scrivi la tua email e ti mandiamo un link.",
+    "submit": "Manda il link",
+    "sent": "Se l'indirizzo è registrato, ti abbiamo mandato un link per scegliere una nuova password. Vale un'ora."
+  },
+  "reset": {
+    "title": "Scegli una nuova password",
+    "hint": "Dopo questo dovrai accedere di nuovo su tutti i dispositivi.",
+    "newPassword": "Nuova password",
+    "submit": "Salva la password",
+    "done": "La password è stata cambiata. Puoi accedere.",
+    "linkInvalid": "Il link non è valido o è scaduto. Chiedine uno nuovo."
+  },
+  "invitation": {
+    "title": "Entra in MusicStudio",
+    "hint": "{{studio}} ti invita come {{role}}.",
+    "invalid": "Questo invito non è valido, è scaduto o è già stato usato.",
+    "signInFirst": "Questo invito è per {{email}}, che ha già un account. Accedi con quell'indirizzo e poi riapri il link.",
+    "forStudents": "Per: {{names}}",
+    "consent": "Acconsento al trattamento dei dati di mio figlio come descritto nell'informativa sulla privacy",
+    "accept": "Accetta l'invito",
+    "role": {
+      "teacher": "insegnante",
+      "parent": "genitore",
+      "student": "studente"
+    }
   }
 }

@@ -1,8 +1,8 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 
-import { ApiError } from '../api/client'
+import { ApiError, apiFetch } from '../api/client'
 import { errorMessage } from '../api/errors'
 import { Icon, Logo } from '../components/ui'
 import { useAuth } from './useAuth'
@@ -18,25 +18,53 @@ const NOTES = [
 
 export function Login() {
   const { t, i18n } = useTranslation()
-  const { user, notice, login } = useAuth()
+  const { user, notice, login, verifyMfa } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
+  const [mfaToken, setMfaToken] = useState<string | null>(null)
+  const [code, setCode] = useState('')
+  const [unconfirmed, setUnconfirmed] = useState(false)
+  const [resent, setResent] = useState(false)
 
   if (user) return <Navigate to="/" replace />
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+    setUnconfirmed(false)
     try {
-      await login(email, password)
-      navigate('/')
+      if (mfaToken) {
+        await verifyMfa(mfaToken, code)
+        navigate('/')
+        return
+      }
+      const result = await login(email, password)
+      if (result.mfaToken) setMfaToken(result.mfaToken)
+      else navigate('/')
     } catch (err) {
+      if (err instanceof ApiError && err.code === 'email_not_confirmed') {
+        setUnconfirmed(true) // shown only after a correct password
+        return
+      }
+      if (mfaToken && err instanceof ApiError && err.status === 401) {
+        setError(t('auth.mfaInvalid'))
+        return
+      }
       // 401 on login = wrong credentials; anything else (offline, throttled) says what it is.
       setError(
         err instanceof ApiError && err.status === 401 ? t('auth.invalidCredentials') : errorMessage(err, t),
       )
+    }
+  }
+
+  const resend = async () => {
+    try {
+      await apiFetch('/auth/confirm-email/resend/', { method: 'POST', body: { email }, auth: false })
+      setResent(true)
+    } catch (err) {
+      setError(errorMessage(err, t))
     }
   }
 
@@ -84,32 +112,60 @@ export function Login() {
               {t('auth.loginHint')}
             </p>
           </div>
-          <label className="ms-field">
-            {t('auth.email')}
-            <input
-              className="ms-input"
-              type="email"
-              autoComplete="username"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </label>
-          <label className="ms-field">
-            {t('auth.password')}
-            <input
-              className="ms-input"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </label>
+          {mfaToken ? (
+            <label className="ms-field">
+              {t('auth.mfaCode')}
+              <input
+                className="ms-input"
+                inputMode="text"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                required
+              />
+              <span className="ms-help">{t('auth.mfaHint')}</span>
+            </label>
+          ) : (
+            <>
+              <label className="ms-field">
+                {t('auth.email')}
+                <input
+                  className="ms-input"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </label>
+              <label className="ms-field">
+                {t('auth.password')}
+                <input
+                  className="ms-input"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </label>
+            </>
+          )}
           {notice && !error && (
             <p role="status" className="ms-alert ms-alert--warning" style={{ margin: 0 }}>
               <Icon name="alert" size={18} />
               <span>{t(notice)}</span>
+            </p>
+          )}
+          {unconfirmed && (
+            <p role="alert" className="ms-alert ms-alert--warning" style={{ margin: 0 }}>
+              <Icon name="alert" size={18} />
+              <span>{resent ? t('auth.confirmationSent') : t('auth.notConfirmed')}</span>
+              {!resent && (
+                <button type="button" className="ms-btn ms-btn--secondary" onClick={resend}>
+                  {t('auth.resendConfirmation')}
+                </button>
+              )}
             </p>
           )}
           {error && (
@@ -121,6 +177,12 @@ export function Login() {
           <button type="submit" className="ms-btn ms-btn--primary ms-btn--l ms-btn--block">
             {t('auth.login')}
           </button>
+          {!mfaToken && (
+            <div className="row-between">
+              <Link to="/forgot-password">{t('auth.forgotPassword')}</Link>
+              <Link to="/register">{t('auth.createAccount')}</Link>
+            </div>
+          )}
           <div className="row-between">
             <span className="ms-help">{t('auth.language')}</span>
             <div className="ms-filters" style={{ flexWrap: 'nowrap' }}>
