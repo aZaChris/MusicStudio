@@ -31,6 +31,9 @@ function Phone({ shot, alt }: { shot: string; alt: string }) {
  * The brand video (rendered from video/ with HyperFrames). It never starts by itself: a cover
  * with a play button ringed by the package "beats" waits for a click. That click is a user
  * gesture, so the browser lets it play with sound, and nothing is downloaded before it.
+ * Web copy of the 1080p master (720p looked soft on retina screens):
+ *   ffmpeg -i video/musicstudio.mp4 -c:v libx264 -crf 20 -preset slow -tune animation \
+ *     -pix_fmt yuv420p -c:a aac -b:a 128k -movflags +faststart frontend/public/showcase/musicstudio.mp4
  */
 function VideoTour() {
   const { t } = useTranslation()
@@ -49,8 +52,8 @@ function VideoTour() {
         src="/showcase/musicstudio.mp4"
         poster="/showcase/musicstudio-poster.jpg"
         aria-label={t('landing.videoLabel')}
-        width={1280}
-        height={720}
+        width={1920}
+        height={1080}
         preload="none"
         controls={started}
         playsInline
