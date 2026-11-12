@@ -1,0 +1,6 @@
+# HyperFrames working files: caches, renders, check reports
+.hyperframes/
+.thumbnails/
+.waveform-cache/
+renders/
+*.mp4
