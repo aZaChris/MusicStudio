@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { type CSSProperties, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { AppDownload } from '../components/AppDownload'
@@ -22,6 +23,48 @@ function Phone({ shot, alt }: { shot: string; alt: string }) {
   return (
     <div className="phone">
       <img src={`/showcase/${shot}-${theme}.jpg`} alt={alt} width={390} height={844} loading="lazy" />
+    </div>
+  )
+}
+
+/**
+ * The brand video (rendered from video/ with HyperFrames). It never starts by itself: a cover
+ * with a play button ringed by the package "beats" waits for a click. That click is a user
+ * gesture, so the browser lets it play with sound, and nothing is downloaded before it.
+ */
+function VideoTour() {
+  const { t } = useTranslation()
+  const video = useRef<HTMLVideoElement>(null)
+  const [started, setStarted] = useState(false)
+
+  function start() {
+    setStarted(true)
+    void video.current?.play()
+  }
+
+  return (
+    <div className="video-tour">
+      <video
+        ref={video}
+        src="/showcase/musicstudio.mp4"
+        poster="/showcase/musicstudio-poster.jpg"
+        aria-label={t('landing.videoLabel')}
+        width={1280}
+        height={720}
+        preload="none"
+        controls={started}
+        playsInline
+      />
+      {!started && (
+        <button type="button" className="video-tour__cover" onClick={start}>
+          <span className="video-tour__play" aria-hidden="true">
+            {Array.from({ length: 8 }, (_, i) => (
+              <i key={i} style={{ '--i': i } as CSSProperties} />
+            ))}
+          </span>
+          <span className="video-tour__label">{t('landing.playVideo')}</span>
+        </button>
+      )}
     </div>
   )
 }
@@ -62,6 +105,9 @@ export function Landing() {
           <Link to="/login" className="ms-btn ms-btn--secondary ms-btn--s">
             {t('auth.login')}
           </Link>
+          <Link to="/register" className="ms-btn ms-btn--primary ms-btn--s">
+            {t('landing.start')}
+          </Link>
         </nav>
       </header>
 
@@ -78,6 +124,9 @@ export function Landing() {
                 {t('auth.login')}
               </Link>
             </div>
+            <a href="#video" className="landing-hero__video-link">
+              ▶ {t('landing.watchVideo')}
+            </a>
             <p className="landing-hero__hint">{t('landing.inviteHint')}</p>
           </div>
           <div className="landing-hero__visual">
@@ -88,6 +137,12 @@ export function Landing() {
               <span className="landing-hero__number">{t('landing.sampleRemaining')}</span>
             </div>
           </div>
+        </section>
+
+        <section className="landing-section" aria-labelledby="landing-video" id="video">
+          <h2 id="landing-video">{t('landing.videoTitle')}</h2>
+          <p className="landing-lead">{t('landing.videoText')}</p>
+          <VideoTour />
         </section>
 
         <section className="landing-section" aria-labelledby="landing-features">
@@ -154,6 +209,9 @@ export function Landing() {
             {t('landing.start')}
           </Link>
           <p>{t('landing.finalHint')}</p>
+          <p>
+            {t('landing.haveAccount')} <Link to="/login">{t('auth.login')}</Link>
+          </p>
         </section>
       </main>
 

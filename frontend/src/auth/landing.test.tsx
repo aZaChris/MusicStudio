@@ -1,6 +1,6 @@
 // The page a visitor sees before signing in (the "shop window" with a way to start).
 import { fireEvent, screen } from '@testing-library/react'
-import { afterEach, expect, test } from 'vitest'
+import { afterEach, expect, test, vi } from 'vitest'
 
 import i18n from '../i18n'
 
@@ -28,7 +28,7 @@ test('the landing speaks Italian on request', async () => {
 
   fireEvent.click(await screen.findByRole('button', { name: 'Passa all’italiano' }))
 
-  expect((await screen.findAllByRole('link', { name: "Crea l'account del tuo studio" }))[0]).toHaveAttribute(
+  expect((await screen.findAllByRole('link', { name: 'Inizia gratis' }))[0]).toHaveAttribute(
     'href',
     '/register',
   )
@@ -53,4 +53,34 @@ test('the landing shows real phone screens that follow the theme', async () => {
   fireEvent.click(screen.getByRole('button', { name: /dark|light/i }))
   expect(parent.getAttribute('src')).not.toBe(before)
   expect(parent.getAttribute('src')).toMatch(/^\/showcase\/parent-(light|dark)\.jpg$/)
+})
+
+test('the brand video waits for a click, then plays with its controls', async () => {
+  installFakeApi()
+  const play = vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+  const { container } = renderApp('/')
+
+  expect(await screen.findByRole('heading', { name: 'See it in motion' })).toBeInTheDocument()
+  const video = container.querySelector('video')!
+  expect(video).toHaveAttribute('aria-label', 'Video: a tour of MusicStudio')
+  expect(video).toHaveAttribute('preload', 'none') // nothing downloaded before the click
+  expect(video).not.toHaveAttribute('autoplay')
+  expect(play).not.toHaveBeenCalled()
+
+  fireEvent.click(screen.getByRole('button', { name: 'Play · 0:28' }))
+
+  expect(play).toHaveBeenCalledOnce()
+  expect(video).toHaveAttribute('controls')
+  expect(screen.queryByRole('button', { name: 'Play · 0:28' })).not.toBeInTheDocument()
+  play.mockRestore()
+})
+
+test('the main call to action starts a free account, with sign-in one click away', async () => {
+  installFakeApi()
+  renderApp('/')
+
+  const starts = await screen.findAllByRole('link', { name: 'Start for free' })
+  expect(starts.length).toBeGreaterThanOrEqual(3) // top bar, hero, closing section
+  for (const link of starts) expect(link).toHaveAttribute('href', '/register')
+  expect(screen.getByText('Already have an account?')).toBeInTheDocument()
 })

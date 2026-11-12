@@ -802,6 +802,101 @@ select.ms-input {
 .landing-gallery .phone {
   width: min(240px, 100%);
 }
+.landing-hero__video-link {
+  display: inline-block;
+  margin-top: var(--space-4);
+  color: inherit;
+  font-weight: 600;
+}
+.video-tour {
+  position: relative;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  background: var(--plum);
+}
+.video-tour video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* The cover: the poster dimmed, a play button ringed by eight "beats" that light up in turn
+   like a metronome (120 BPM, the video's tempo). */
+.video-tour__cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 64px;
+  border: 0;
+  cursor: pointer;
+  background: rgb(75 46 90 / 0.3);
+  color: #fbf5ec;
+  font: inherit;
+}
+.video-tour__play {
+  position: relative;
+  width: 132px;
+  height: 132px;
+  border-radius: 50%;
+  background: var(--orange);
+  box-shadow: var(--shadow-float);
+  transition: transform var(--duration-base) var(--ease-out-soft);
+}
+.video-tour__play::after {
+  /* the triangle, nudged right so it looks centred */
+  content: '';
+  position: absolute;
+  left: 52px;
+  top: 40px;
+  border-style: solid;
+  border-width: 26px 0 26px 40px;
+  border-color: transparent transparent transparent var(--ink);
+}
+.video-tour__play i {
+  position: absolute;
+  left: 58px;
+  top: 58px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 3px solid #fbf5ec;
+  transform: rotate(calc(var(--i) * 45deg)) translateY(-96px);
+}
+.video-tour__label {
+  padding: 6px 16px;
+  border-radius: var(--radius-pill);
+  background: rgb(43 29 20 / 0.6);
+  font-weight: 600;
+}
+.video-tour__cover:hover .video-tour__play,
+.video-tour__cover:focus-visible .video-tour__play {
+  transform: scale(1.08);
+}
+.video-tour__cover:focus-visible {
+  outline: 3px solid var(--orange);
+  outline-offset: -6px;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .video-tour__play i {
+    animation: ms-beat 4s steps(1, end) infinite;
+    animation-delay: calc(var(--i) * 0.5s);
+  }
+}
+@keyframes ms-beat {
+  0% {
+    background: #fbf5ec;
+  }
+  12.5% {
+    background: transparent;
+  }
+}
+@media (max-width: 720px) {
+  .video-tour__cover {
+    zoom: 0.55; /* unlike scale, zoom also shrinks the layout box */
+  }
+}
 @media (max-width: 720px) {
   .landing-bar__link {
     display: none;

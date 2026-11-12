@@ -13,10 +13,7 @@ test('without a session the portal opens on the landing page, with a way in', as
   expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent(
     'The register of your music school',
   )
-  expect(screen.getAllByRole('link', { name: 'Create your studio account' })[0]).toHaveAttribute(
-    'href',
-    '/register',
-  )
+  expect(screen.getAllByRole('link', { name: 'Start for free' })[0]).toHaveAttribute('href', '/register')
   expect(screen.getAllByRole('link', { name: 'Log in' })[0]).toHaveAttribute('href', '/login')
 })
 
