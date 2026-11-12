@@ -1,8 +1,8 @@
 # MusicStudio — working rules for Claude Code
 
 Read this first in every session. It travels with the repository, so it applies on any
-machine. Answer the user (Christian) **in Italian**: he is a developer with ~1.5 years of
-experience, English B1, and studies everything that is built here.
+machine. Answer the owner **in Italian** and explain the choices you make: the study
+documentation is a deliverable, and the owner studies everything that is built here.
 
 ## What this project is
 
@@ -27,7 +27,7 @@ experience, English B1, and studies everything that is built here.
 | 3 Celery & payments | `specs/004-celery-payments` | done |
 | 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (owner tasks open: real Coolify deploy T018, bucket drill T024) |
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
-| Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (owner: Coolify deploy + friend's review T017; image run locally once Docker works in WSL) |
+| Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (owner: Coolify deploy + external review T017; image run locally once Docker works in WSL) |
 | 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | done (owner: T058 SMTP check on staging) |
 
 The mobile app is on branch `mobile` (own CLAUDE.md and constitution); it reads the backend
@@ -133,5 +133,5 @@ whenever serializers/views change.
   `THROTTLE_LOGIN=100/min` (it logs in six times; the 5/min limit returns 429) and serve the SPA
   with `vite preview`, not `vite dev`: WSL's `ERR_NETWORK_CHANGED` aborts the dev server's
   hundreds of module requests.
-- Never print or read credential files (`.env.local`, `.pgpass`); `.env.local` on the main
-  machine holds real Neon credentials from the old `app` branch and is git-ignored.
+- Never print or read credential files (`.env*` except `.env.example`, `.pgpass`); they are
+  git-ignored.

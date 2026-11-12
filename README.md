@@ -168,8 +168,8 @@ cd ../frontend && npm run lint && npm test && npm run build
 ### Deploy
 
 `docker-compose.coolify.yml` is the production stack (health checks, memory limits, backups, no
-published ports). The step-by-step guide is in [`docs/DEPLOY_STAGING.md`](docs/DEPLOY_STAGING.md)
-and the runbook in [`docs/operations/runbook.md`](docs/operations/runbook.md).
+published ports). Deploy steps, backups and incident procedures are in the runbook,
+[`docs/operations/runbook.md`](docs/operations/runbook.md).
 
 ## Documentation
 

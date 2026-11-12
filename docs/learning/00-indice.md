@@ -208,7 +208,7 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Dati:** tipi generati dal contratto, tutte le pagine di studenti e pagamenti, errori tradotti e mai ritentati sui 4xx, date locali (il form dei pagamenti usava il giorno UTC).
 - **Deploy:** immagine con versioni fissate, nginx senza privilegi, fallback delle rotte, CSP stretta e altre intestazioni, nessuna porta pubblicata, CORS limitato al portale; un test vieta le porte nel compose, un job della CI prova l'immagine vera.
 - **Qualità:** TypeScript strict attivato, oxlint senza avvisi, Prettier, da 3 a 48 test, CI dedicata, README per la review, verifica end-to-end 10 su 10.
-- **Dopo la review (10 novembre):** l'amico ha approvato tutto tranne i backup, che gestisce lui sul suo server: i servizi di backup sono diventati opzionali (ADR-026). Il primo deploy avverrà su un dominio di staging.
+- **Dopo la review (10 novembre):** il revisore esterno ha approvato tutto tranne i backup, che gestisce sul server che ospita il deploy: i servizi di backup sono diventati opzionali (ADR-026). Il primo deploy avverrà su un dominio di staging.
 - **Aperto (serve il proprietario):** deploy in staging; prova dell'immagine in locale quando Docker sarà attivo in WSL; refresh token in cookie httpOnly come passo successivo.
 
 ## Riepilogo della fase 7 (sicurezza, privacy e account)
