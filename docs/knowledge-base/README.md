@@ -25,3 +25,4 @@ Problemi non banali risolti nel progetto: sintomo, causa radice, verifica, soluz
 | [ci-rossa-dopo-mezzanotte-seed-demo.md](ci-rossa-dopo-mezzanotte-seed-demo.md) | Una data UTC confrontata con `__date` in ora di Roma: la CI falliva solo tra le 23 e le 01 |
 | [audit-operatore-invisibile-al-titolare.md](audit-operatore-invisibile-al-titolare.md) | Sblocco e reset MFA dell'operatore salvati senza studio né autore: esistevano nel log ma il titolare non li vedeva |
 | [font-titoli-tema-chiaro.md](font-titoli-tema-chiaro.md) | Nel tema chiaro i titoli usavano il font di ripiego: l'override di `--font-display` perdeva per specificità contro il selettore dei token |
+| [tzdata-sparito-con-kombu.md](tzdata-sparito-con-kombu.md) | Celery 5.7 ha tolto `tzdata` su Linux: i fusi orari arrivavano per caso da kombu; ora è dichiarato e un test lo garantisce |

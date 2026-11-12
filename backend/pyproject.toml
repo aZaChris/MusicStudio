@@ -18,6 +18,8 @@ dependencies = [
     "redis>=5",
     "sentry-sdk[celery,django]>=2",
     "stripe>=12",
+    # Time zone data for zoneinfo (Europe/Rome): declared, not inherited from kombu or the OS.
+    "tzdata>=2025.2",
     "whitenoise>=6.9",
 ]
 
