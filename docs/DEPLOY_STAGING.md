@@ -1,6 +1,6 @@
 # Deploy di staging, passo per passo (versione di oggi)
 
-Stato: 11 novembre 2026, branch `staging/backend`, CI verde su PostgreSQL 16.15 e 18.6. Questa guida
+Stato: 11 novembre 2026, branch `main`, CI verde su PostgreSQL 16.15 e 18.6. Questa guida
 mette online backend e portale **senza aspettare la prova dell'SMTP** (che si fa dopo). Per i dettagli
 e le motivazioni: `docs/operations/runbook.md`. I valori segreti si incollano **solo** nelle variabili di
 Coolify, mai nel repository né in chat.
@@ -27,7 +27,7 @@ Non serve aspettare per il passo 2: Coolify può preparare tutto mentre il DNS s
 ## 2. Risorsa in Coolify
 
 1. Nuova risorsa, tipo **Docker Compose**, dal repository GitHub `aZaChris/MusicStudio`.
-2. Branch: `staging/backend`. File Compose: `docker-compose.coolify.yml`. Base directory: `/`.
+2. Branch: `main`. File Compose: `docker-compose.coolify.yml`. Base directory: `/`.
 3. Domini (il numero dopo i due punti è la porta del container e **deve esserci**):
    - servizio `backend`: `https://stagingapimusic.christianseminerio.dev:8000`
    - servizio `web`: `https://app-staging.christianseminerio.dev:8080`

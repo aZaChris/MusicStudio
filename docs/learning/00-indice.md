@@ -83,6 +83,7 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-030-cifratura-dei-campi.md` — Fernet, MultiFernet e rotazione delle chiavi.
 - `adr/ADR-031-audit-log-dai-service.md` — registro append-only scritto dai service.
 - `adr/ADR-032-cancellazione-come-anonimizzazione.md` — anonimizzare sul posto e tempi di conservazione.
+- `adr/ADR-033-branch-di-produzione-licenza-e-release.md` — `main` protetto con PR e CI obbligatoria, licenza MIT, una release per fase.
 
 ### Concetti (fase 1)
 
@@ -220,4 +221,3 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **CI:** il passo `check --deploy` mancava delle variabili nuove; corretto. Nuovo job con gitleaks sulla cronologia.
 - **Qualità:** 740 test del backend, copertura circa 96%, ruff, mypy, migrazioni e contratto OpenAPI verdi.
 - **Aperto:** il passo finale della fase (giro del quickstart, script per NotebookLM); la scansione gitleaks mai eseguita in locale; le bozze legali da far validare (T057); la prova delle email con un fornitore SMTP vero (T058); l'app mobile (nota in `specs/007-security-privacy-accounts/mobile-followup.md`).
-

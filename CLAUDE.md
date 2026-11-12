@@ -9,11 +9,13 @@ experience, English B1, and studies everything that is built here.
 - A Django REST API for music teachers and small studios (lessons, packages, payments,
   parent portal). Two goals: a production-grade backend portfolio, and training the owner to
   mid-level backend skills. **The study documentation is a deliverable as much as the code.**
-- Work happens on branch `staging/backend` (GitHub default branch), a copy of
+- Work happens on branch `main` (GitHub default, production line, protected by a ruleset: CI
+  must pass, no force-push, no deletion). It was `staging/backend`, a copy of
   `refactor/production-standards`, which started from the Django commit `4be062d` (see
-  `docs/learning/adr/ADR-001-*`). The earlier rewrites `web` (Next.js) and `app` (Expo) are no
-  longer branches: they are archived as tags `archive/web` and `archive/app`. There is no `main`.
-- Principles: `.specify/memory/constitution.md` (v3.1.0). They override habits; re-read the
+  `docs/learning/adr/ADR-001-*` and ADR-033). Earlier rewrites and refactor branches are tags only:
+  `archive/web`, `archive/app`, `archive/refactor-production-standards`,
+  `archive/refactor-mobile`. Each completed phase gets a release tag `vX.Y.0` on `main`.
+- Principles: `.specify/memory/constitution.md` (v3.1.1). They override habits; re-read the
   relevant principle before deciding.
 
 ## Roadmap and status
@@ -28,9 +30,8 @@ experience, English B1, and studies everything that is built here.
 | Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (owner: Coolify deploy + friend's review T017; image run locally once Docker works in WSL) |
 | 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | done (owner: T058 SMTP check on staging) |
 
-The mobile app is on branch `staging/mobile` (own CLAUDE.md and constitution); it reads the
-backend contract from `staging/backend`. The `refactor/*` branches are kept as they were on
-2026-11-10 and no longer receive work.
+The mobile app is on branch `mobile` (own CLAUDE.md and constitution); it reads the backend
+contract from `main`.
 
 Open items carried over are listed at the end of `docs/learning/00-indice.md`.
 
@@ -42,7 +43,9 @@ Open items carried over are listed at the end of `docs/learning/00-indice.md`.
   Italian (what changed, what is open, which docs to read). If an ambiguous choice changes the
   architecture significantly, pick the simplest conservative option, record an ADR, continue.
 - **Commits**: small, in English, body explains *why* (it becomes the diary in the owner's
-  vault). Commit on the working branch; push only when the user asks.
+  vault). `main` only changes through pull requests with green CI (ruleset, ADR-033): commit on a
+  feature branch (the spec-kit feature name, or `chore/<topic>`); push and open the PR only when
+  the user asks.
 - **Code**: modular monolith, one app per domain; writes in `services.py`, reads in
   `selectors.py`, thin views/serializers. Tenant scoping only through
   `apps/common/scoping.py` + `TenantContext`. Every feature ships tests (cross-tenant
@@ -126,5 +129,9 @@ whenever serializers/views change.
 - On a machine where PostgreSQL has a role named after the Linux user (peer auth), use
   `DATABASE_URL=postgres://$USER@/musicstudio` (empty host = Unix socket). `localhost` goes
   over TCP and asks for a password; a URL-encoded socket path is read as a hostname.
+- README screenshots (`scripts/readme-screenshots.mjs`): start the API with
+  `THROTTLE_LOGIN=100/min` (it logs in six times; the 5/min limit returns 429) and serve the SPA
+  with `vite preview`, not `vite dev`: WSL's `ERR_NETWORK_CHANGED` aborts the dev server's
+  hundreds of module requests.
 - Never print or read credential files (`.env.local`, `.pgpass`); `.env.local` on the main
   machine holds real Neon credentials from the old `app` branch and is git-ignored.

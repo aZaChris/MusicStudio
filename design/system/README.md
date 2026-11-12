@@ -79,4 +79,4 @@ Movimenti brevi che spiegano da dove arriva una cosa, mai decorazione. Le durate
 Questa cartella è la copia versionata del design system "MusicStudio" (claude.ai, 10 nov 2026).
 `tokens.json` e `components.css` sono la fonte: `npm run tokens` (in `frontend/`) rigenera
 `src/theme/tokens.css` e copia il kit in `src/theme/components.css`. L'app mobile (branch
-`staging/mobile`) legge lo stesso `tokens.json` per generare il suo tema TypeScript.
+`mobile`) legge lo stesso `tokens.json` per generare il suo tema TypeScript.

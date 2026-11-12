@@ -6,14 +6,15 @@ Stato al 11 novembre 2026, fine della fase 7. Il **deploy di staging** ha la sua
 Qui ci sono le azioni che richiedono te e che puoi fare **adesso**, in ordine. I segreti non vanno mai
 nel repository né in chat.
 
-Branch in gioco: `staging/backend` (backend e portale, nel worktree `~/MusicStudio-web`) e
-`staging/mobile` (app, nel worktree `~/MusicStudio-mobile`). Nessuno dei due è stato pubblicato.
+Branch in gioco: `main` (backend e portale, nel worktree `~/MusicStudio-web`) e
+`mobile` (app, nel worktree `~/MusicStudio-mobile`). Dal 12 novembre 2026 `main` è il branch di produzione,
+protetto da un ruleset: ci si arriva solo con la CI verde.
 
 ## 1. Rileggi e pubblica i branch
 
-1. In `~/MusicStudio-web`: `git log --oneline origin/staging/backend..HEAD` per vedere cosa parte.
-2. `git push origin staging/backend`.
-3. In `~/MusicStudio-mobile`: `git push origin staging/mobile`.
+1. In `~/MusicStudio-web`: `git log --oneline origin/main..HEAD` per vedere cosa parte.
+2. `git push origin main`.
+3. In `~/MusicStudio-mobile`: `git push origin mobile`.
 4. Su GitHub, scheda **Actions**, aspetta i risultati. Ti aspetta questo:
    - `backend (postgres 16.15)` e `backend (postgres 18.6)`: **devono essere verdi tutti e due**. Il primo è
      la prima volta in assoluto che i test della fase 7 girano su PostgreSQL 16.
@@ -38,7 +39,7 @@ della verifica in due passaggi. **Se la perdi, perdi le note.**
 1. Apri https://expo.dev/accounts/azachris/projects/musicstudio-app?tab=activity e guarda lo stato
    dell'ultima build. Se è fallita, incolla qui le ultime righe del log.
 2. L'APK che hai già scaricato è **precedente** alle novità: non ha secondo passo, invito, privacy. Per
-   provarle serve una build nuova dal branch `staging/mobile` aggiornato:
+   provarle serve una build nuova dal branch `mobile` aggiornato:
    `cd ~/MusicStudio-mobile && npx eas-cli login` (una volta) e `npx eas-cli build --platform android --profile preview`.
 3. L'APK `preview` è già puntato all'API di staging (`https://stagingapimusic.christianseminerio.dev/api/v1`):
    funzionerà **solo dopo il deploy**. Prima del deploy, per provarla davvero, avvia il backend in locale

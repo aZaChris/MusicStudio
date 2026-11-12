@@ -1,6 +1,6 @@
 # Divisione dei task: cosa fa Claude, cosa fa Christian
 
-Data: 11 novembre 2026. Branch: `staging/backend` (backend + portale web) e `staging/mobile` (app).
+Data: 11 novembre 2026. Branch: `main` (backend + portale web) e `mobile` (app).
 Stack di riferimento: quello del repository (Django + DRF, PostgreSQL 16, Redis, Celery, React + Vite,
 Expo, deploy su **Coolify**). AWS è fuori perimetro (constitution: "No AWS").
 
@@ -107,8 +107,8 @@ Ogni voce dice cosa serve, dove si fa e cosa resta già pronto nel codice. I pas
 - **Dove:** sentry.io, piano gratuito.
 - **Pronto:** `SENTRY_DSN`, `SENTRY_ENVIRONMENT`. Se il DSN è vuoto, l'API funziona lo stesso.
 
-### B6. Protezione dei branch su GitHub
-- **Cosa:** sui branch `staging/backend` e `staging/mobile`, rendere obbligatori i check della CI.
+### B6. Protezione dei branch su GitHub (fatto il 12 novembre 2026, ruleset, ADR-033)
+- **Cosa:** sui branch `main` e `mobile`, rendere obbligatori i check della CI.
 - **Dove:** GitHub, Settings, Rules.
 - **Pronto:** job `backend`, `frontend`, `web-image` (`ci.yml`) e la CI mobile (`mobile-ci.yml`).
 
