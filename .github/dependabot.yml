@@ -1,18 +1,19 @@
-# Weekly, grouped updates: one PR per ecosystem instead of one per package.
+# Weekly updates. Minor and patch versions arrive grouped, one PR per ecosystem; every major
+# version gets its own PR, so a breaking change is reviewed alone and a red CI names its cause.
 version: 2
 updates:
   - package-ecosystem: uv
     directory: /backend
     schedule: { interval: weekly }
     groups:
-      backend: { patterns: ["*"] }
+      backend-minor-patch: { update-types: [minor, patch] }
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly }
     groups:
-      frontend: { patterns: ["*"] }
+      frontend-minor-patch: { update-types: [minor, patch] }
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
     groups:
-      actions: { patterns: ["*"] }
+      actions-minor-patch: { update-types: [minor, patch] }

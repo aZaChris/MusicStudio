@@ -26,7 +26,8 @@ export function Dashboard() {
   const money = new Intl.NumberFormat(lng, { style: 'currency', currency: 'EUR' })
   // The four most recent, newest first (dates are plain YYYY-MM-DD, so they sort as text).
   const recent = [...(payments.data ?? [])].sort((x, y) => y.date.localeCompare(x.date)).slice(0, 4)
-  const today = new Date()
+  // Read the clock once per mount: calling new Date() in render makes it impure.
+  const [today] = useState(() => new Date())
   const todayLabel = new Intl.DateTimeFormat(lng, { weekday: 'long', day: 'numeric', month: 'long' }).format(
     today,
   )
