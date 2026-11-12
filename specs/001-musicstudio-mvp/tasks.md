@@ -247,6 +247,12 @@ and roster (see T024/T036) — this phase wires the automation, not the UI flag.
       itself was verified via sqlite (migrations, `seed_demo`, all 26 backend tests, `ruff`,
       OpenAPI schema generation, an `APIClient` smoke walkthrough) — see the note at the top
       of `quickstart.md`. Run this task from a machine with Docker to close the loop.
+      Re-run on 2026-11-12 against a real PostgreSQL 18 (no Docker, no Redis, no browser): migrate and
+      `seed_demo` OK; live API walkthrough OK for US1 (dashboard, completing a lesson takes the package
+      from 9 to 8, the retry leaves it at 8), US2 (roster, packages, payments list) and US3 (the parent
+      sees only their own student, others return 404); `/health/ready/` answers 503 with Redis down, as
+      designed; full suite 751 passed, coverage 95.83%. Still open: `docker compose up`, the browser
+      walk, and US4 (reminder sweep needs Redis/Celery; covered only by the automated tests).
 - [x] T056 `.gitignore` review (env files, `__pycache__`, `node_modules`, build output) at
       repo root
 
