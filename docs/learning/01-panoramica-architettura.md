@@ -32,7 +32,7 @@ In più ci sono due servizi di supporto. Il **backup** ogni notte salva il datab
 
 Backend, worker e beat usano la stessa immagine Docker. Cambia solo il comando di avvio.
 
-C'è poi il **portale web** (`frontend/`): una SPA React servita da nginx senza privilegi, che parla con le API dal browser. I suoi tipi sono generati dal contratto OpenAPI, la sessione segue la rotazione dei refresh token, e il suo container manda una Content-Security-Policy stretta (ADR-023…025). Un'app mobile, con lo stesso contratto, vive sul branch `refactor/mobile`.
+C'è poi il **portale web** (`frontend/`): una SPA React servita da nginx senza privilegi, che parla con le API dal browser. I suoi tipi sono generati dal contratto OpenAPI, la sessione segue la rotazione dei refresh token, e il suo container manda una Content-Security-Policy stretta (ADR-023…025). Un'app mobile, con lo stesso contratto, vive sul branch `mobile`.
 
 ## Dentro il backend
 

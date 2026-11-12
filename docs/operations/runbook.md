@@ -41,7 +41,7 @@ Le verifiche dopo il deploy, la misura con `scripts/measure-resources.sh` e la c
 
 ## Primo deploy
 
-1. In Coolify crea una risorsa **Docker Compose** dal repository GitHub, branch `staging/backend`, file `docker-compose.coolify.yml`.
+1. In Coolify crea una risorsa **Docker Compose** dal repository GitHub, branch `main`, file `docker-compose.coolify.yml`.
 2. Sul servizio `backend` imposta il dominio con il suffisso della porta del container, per esempio `https://api.tuodominio.it:8000`. Il suffisso deve coincidere con `PORT`.
 3. Le credenziali del database e le chiavi `DJANGO_SECRET_KEY` e `JWT_SIGNING_KEY` le genera Coolify da solo (variabili `SERVICE_PASSWORD_*`). Non vanno inventate.
 4. Imposta le variabili obbligatorie. Coolify blocca il deploy finché mancano: `SMTP_HOST`, `SMTP_USER`, `SMTP_PASSWORD`, `DEFAULT_FROM_EMAIL`.

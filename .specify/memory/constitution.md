@@ -1,5 +1,9 @@
 <!--
 Sync Impact Report
+Version change: 3.1.0 → 3.1.1 (PATCH: `staging/backend` renamed `main` (production, protected) and
+  `staging/mobile` renamed `mobile`; `refactor/*` archived as tags; no principle changed)
+
+Previous report (3.1.0):
 Version change: 3.0.1 → 3.1.0 (MINOR: Principle X added — privacy by design for minors' data)
 Modified principles: none
 Added principles: X. Privacy by Design for Minors' Data
@@ -129,7 +133,7 @@ same discipline as the backend where it applies:
 - every feature ships tests (Vitest + Testing Library, network mocked at the `fetch` boundary);
 - user-facing text is bilingual EN/IT through i18next.
 The earlier rewrites `web` (Next.js) and `app` (Expo) are archived as tags `archive/web` and
-`archive/app`, which MUST NOT be moved. The mobile app lives on branch `staging/mobile` under its
+`archive/app`, which MUST NOT be moved. The mobile app lives on branch `mobile` under its
 own constitution. The backend keeps EN/IT where it owns
 user-facing text (emails, admin, error messages via Django i18n).
 Rationale: the owner re-opened the web portal; a client that drifts from the contract or
@@ -226,4 +230,4 @@ materially expanded; PATCH: wording). Every change is self-reviewed against Prin
 and V before it is considered done; violations are fixed or justified in the plan's
 Complexity Tracking table.
 
-**Version**: 3.1.0 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-11
+**Version**: 3.1.1 | **Ratified**: 2026-09-17 | **Last Amended**: 2026-11-12

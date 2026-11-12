@@ -56,7 +56,7 @@ Senza questo i test del backend non partono su questo computer.
 
 Segui `docs/operations/runbook.md`, sezioni "Staging" e "Primo deploy". In breve:
 
-1. Nuova risorsa **Docker Compose** dal repository GitHub, branch `staging/backend`, file
+1. Nuova risorsa **Docker Compose** dal repository GitHub, branch `main`, file
    `docker-compose.coolify.yml`.
 2. Dominio del servizio `backend`: `https://stagingapimusic.christianseminerio.dev:8000`.
 3. Dominio del servizio `web`: `https://app-staging.tuodominio.it:8080`.
@@ -111,8 +111,11 @@ Dal terminale del container `backend` in Coolify:
 
 ## 8. Protezione dei branch su GitHub
 
+Fatto il 12 novembre 2026 con due ruleset (`main` e `mobile`), descritti nell'ADR-033. I passi
+sotto restano come riferimento.
+
 1. GitHub, repository MusicStudio, Settings, Rules, **New branch ruleset**.
-2. Target: `staging/backend` e `staging/mobile`.
+2. Target: `main` e `mobile`.
 3. Attiva "Require status checks to pass" e aggiungi `backend`, `frontend`, `web-image` e il job
    della CI mobile.
 4. Attiva "Block force pushes".
