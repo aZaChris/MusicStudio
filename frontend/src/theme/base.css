@@ -1,7 +1,12 @@
 /* App-level base and layout, on top of the design system tokens (tokens.css) and kit (components.css). */
-:root {
-  /* The variable build of Bricolage Grotesque registers under its own family name. */
+/* The variable build of Bricolage Grotesque registers under its own family name. The
+   [data-theme] selector matches tokens.css's :root[data-theme='light'], which otherwise wins on
+   specificity and left the light theme on the fallback font. */
+:root,
+:root[data-theme] {
   --font-display: 'Bricolage Grotesque Variable', 'Bricolage Grotesque', system-ui, sans-serif;
+}
+:root {
   color-scheme: light;
 }
 :root[data-theme='dark'] {
@@ -420,7 +425,8 @@ select.ms-input {
   align-items: center;
   gap: var(--space-3);
 }
-.portal-header .ms-logo {
+.portal-header .ms-logo,
+.ms-sidebar .ms-logo {
   color: var(--on-plum);
 }
 .portal-header__tools {
