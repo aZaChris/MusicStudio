@@ -375,7 +375,15 @@
       "twoStep": "Titolari e insegnanti possono attivare la verifica in due passaggi."
     },
     "finalTitle": "Pronti a cominciare?",
-    "finalHint": "Ci vogliono pochi minuti. Ti serve solo un indirizzo email."
+    "finalHint": "Ci vogliono pochi minuti. Ti serve solo un indirizzo email.",
+    "galleryTitle": "Dai un'occhiata dentro",
+    "galleryText": "Schermate vere del sito, così come le vedi dal telefono.",
+    "gallery": {
+      "home": "La giornata dello studio",
+      "student": "Un allievo e il suo pacchetto",
+      "payments": "Chi ha pagato e chi no",
+      "parent": "Il portale del genitore"
+    }
   },
   "app": {
     "title": "L'app per il telefono",

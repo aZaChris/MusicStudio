@@ -13,6 +13,18 @@ const FEATURES: { key: 'lessons' | 'packages' | 'payments' | 'parents'; icon: Ic
 ]
 const SAFETY = ['studios', 'notes', 'rights', 'twoStep'] as const
 const STEPS = ['account', 'students', 'parents'] as const
+// Real screens of the portal at phone width, captured by scripts/readme-screenshots.mjs.
+const GALLERY = ['home', 'student', 'payments', 'parent'] as const
+
+/** A phone drawn in CSS around a real screenshot: no image of a device to license or keep in sync. */
+function Phone({ shot, alt }: { shot: string; alt: string }) {
+  const { theme } = useTheme()
+  return (
+    <div className="phone">
+      <img src={`/showcase/${shot}-${theme}.jpg`} alt={alt} width={390} height={844} loading="lazy" />
+    </div>
+  )
+}
 
 /** What a visitor sees before signing in: what the product is, and how to start. */
 export function Landing() {
@@ -41,6 +53,12 @@ export function Landing() {
           >
             {isItalian ? 'EN' : 'IT'}
           </button>
+          <a href="#landing-steps" className="landing-bar__link">
+            {t('landing.stepsTitle')}
+          </a>
+          <a href="#landing-gallery" className="landing-bar__link">
+            {t('landing.galleryTitle')}
+          </a>
           <Link to="/login" className="ms-btn ms-btn--secondary ms-btn--s">
             {t('auth.login')}
           </Link>
@@ -62,10 +80,13 @@ export function Landing() {
             </div>
             <p className="landing-hero__hint">{t('landing.inviteHint')}</p>
           </div>
-          <div className="landing-hero__card" aria-hidden="false">
-            <span className="ms-label">{t('landing.sampleLabel')}</span>
-            <Beats onPlum size="l" total={8} used={3} />
-            <span className="landing-hero__number">{t('landing.sampleRemaining')}</span>
+          <div className="landing-hero__visual">
+            <Phone shot="home" alt={t('landing.gallery.home')} />
+            <div className="landing-hero__card">
+              <span className="ms-label">{t('landing.sampleLabel')}</span>
+              <Beats onPlum size="l" total={8} used={3} />
+              <span className="landing-hero__number">{t('landing.sampleRemaining')}</span>
+            </div>
           </div>
         </section>
 
@@ -73,7 +94,7 @@ export function Landing() {
           <h2 id="landing-features">{t('landing.featuresTitle')}</h2>
           <div className="landing-grid">
             {FEATURES.map(({ key, icon }) => (
-              <article key={key} className="panel">
+              <article key={key} className="panel reveal">
                 <span className="landing-icon">
                   <Icon name={icon} size={24} />
                 </span>
@@ -84,6 +105,19 @@ export function Landing() {
           </div>
         </section>
 
+        <section className="landing-section" aria-labelledby="landing-gallery">
+          <h2 id="landing-gallery">{t('landing.galleryTitle')}</h2>
+          <p className="landing-lead">{t('landing.galleryText')}</p>
+          <ul className="landing-gallery reveal">
+            {GALLERY.map((shot) => (
+              <li key={shot}>
+                <Phone shot={shot} alt={t(`landing.gallery.${shot}`)} />
+                <span>{t(`landing.gallery.${shot}`)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         <div className="landing-section">
           <AppDownload showWhenEmpty />
         </div>
@@ -92,7 +126,7 @@ export function Landing() {
           <h2 id="landing-steps">{t('landing.stepsTitle')}</h2>
           <ol className="landing-steps">
             {STEPS.map((key, i) => (
-              <li key={key} className="panel">
+              <li key={key} className="panel reveal">
                 <span className="landing-step__n">{i + 1}</span>
                 <h3>{t(`landing.steps.${key}.title`)}</h3>
                 <p>{t(`landing.steps.${key}.text`)}</p>

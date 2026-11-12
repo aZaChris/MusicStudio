@@ -375,7 +375,15 @@
       "twoStep": "Owners and teachers can turn on two-step verification."
     },
     "finalTitle": "Ready to start?",
-    "finalHint": "It takes a few minutes. You only need an email address."
+    "finalHint": "It takes a few minutes. You only need an email address.",
+    "galleryTitle": "Take a look inside",
+    "galleryText": "Real screens of the site, as you see them on a phone.",
+    "gallery": {
+      "home": "The studio's day",
+      "student": "A student and their package",
+      "payments": "Who has paid and who hasn't",
+      "parent": "The parent portal"
+    }
   },
   "app": {
     "title": "The phone app",
