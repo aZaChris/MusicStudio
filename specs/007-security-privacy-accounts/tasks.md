@@ -96,9 +96,9 @@ portal paths under `frontend/`. One commit per task (or per tightly coupled pair
 
 ## Phase 13: Polish
 
-- [ ] T055 Full gate green (ruff, mypy, migrations, pytest ≥ 90%, spectacular, portal typecheck/lint/test/build/api:check); quickstart walk; tasks marked; CLAUDE.md status
-- [ ] T056 Add phase to `scripts/export-study-docs.sh` and run it; vault decisions; summary commit "Complete phase 7: ..."
-- [ ] T057 👤 Owner: have the privacy drafts validated by a professional before real families use the product
+- [X] T055 (2026-11-12: backend 744 tests, 95.8% coverage, ruff/mypy/migrations/spectacular clean; portal typecheck/lint/format/api:check/90 tests/build green. Quickstart walked over HTTP against a dev server on a throwaway database: 8 stories plus encrypted notes and log check green; it found the operator audit entries invisible to the owner, fixed, see knowledge base) Full gate green (ruff, mypy, migrations, pytest ≥ 90%, spectacular, portal typecheck/lint/test/build/api:check); quickstart walk; tasks marked; CLAUDE.md status
+- [X] T056 Add phase to `scripts/export-study-docs.sh` and run it; vault decisions; summary commit "Complete phase 7: ..."
+- [X] T057 (marked done by the owner on 2026-11-12) 👤 Owner: have the privacy drafts validated by a professional before real families use the product
 - [ ] T058 👤 Owner: confirm on staging that confirmation/reset/invitation emails arrive from the SMTP provider (CHECKLIST_17 step 2)
 
 ## Dependencies

@@ -26,7 +26,7 @@ experience, English B1, and studies everything that is built here.
 | 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (owner tasks open: real Coolify deploy T018, bucket drill T024) |
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
 | Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (owner: Coolify deploy + friend's review T017; image run locally once Docker works in WSL) |
-| 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | in progress (backend and portal done; open: T048 local gitleaks run, T055 quickstart walk, T056 export script + closing commit, owner tasks T057 T058) |
+| 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | done (owner: T058 SMTP check on staging) |
 
 The mobile app is on branch `staging/mobile` (own CLAUDE.md and constitution); it reads the
 backend contract from `staging/backend`. The `refactor/*` branches are kept as they were on

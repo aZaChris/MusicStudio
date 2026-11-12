@@ -23,3 +23,4 @@ Problemi non banali risolti nel progetto: sintomo, causa radice, verifica, soluz
 | [coolify-build-arg-vuoti-collectstatic.md](coolify-build-arg-vuoti-collectstatic.md) | Coolify passa ogni variabile, anche vuota, alla build e a tutti i container: `collectstatic`, worker e beat crashavano su un int vuoto |
 | [celery-scrive-i-token-nei-log.md](celery-scrive-i-token-nei-log.md) | Il log di fine task di Celery includeva gli argomenti, quindi il token d'invito in chiaro: un filtro li toglie |
 | [ci-rossa-dopo-mezzanotte-seed-demo.md](ci-rossa-dopo-mezzanotte-seed-demo.md) | Una data UTC confrontata con `__date` in ora di Roma: la CI falliva solo tra le 23 e le 01 |
+| [audit-operatore-invisibile-al-titolare.md](audit-operatore-invisibile-al-titolare.md) | Sblocco e reset MFA dell'operatore salvati senza studio né autore: esistevano nel log ma il titolare non li vedeva |
