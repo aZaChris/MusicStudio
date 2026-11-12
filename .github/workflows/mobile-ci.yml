@@ -3,9 +3,9 @@ name: mobile-ci
 
 on:
   push:
-    branches: [staging/mobile]
+    branches: [mobile]
   pull_request:
-    branches: [staging/mobile]
+    branches: [mobile]
   # Manual re-run from the Actions tab, e.g. when GitHub leaves a run stuck in the queue.
   workflow_dispatch:
 
@@ -17,7 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           # Full history and all branches: the contract check reads backend/openapi.yaml
-          # from origin/staging/backend.
+          # from origin/main.
           fetch-depth: 0
 
       - uses: actions/setup-node@v4

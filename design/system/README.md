@@ -77,7 +77,7 @@ Movimenti brevi che spiegano da dove arriva una cosa, mai decorazione. Le durate
 ## Nel repository
 
 Copia versionata del design system "MusicStudio" (claude.ai, 10 nov 2026); è la stessa del
-branch `staging/backend` (`design/system/`). `tokens.json` è la fonte: `npm run tokens` genera
+branch `main` (`design/system/`). `tokens.json` è la fonte: `npm run tokens` genera
 `src/constants/tokens.generated.ts`, che `src/constants/theme.ts` riesporta con i nomi usati
 dall'app. Il kit CSS (`components.css`) vale solo per il web: qui i componenti sono in
 `src/components/` e seguono le stesse regole.

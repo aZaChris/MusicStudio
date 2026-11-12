@@ -12,7 +12,7 @@ tradotto, dove vive nel codice, cosa ho trovato rivedendolo e cosa ho scelto di 
 - `design/system/components.css`: il kit CSS con le classi `ms-*`.
 - Web: `npm run tokens` (in `frontend/`) genera `src/theme/tokens.css` e copia il kit in
   `src/theme/components.css`. Il layout della pagina è in `src/theme/base.css`.
-- Mobile (branch `staging/mobile`): `npm run tokens` genera `src/constants/tokens.generated.ts`;
+- Mobile (branch `mobile`): `npm run tokens` genera `src/constants/tokens.generated.ts`;
   `src/constants/theme.ts` aggiunge font e stili di testo.
 
 Per cambiare un colore: si modifica `tokens.json` e si lancia `npm run tokens`. Niente più
