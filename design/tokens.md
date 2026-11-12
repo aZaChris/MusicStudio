@@ -10,5 +10,5 @@ claude.ai, 2026-11-10):
 - `components.css` — the `ms-*` CSS kit.
 
 `frontend/src/theme/tokens.css` and `frontend/src/theme/components.css` are generated from these
-files: run `npm run tokens` in `frontend/` after changing them. `design/reference/` holds the
-earlier Poppins/Nunito artboards and is kept only as history.
+files: run `npm run tokens` in `frontend/` after changing them. The earlier Poppins/Nunito
+artboards were removed from the tree on 2026-11-12; git history still has them (`design/reference/`).
