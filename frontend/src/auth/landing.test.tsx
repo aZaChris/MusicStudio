@@ -42,3 +42,15 @@ test('a signed-in teacher does not see the landing', async () => {
   expect(await screen.findByText('Hi, mario.rossi')).toBeInTheDocument()
   expect(screen.queryByText('What it does')).not.toBeInTheDocument()
 })
+
+test('the landing shows real phone screens that follow the theme', async () => {
+  installFakeApi()
+  renderApp('/')
+
+  expect(await screen.findByRole('heading', { name: 'Take a look inside' })).toBeInTheDocument()
+  const parent = screen.getByRole('img', { name: 'The parent portal' })
+  const before = parent.getAttribute('src')
+  fireEvent.click(screen.getByRole('button', { name: /dark|light/i }))
+  expect(parent.getAttribute('src')).not.toBe(before)
+  expect(parent.getAttribute('src')).toMatch(/^\/showcase\/parent-(light|dark)\.jpg$/)
+})

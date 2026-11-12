@@ -631,8 +631,23 @@ select.ms-input {
 .landing-hero__hint {
   font-size: 15px !important;
 }
+.landing-hero__visual {
+  flex: 0 1 340px;
+  margin-inline: auto;
+  position: relative;
+  padding-bottom: 40px;
+}
+.landing-hero__visual .phone {
+  width: min(260px, 70vw);
+  margin-inline: auto;
+  transform: rotate(-3deg);
+}
 .landing-hero__card {
-  flex: 0 1 300px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  background: var(--plum);
+  box-shadow: 0 18px 40px -16px rgb(0 0 0 / 0.55);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -718,6 +733,98 @@ select.ms-input {
 }
 .landing-final {
   align-items: flex-start;
+}
+/* A phone drawn in CSS around a real screenshot (bezel, notch, home bar). */
+.phone {
+  position: relative;
+  /* The top bezel is taller so the notch never covers the screenshot. */
+  padding: 30px 10px 10px;
+  border-radius: 40px;
+  background: #1c1410;
+  border: 1px solid rgb(255 255 255 / 0.14); /* keeps the outline visible on the dark theme */
+  box-shadow: 0 30px 60px -24px rgb(0 0 0 / 0.5);
+}
+.phone::before,
+.phone::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  width: 34%;
+  border-radius: 999px;
+  background: #1c1410;
+}
+.phone::before {
+  top: 9px;
+  height: 12px;
+  background: #000;
+}
+.phone::after {
+  bottom: 18px;
+  height: 4px;
+  background: rgb(255 255 255 / 0.35);
+}
+.phone img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px 6px 30px 30px;
+}
+.landing-bar__link {
+  color: var(--ink-2);
+  font-weight: 600;
+  text-decoration: none;
+  padding: 6px 8px;
+}
+.landing-bar__link:hover {
+  color: var(--ink);
+}
+.landing-gallery {
+  list-style: none;
+  margin: 0;
+  padding: 8px 0 16px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(200px, 1fr));
+  gap: var(--space-4);
+  /* On a phone the four screens become a row to swipe. */
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+}
+.landing-gallery li {
+  scroll-snap-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--ink-2);
+  font-size: 15px;
+}
+.landing-gallery .phone {
+  width: min(240px, 100%);
+}
+@media (max-width: 720px) {
+  .landing-bar__link {
+    display: none;
+  }
+  .landing-gallery {
+    grid-template-columns: repeat(4, 72%);
+  }
+}
+/* Scroll reveal in CSS only: browsers without view timelines just show the content. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal {
+      animation: ms-reveal linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 40%;
+    }
+  }
+}
+@keyframes ms-reveal {
+  from {
+    opacity: 0;
+    translate: 0 32px;
+  }
 }
 .landing-footer {
   display: flex;
