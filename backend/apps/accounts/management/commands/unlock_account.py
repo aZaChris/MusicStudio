@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.audit import services as audit
 
 from ...models import User
+from ...services import _studio_id
 
 
 class Command(BaseCommand):
@@ -23,5 +24,7 @@ class Command(BaseCommand):
         user.lock_level = 0
         user.locked_until = None
         user.save(update_fields=["failed_logins", "lock_level", "locked_until"])
-        audit.record(audit.Action.ACCOUNT_UNLOCK_BY_OPERATOR, target=user)
+        audit.record(
+            audit.Action.ACCOUNT_UNLOCK_BY_OPERATOR, target=user, studio_id=_studio_id(user)
+        )
         self.stdout.write(f"Unlocked user #{user.pk}.")

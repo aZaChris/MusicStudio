@@ -11,6 +11,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.audit import services as audit
 
 from ...models import MfaDevice, User
+from ...services import _studio_id
 
 
 class Command(BaseCommand):
@@ -26,5 +27,5 @@ class Command(BaseCommand):
         removed, _ = MfaDevice.objects.filter(user=user).delete()
         if not removed:
             raise CommandError("MFA is not enabled for this account.")
-        audit.record(audit.Action.MFA_RESET_BY_OPERATOR, target=user)
+        audit.record(audit.Action.MFA_RESET_BY_OPERATOR, target=user, studio_id=_studio_id(user))
         self.stdout.write(f"MFA removed for user #{user.pk}.")

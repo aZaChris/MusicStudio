@@ -18,7 +18,9 @@ def test_unlock_account_clears_the_lock_and_is_audited():
 
     user.refresh_from_db()
     assert (user.failed_logins, user.lock_level, user.locked_until) == (0, 0, None)
-    assert AuditEntry.objects.filter(action="account.unlock_by_operator").count() == 1
+    # The studio is set, so the owner's audit view shows it (the operator has no account).
+    entry = AuditEntry.objects.get(action="account.unlock_by_operator")
+    assert entry.studio_id == user.teacher.studio_id
 
 
 def test_reset_mfa_removes_the_device_and_is_audited():
@@ -28,7 +30,8 @@ def test_reset_mfa_removes_the_device_and_is_audited():
     call_command("reset_mfa", user.email)
 
     assert not MfaDevice.objects.exists()
-    assert AuditEntry.objects.filter(action="mfa.reset_by_operator").count() == 1
+    entry = AuditEntry.objects.get(action="mfa.reset_by_operator")
+    assert entry.studio_id == user.teacher.studio_id
     with pytest.raises(CommandError):
         call_command("reset_mfa", user.email)  # nothing left to reset
 
