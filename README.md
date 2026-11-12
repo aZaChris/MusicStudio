@@ -25,6 +25,13 @@ A production-grade Django REST API, a React web portal and an Expo mobile app, b
   <img src="docs/assets/screenshots/home-light.png" alt="The teacher's home: active students, pending payments, packages running low, upcoming lessons and recent payments">
 </picture>
 
+## Status
+
+**Staging, not production.** The stack runs on a self-hosted [Coolify](https://coolify.io) server:
+the web portal is at <https://stagingwebmusic.christianseminerio.dev/> and the API at
+`https://stagingapimusic.christianseminerio.dev/api/v1`. There are no real users yet, Stripe is in
+test mode, and the privacy texts in `docs/privacy/` are drafts waiting for a legal review.
+
 ## Why it exists
 
 A music teacher with twenty students runs the business on paper or in a spreadsheet: who has
