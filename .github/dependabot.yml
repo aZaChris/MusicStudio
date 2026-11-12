@@ -17,6 +17,13 @@ updates:
     schedule: { interval: weekly }
     groups:
       frontend-minor-patch: { update-types: [minor, patch] }
+      # react-i18next's majors need the matching i18next major: one PR, or neither installs.
+      # Dependabot takes the first matching group, so only majors reach this one.
+      i18n: { patterns: ["i18next", "i18next-*", "react-i18next"] }
+    # @types/node follows the Node version we run (CI and the image use Node 22), not npm's latest.
+    ignore:
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
