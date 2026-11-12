@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      /* Brand tokens copied from frontend/src/theme/tokens.css (light theme). */
+      @font-face {
+        font-family: 'Bricolage Grotesque';
+        src: url('assets/fonts/bricolage-grotesque-latin-opsz-normal.woff2') format('woff2');
+        font-weight: 200 800;
+      }
+      @font-face {
+        font-family: Figtree;
+        src: url('assets/fonts/figtree-latin-400-normal.woff2') format('woff2');
+        font-weight: 400;
+      }
+      @font-face {
+        font-family: Figtree;
+        src: url('assets/fonts/figtree-latin-600-normal.woff2') format('woff2');
+        font-weight: 600;
+      }
+      :root {
+        --paper: #fbf5ec;
+        --ink: #2b1d14;
+        --ink-2: #6b5647;
+        --line: #eadfd0;
+        --orange: #ef852e;
+        --orange-soft: #fde6d2;
+        --orange-text: #a84a14;
+        --plum: #4b2e5a;
+        --display: 'Bricolage Grotesque', sans-serif;
+        --body: Figtree, sans-serif;
+      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 1920px; height: 1080px; overflow: hidden;
+        background: var(--paper); color: var(--ink); font-family: var(--body);
+      }
+      #root { position: relative; width: 100%; height: 100%; }
+      .clip { position: absolute; inset: 0; }
+      /* Scenes move through this inner stage, never through the timed .clip itself. */
+      .stage { position: absolute; inset: 0; }
+
+      /* The package motif: one dot per lesson, filled = played, ring = to come. */
+      .beats { display: flex; gap: 22px; }
+      .beat { width: 34px; height: 34px; border-radius: 50%; background: var(--plum); }
+      .beat--ring { background: var(--orange-soft); border: 8px solid var(--plum); }
+
+      .eyebrow { font-weight: 600; font-size: 30px; color: var(--orange-text); letter-spacing: 0.02em; }
+      .headline { font-family: var(--display); font-weight: 700; line-height: 1.02; letter-spacing: -0.035em; }
+      .headline .line { display: block; overflow: hidden; }
+      .headline .line span { display: block; }
+      .labels { position: relative; height: 56px; }
+      .label { position: absolute; left: 0; top: 0; white-space: nowrap; font-size: 44px; font-weight: 600; color: var(--ink-2); opacity: 0; }
+      .shots img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top; }
+
+      /* Scene 1: the mark assembles itself. */
+      #intro .stage { display: grid; place-content: center; justify-items: center; gap: 44px; }
+      #mark { width: 240px; height: 240px; }
+      #wordmark { font-family: var(--display); font-weight: 700; font-size: 120px; letter-spacing: -0.04em; }
+
+      /* Scene 2: on the phone. Headline left, real phone screens right. */
+      #mobile .stage { display: grid; grid-template-columns: 1fr 520px; align-items: center; padding: 0 200px; gap: 80px; }
+      #mobile .headline { font-size: 92px; margin: 22px 0 64px; }
+      #mobile .labels { margin-bottom: 30px; }
+      .phone { width: 440px; height: 924px; padding: 16px; border-radius: 68px; background: var(--ink); box-shadow: 0 40px 80px rgba(43, 29, 20, 0.22); }
+      .phone .shots { position: relative; width: 100%; height: 100%; border-radius: 52px; overflow: hidden; background: var(--paper); }
+
+      /* Scene 3: on the computer. Title row on top, a browser window below. */
+      #web .stage { padding: 64px 140px 0; }
+      .web-top { display: flex; justify-content: space-between; align-items: flex-end; height: 150px; }
+      #web .headline { font-size: 80px; margin-top: 10px; }
+      .web-caption { display: grid; justify-items: end; gap: 22px; }
+      #web .label { left: auto; right: 0; }
+      .window { position: absolute; left: 50%; top: 250px; width: 1240px; margin-left: -620px; border-radius: 22px; overflow: hidden; background: #fff; border: 2px solid var(--line); box-shadow: 0 40px 90px rgba(43, 29, 20, 0.2); }
+      .window-bar { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 18px; background: #f1e8dc; }
+      .window-bar i { width: 14px; height: 14px; border-radius: 50%; background: #d9cbb8; }
+      .window-bar span { margin-left: 18px; padding: 4px 18px; border-radius: 999px; background: var(--paper); font-size: 17px; color: var(--ink-2); }
+      .window .shots { position: relative; height: 775px; overflow: hidden; background: var(--paper); }
+
+      /* Scene 4: plum wipe and the call to action. */
+      #wipe { position: absolute; left: 50%; top: 50%; width: 2400px; height: 2400px; margin: -1200px 0 0 -1200px; border-radius: 50%; background: var(--plum); }
+      #outro-copy { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 40px; color: var(--paper); text-align: center; }
+      #outro-copy svg { width: 150px; height: 150px; }
+      #outro-copy h2 { font-family: var(--display); font-weight: 700; font-size: 110px; letter-spacing: -0.04em; }
+      #outro-copy p { font-size: 40px; opacity: 0.85; }
+    </style>
+  </head>
+  <body>
+    <!-- 28 s at 120 BPM (music.py): one bar is 2 s, every scene starts on a bar line. -->
+    <div id="root" data-composition-id="main" data-start="0" data-duration="28" data-width="1920" data-height="1080">
+      <audio id="music" class="clip" src="assets/music.m4a" data-start="0" data-duration="28" data-timeline-role="music" data-volume="0.5" data-track-index="5"></audio>
+
+      <section id="intro" class="clip" data-start="0" data-duration="4" data-track-index="0">
+        <div class="stage">
+          <svg id="mark" viewBox="0 0 512 512" aria-hidden="true">
+            <!-- Same mark as frontend/public/favicon.svg, beats dropped: the row below plays them. -->
+            <rect width="512" height="512" rx="120" fill="#ef852e" />
+            <g id="notes" fill="#2b1d14" stroke="#2b1d14" stroke-linejoin="round" stroke-width="16">
+              <path d="M206 132 L388 98 V150 L206 184 Z" />
+              <path d="M206 140 V318 M388 106 V286" stroke-width="30" stroke-linecap="round" />
+              <ellipse cx="172" cy="324" rx="50" ry="38" transform="rotate(-22 172 324)" stroke="none" />
+              <ellipse cx="354" cy="292" rx="50" ry="38" transform="rotate(-22 354 292)" stroke="none" />
+            </g>
+          </svg>
+          <div class="beats" id="intro-beats">
+            <i class="beat"></i><i class="beat"></i><i class="beat"></i><i class="beat beat--ring"></i>
+          </div>
+          <div id="wordmark">MusicStudio</div>
+        </div>
+      </section>
+
+      <section id="mobile" class="clip" data-start="4" data-duration="10" data-track-index="1">
+        <div class="stage">
+          <div>
+            <p class="eyebrow">Dal telefono</p>
+            <h1 class="headline">
+              <span class="line"><span>Il registro della</span></span>
+              <span class="line"><span>tua scuola di musica,</span></span>
+              <span class="line"><span>in un posto solo.</span></span>
+            </h1>
+            <div class="labels">
+              <span class="label">La giornata dello studio</span>
+              <span class="label">Un allievo e il suo pacchetto</span>
+              <span class="label">Chi ha pagato e chi no</span>
+              <span class="label">Il portale del genitore</span>
+            </div>
+            <div class="beats">
+              <i class="beat beat--ring"></i><i class="beat beat--ring"></i><i class="beat beat--ring"></i><i class="beat beat--ring"></i>
+            </div>
+          </div>
+          <div class="phone">
+            <div class="shots" data-layout-allow-overflow>
+              <img src="assets/home-light.jpg" alt="" />
+              <img src="assets/student-light.jpg" alt="" />
+              <img src="assets/payments-light.jpg" alt="" />
+              <img src="assets/parent-light.jpg" alt="" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="web" class="clip" data-start="13.5" data-duration="10.5" data-track-index="2">
+        <div class="stage">
+          <div class="web-top">
+            <div>
+              <p class="eyebrow">E dal computer</p>
+              <h2 class="headline"><span class="line"><span>Più spazio, stesso studio.</span></span></h2>
+            </div>
+            <div class="web-caption">
+              <div class="labels">
+                <span class="label">Lo studio a colpo d'occhio</span>
+                <span class="label">Il pacchetto, lezione per lezione</span>
+                <span class="label">Un pagamento, due clic</span>
+                <span class="label">I genitori, in sola lettura</span>
+              </div>
+              <div class="beats">
+                <i class="beat beat--ring"></i><i class="beat beat--ring"></i><i class="beat beat--ring"></i><i class="beat beat--ring"></i>
+              </div>
+            </div>
+          </div>
+          <div class="window">
+            <div class="window-bar"><i></i><i></i><i></i><span data-layout-ignore>MusicStudio</span></div>
+            <div class="shots" data-layout-allow-overflow>
+              <img src="assets/web-home.jpg" alt="" />
+              <img src="assets/web-student.jpg" alt="" />
+              <img src="assets/web-payments.jpg" alt="" />
+              <img src="assets/web-parent.jpg" alt="" />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="outro" class="clip" data-start="23.5" data-duration="4.5" data-track-index="3">
+        <div id="wipe"></div>
+        <div id="outro-copy">
+          <svg viewBox="0 0 512 512" aria-hidden="true">
+            <rect width="512" height="512" rx="120" fill="#ef852e" />
+            <g fill="#2b1d14" stroke="#2b1d14" stroke-linejoin="round" stroke-width="16">
+              <path d="M206 132 L388 98 V150 L206 184 Z" />
+              <path d="M206 140 V318 M388 106 V286" stroke-width="30" stroke-linecap="round" />
+              <ellipse cx="172" cy="324" rx="50" ry="38" transform="rotate(-22 172 324)" stroke="none" />
+              <ellipse cx="354" cy="292" rx="50" ry="38" transform="rotate(-22 354 292)" stroke="none" />
+            </g>
+          </svg>
+          <h2>Pronti a cominciare?</h2>
+          <p>Dal telefono e dal computer. In un posto solo.</p>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      // Every tween sits at an absolute time (3rd argument), so any frame can be seeked directly.
+      // Times are in beats of the music: 120 BPM, a beat every 0.5 s, a bar every 2 s.
+      const tl = gsap.timeline({ paused: true });
+      const soft = 'power3.out';
+
+      // Scene 1 (bars 1-2): the mark settles, the notes drop, the beats pop on the plucks.
+      tl.fromTo('#mark', { scale: 0.8, rotation: -12 }, { scale: 1, rotation: 0, duration: 0.7, ease: 'back.out(1.6)' }, 0);
+      tl.fromTo('#notes', { y: -60, opacity: 0 }, { y: 0, opacity: 1, duration: 0.5, ease: soft }, 0.5);
+      tl.fromTo('#intro-beats .beat', { scale: 0 }, { scale: 1, duration: 0.3, ease: 'back.out(2.5)', stagger: 0.5 }, 1.0);
+      tl.fromTo('#wordmark', { y: 50, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: soft }, 2.5);
+      tl.to('#intro .stage > *', { y: -40, opacity: 0, duration: 0.4, ease: 'power2.in', stagger: 0.05 }, 3.5);
+
+      // A tour: screens land on the downbeat, the caption changes, one lesson "is played".
+      function tour(scene, from, enter) {
+        const shots = gsap.utils.toArray(`${scene} .shots img`);
+        const labels = gsap.utils.toArray(`${scene} .label`);
+        const beats = gsap.utils.toArray(`${scene} .beats .beat`);
+        tl.fromTo(beats, { scale: 0 }, { scale: 1, duration: 0.3, ease: 'back.out(2)', stagger: 0.06 }, from + 0.5);
+        shots.forEach((shot, i) => {
+          const at = from + 1 + i * 2;
+          if (i > 0) tl.fromTo(shot, enter, { xPercent: 0, yPercent: 0, duration: 0.5, ease: 'power3.inOut' }, at - 0.5);
+          tl.fromTo(labels[i], { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.4, ease: soft }, at);
+          if (i < labels.length - 1) tl.to(labels[i], { opacity: 0, y: -24, duration: 0.3, ease: 'power2.in' }, at + 1.6);
+          tl.to(beats[i], { borderWidth: 0, backgroundColor: '#4b2e5a', duration: 0.2 }, at);
+          tl.fromTo(beats[i], { scale: 1 }, { scale: 1.35, duration: 0.15, yoyo: true, repeat: 1 }, at);
+        });
+      }
+
+      // Scene 2 (bars 3-7): headline rises, the phone slides up, screens push in from below.
+      tl.fromTo('#mobile .eyebrow', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: soft }, 4.0);
+      tl.fromTo('#mobile .line span', { yPercent: 110 }, { yPercent: 0, duration: 0.7, ease: soft, stagger: 0.12 }, 4.1);
+      tl.fromTo('.phone', { y: 700, rotation: 6 }, { y: 0, rotation: 0, duration: 0.9, ease: 'power4.out' }, 4.0);
+      tour('#mobile', 4, { yPercent: 100 });
+
+      // Scenes 2 to 3: the whole stage is pushed left half a bar before the downbeat.
+      tl.to('#mobile .stage', { x: -1920, duration: 0.5, ease: 'power3.in' }, 13.5);
+      tl.fromTo('#web .stage', { x: 1920 }, { x: 0, duration: 0.5, ease: 'power3.out' }, 13.5);
+
+      // Scene 3 (bars 8-12): title, then the browser window; screens push in from the right.
+      tl.fromTo('#web .line span', { yPercent: 110 }, { yPercent: 0, duration: 0.6, ease: soft }, 14.0);
+      tl.fromTo('.window', { y: 160, scale: 0.94 }, { y: 0, scale: 1, duration: 0.8, ease: 'power4.out' }, 13.8);
+      tour('#web', 14, { xPercent: 100 });
+
+      // Scene 4 (bars 13-14): plum wipe lands on the final strum; the closing line holds 3.5 s.
+      tl.fromTo('#wipe', { scale: 0 }, { scale: 1, duration: 0.5, ease: 'power3.in' }, 23.5);
+      tl.fromTo('#outro-copy > *', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: soft, stagger: 0.12 }, 24.0);
+
+      window.__timelines = window.__timelines || {};
+      window.__timelines['main'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

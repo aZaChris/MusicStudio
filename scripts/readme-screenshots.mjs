@@ -98,5 +98,21 @@ for (const theme of ["light", "dark"]) {
   const family = await session(theme, iphone, "parent@example.com", "it-IT");
   await shot(family.page, "/", `${SHOWCASE}/parent-${theme}.jpg`);
   await family.ctx.close();
+
+  // Desktop shots for the brand video (video/), Italian UI, light theme only.
+  if (theme === "light") {
+    const VIDEO = "../video/assets";
+    const web = { width: 1440, height: 900 };
+    const desk = await session(theme, web, "owner@example.com", "it-IT");
+    await shot(desk.page, "/", `${VIDEO}/web-home.jpg`);
+    await desk.page.goto(BASE + "/students");
+    await desk.page.locator('a[href^="/students/"]').first().click();
+    await shot(desk.page, null, `${VIDEO}/web-student.jpg`);
+    await shot(desk.page, "/payments", `${VIDEO}/web-payments.jpg`);
+    await desk.ctx.close();
+    const deskParent = await session(theme, web, "parent@example.com", "it-IT");
+    await shot(deskParent.page, "/", `${VIDEO}/web-parent.jpg`);
+    await deskParent.ctx.close();
+  }
 }
 await browser.close();
