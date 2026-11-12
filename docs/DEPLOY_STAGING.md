@@ -63,6 +63,13 @@ Builds), copia il link di installazione e mettilo in `ANDROID_APK_URL`. Prima di
 anonima** del browser: deve scaricare o mostrare la pagina di installazione senza chiederti di accedere a Expo.
 Deve iniziare con `https://`. Ricorda che l'APK attuale è puntato sull'API di staging.
 
+**Limiti di memoria (il server è condiviso):** ogni servizio ha un tetto di RAM, così un container impazzito non
+toglie memoria alle altre app del server. Default: `db` 512m, `backend` 512m, `worker` 512m, `beat` 192m, `redis`
+128m (Redis stesso si ferma a 96 MB), `web` 64m. In totale circa 2 GB al massimo, di solito molto meno. Se Elio vuole
+valori diversi si cambiano da Coolify con `DB_MEM_LIMIT`, `BACKEND_MEM_LIMIT`, `WORKER_MEM_LIMIT`, `BEAT_MEM_LIMIT`,
+`REDIS_MEM_LIMIT`, `WEB_MEM_LIMIT` (per esempio `384m`), senza toccare il codice. Un container che supera il tetto viene
+riavviato da Docker: nei log compare `OOMKilled`.
+
 **Stripe: lascialo vuoto oggi** (`STRIPE_API_KEY`, `STRIPE_WEBHOOK_SECRET`,
 `STRIPE_WEBHOOK_ALLOWED_IPS`). Il pagamento online risponde "non disponibile" (503) e tutto il resto
 funziona. Si configura dopo (`docs/CHECKLIST_17.md`, passi 3 e 5).

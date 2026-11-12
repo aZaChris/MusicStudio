@@ -48,3 +48,9 @@ def test_the_shipped_image_stage_has_no_run_step(dockerfile):
     text = (ROOT / dockerfile).read_text()
     final_stage = text[text.rindex("\nFROM ") :]
     assert not any(line.lstrip().startswith("RUN ") for line in final_stage.splitlines())
+
+
+@pytest.mark.parametrize("name", sorted(SERVICES))
+def test_every_service_has_a_memory_limit(name):
+    # The server is shared with other apps: a runaway container must not starve them.
+    assert "mem_limit" in SERVICES[name]

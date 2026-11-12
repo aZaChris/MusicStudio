@@ -8,7 +8,8 @@
 #   must match PORT). A published host port would bypass the proxy.
 # - SERVICE_USER_* / SERVICE_PASSWORD_* are generated and persisted by Coolify.
 # - `${VAR:?}` marks a variable as required: Coolify blocks the deploy until it is set.
-# - Every service has a healthcheck.
+# - Every service has a healthcheck and a memory limit (the server is shared: one runaway
+#   container must not starve the other apps). Override with <SERVICE>_MEM_LIMIT.
 # - YAML anchors are avoided on purpose (Coolify's compose parser has had issues with
 #   them), so the backend environment is repeated for worker and beat.
 
@@ -23,6 +24,7 @@ services:
       POSTGRES_PASSWORD: ${SERVICE_PASSWORD_POSTGRES}
     volumes:
       - db-data:/var/lib/postgresql/data
+    mem_limit: ${DB_MEM_LIMIT:-512m}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 10s
@@ -31,9 +33,12 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: ["redis-server", "--appendonly", "yes"]
+    # Below its mem_limit; noeviction: never drop queued tasks, refuse writes instead
+    # (throttles fail open when Redis refuses, apps/common/throttling.py).
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "96mb", "--maxmemory-policy", "noeviction"]
     volumes:
       - redis-data:/data
+    mem_limit: ${REDIS_MEM_LIMIT:-128m}
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -87,6 +92,7 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    mem_limit: ${BACKEND_MEM_LIMIT:-512m}
     healthcheck:
       test: ["CMD", "python", "docker/healthcheck.py", "http", "/health/ready/"]
       interval: 30s
@@ -128,6 +134,7 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    mem_limit: ${WORKER_MEM_LIMIT:-512m}
     healthcheck:
       test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME --timeout 10"]
       interval: 60s
@@ -161,6 +168,7 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    mem_limit: ${BEAT_MEM_LIMIT:-192m}
     healthcheck:
       test: ["CMD", "python", "docker/healthcheck.py", "beat", "/tmp/celerybeat-schedule", "1200"]
       interval: 60s
@@ -185,6 +193,7 @@ services:
       API_ORIGIN: ${API_PUBLIC_URL:?}
     expose:
       - "8080"
+    mem_limit: ${WEB_MEM_LIMIT:-64m}
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/healthz"]
       interval: 30s
