@@ -6,6 +6,8 @@ on:
     branches: [staging/mobile]
   pull_request:
     branches: [staging/mobile]
+  # Manual re-run from the Actions tab, e.g. when GitHub leaves a run stuck in the queue.
+  workflow_dispatch:
 
 jobs:
   gate:
