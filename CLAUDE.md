@@ -1,7 +1,7 @@
 # MusicStudio Mobile — working rules for Claude Code
 
-Read this first in every session on this branch. Answer the user (Christian) **in Italian**:
-he is a developer with ~1.5 years of experience, English B1, and studies everything built here.
+Read this first in every session on this branch. Answer the owner **in Italian** and explain the
+choices you make: the owner studies everything built here.
 Also read `AGENTS.md` (Expo SDK 57 docs are the reference: https://docs.expo.dev/versions/v57.0.0/).
 
 ## What this branch is
