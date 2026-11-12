@@ -32,7 +32,8 @@ export function ParentPortal() {
   const money = new Intl.NumberFormat(isItalian ? 'it-IT' : 'en-GB', { style: 'currency', currency: 'EUR' })
 
   // The earliest lesson still to come.
-  const now = new Date()
+  // Read the clock once per mount: calling new Date() in render makes it impure.
+  const [now] = useState(() => new Date())
   const next = (lessons.data ?? [])
     .filter((l) => l.status === 'scheduled' && new Date(l.start_time) >= now)
     .sort((a, b) => +new Date(a.start_time) - +new Date(b.start_time))[0]
