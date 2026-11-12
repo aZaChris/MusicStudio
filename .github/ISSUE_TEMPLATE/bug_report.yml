@@ -1,0 +1,33 @@
+name: Bug report
+description: Something does not work as described.
+labels: [bug]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [API (backend), Web portal (frontend), Mobile app, Deploy / operations, Docs]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Log in as owner@example.com (seed_demo)
+        2. Open …
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or response
+      description: Status code, response body, request ID (X-Request-ID). Remove any personal data.
+      render: text
