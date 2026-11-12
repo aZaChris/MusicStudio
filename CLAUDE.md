@@ -6,13 +6,14 @@ Also read `AGENTS.md` (Expo SDK 57 docs are the reference: https://docs.expo.dev
 
 ## What this branch is
 
-- `staging/mobile`: the Expo app, refactored onto the **Django REST API** of branch
-  `staging/backend` (case study, like the backend refactor). It is a copy of `refactor/mobile`,
+- `mobile`: the Expo app, refactored onto the **Django REST API** of branch `main` (case
+  study, like the backend refactor). It was `staging/mobile`, a copy of `refactor/mobile` (now
+  tag `archive/refactor-mobile`, ADR-033 on `main`),
   which started from the old branch `app` (commit `3fb9be8`), written for the Next.js API of the
   old branch `web`. Both old branches are archived as tags `archive/app` and `archive/web`.
 - The backend lives on its own branch; contract fixes go there, then the vendored contract here
   is refreshed (`npm run contract:sync`).
-- Principles: `.specify/memory/constitution.md` (v3.0.0). Starting point:
+- Principles: `.specify/memory/constitution.md` (v3.0.2). Starting point:
   `docs/learning/audit-iniziale.md`.
 
 ## Status
@@ -30,7 +31,9 @@ for an SDK patch (`npx expo install --fix`), never `npm audit fix --force`.
   `/speckit-implement`. `.specify/feature.json` points to the active feature.
 - Autonomy until the phase is complete, then stop with an Italian summary. Ambiguous
   architectural choice: simplest conservative option + ADR.
-- Commits: small, English, body explains *why*. Push only when the user asks.
+- Commits: small, English, body explains *why*. `mobile` only changes through pull requests
+  with a green `gate` check (ruleset): commit on a feature branch; push and open the PR only
+  when the user asks.
 - Code/comments/commits in English; study docs (`docs/learning/`) in Italian, same format as
   the backend (concept docs 800–1500 words, `wc -w`).
 - Add dependencies with `npx expo install <pkg>` (SDK-matched versions).

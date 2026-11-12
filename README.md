@@ -1,11 +1,13 @@
+<img src="assets/images/splash-icon.png" width="72" alt="MusicStudio logo">
+
 # MusicStudio — mobile app
 
 The Expo (React Native) client of MusicStudio, a platform for private music teachers and small
 studios: lessons, lesson packages, payments, and a read-only portal for parents.
 
-This branch, `staging/mobile`, is a refactor case study: it starts from the old branch `app` (archived as tag `archive/app`; an Expo
+This branch, `mobile`, is a refactor case study: it starts from the old branch `app` (archived as tag `archive/app`; an Expo
 app written for a Next.js API) and rewires it onto the **Django REST API** of branch
-`staging/backend`, with production standards (generated API types, real session
+`main`, with production standards (generated API types, real session
 handling, tests, CI). The starting point and its problems are in
 [`docs/learning/audit-iniziale.md`](docs/learning/audit-iniziale.md); principles in
 [`.specify/memory/constitution.md`](.specify/memory/constitution.md); the current feature in
@@ -48,7 +50,7 @@ cp .env.example .env            # set EXPO_PUBLIC_API_BASE_URL to your backend
 npx expo start                  # Expo Go on a phone, or press w for the web
 ```
 
-The backend runs from branch `staging/backend` (see its `CLAUDE.md`); for the web
+The backend runs from branch `main` (see its `CLAUDE.md`); for the web
 build allow the origin with `CORS_ALLOWED_ORIGINS=http://localhost:8081`. Demo accounts come
 from its `manage.py seed_demo` (password `password123`).
 
