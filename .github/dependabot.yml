@@ -7,6 +7,11 @@ updates:
     schedule: { interval: weekly }
     groups:
       backend-minor-patch: { update-types: [minor, patch] }
+    # Django stays on the 5.2 LTS (security patches until April 2028, audit-iniziale.md); the
+    # move to the next LTS is planned as its own phase, not a weekly bump. Patches still arrive.
+    ignore:
+      - dependency-name: django
+        update-types: [version-update:semver-major]
   - package-ecosystem: npm
     directory: /frontend
     schedule: { interval: weekly }
