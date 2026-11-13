@@ -270,6 +270,14 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Punto debole.** Il test copre i flussi che ho pensato io: un flusso nuovo con un segreto passato a un task richiede di essere aggiunto al test.
 
+## Pubblicazione e motori di ricerca
+
+### 43. Come tieni un ambiente fuori da Google, e come eviti di aprirlo per sbaglio?
+
+**Risposta modello.** Il sito manda un'intestazione `X-Robots-Tag` che viene da una variabile. Nell'immagine il valore è `noindex, nofollow`, e solo la produzione lo cambia a mano in `index, follow`. Così un ambiente nuovo o dimenticato resta nascosto. Il `robots.txt` consente la lettura, perché un `Disallow` impedirebbe ai crawler di vedere il `noindex`. L'API manda sempre `noindex`, senza interruttore. La CI controlla il valore predefinito, l'apertura e la sitemap.
+
+**Punto debole.** Il rischio opposto: dimenticare di aprirlo in produzione e restare invisibili. L'ho accettato di proposito, e la guida di deploy lo elenca. Inoltre aprire l'indicizzazione non basta a farsi trovare: un nome generico e un sito nuovo su un sottodominio non compaiono in cima a una ricerca.
+
 ## Domanda finale tipica
 
 ### 19. Cosa faresti diversamente o cosa miglioreresti per primo?
