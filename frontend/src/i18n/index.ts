@@ -23,4 +23,11 @@ i18n
     },
   })
 
+// The page language is what search engines and screen readers read: keep <html lang> in step.
+const syncLang = (lng: string) => {
+  document.documentElement.lang = lng.split('-')[0]
+}
+syncLang(i18n.language)
+i18n.on('languageChanged', syncLang)
+
 export default i18n

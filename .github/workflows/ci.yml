@@ -171,6 +171,7 @@ jobs:
         run: >
           docker build frontend --target prod -t musicstudio-web
           --build-arg VITE_API_BASE_URL=https://api.example.com/api/v1
+          --build-arg VITE_SITE_URL=https://www.example.com
 
       - name: Runs as a non-root user
         run: test "$(docker run --rm --entrypoint id musicstudio-web -u)" != "0"
@@ -192,6 +193,18 @@ jobs:
           grep -qi "permissions-policy:" headers.txt
           ! grep -qi "^server: nginx/" headers.txt
           docker rm -f web
+
+      - name: Closed to search engines by default, open only when asked
+        run: |
+          docker run -d --name web-default -e API_ORIGIN=https://api.example.com -p 127.0.0.1:18081:8080 musicstudio-web
+          docker run -d --name web-open -e API_ORIGIN=https://api.example.com -e ROBOTS_TAG="index, follow" -p 127.0.0.1:18082:8080 musicstudio-web
+          for p in 18081 18082; do for i in $(seq 1 20); do curl -fs http://127.0.0.1:$p/healthz && break; sleep 1; done; done
+          curl -sI http://127.0.0.1:18081/ | grep -qi "^x-robots-tag: noindex, nofollow"
+          curl -sI http://127.0.0.1:18082/ | grep -qi "^x-robots-tag: index, follow"
+          curl -sI http://127.0.0.1:18081/ | grep -qi "^strict-transport-security: max-age=2592000"
+          curl -fs http://127.0.0.1:18081/ | grep -q "https://www.example.com/showcase/musicstudio-poster.jpg"
+          curl -fs http://127.0.0.1:18081/robots.txt | grep -q "^Allow: /"
+          docker rm -f web-default web-open
 
   backend-image:
     # Builds the backend image the way Coolify does (no dev group). The tests run with the dev

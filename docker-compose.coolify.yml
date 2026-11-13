@@ -186,11 +186,14 @@ services:
       args:
         # Baked into the bundle: changing the API address means rebuilding the portal.
         VITE_API_BASE_URL: ${API_PUBLIC_URL:?}/api/v1
+        VITE_SITE_URL: ${FRONTEND_URL:-}
         # Optional: link to the Android app (an EAS build). Empty = the landing says it is coming.
         VITE_ANDROID_APK_URL: ${ANDROID_APK_URL:-}
     environment:
       # The only extra origin the browser may connect to (Content-Security-Policy).
       API_ORIGIN: ${API_PUBLIC_URL:?}
+      # Search engines: noindex by default. Set ROBOTS_TAG=index, follow only on the public site.
+      ROBOTS_TAG: ${ROBOTS_TAG:-noindex, nofollow}
     expose:
       - "8080"
     mem_limit: ${WEB_MEM_LIMIT:-64m}

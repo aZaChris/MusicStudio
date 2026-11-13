@@ -22,6 +22,9 @@ ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 # Optional: where to download the Android app (shown on the landing and after sign-in).
 ARG VITE_ANDROID_APK_URL=
 ENV VITE_ANDROID_APK_URL=$VITE_ANDROID_APK_URL
+# Public address of the site, for the canonical link and the share preview (vite.config.ts).
+ARG VITE_SITE_URL=
+ENV VITE_SITE_URL=$VITE_SITE_URL
 COPY . .
 RUN npm run build
 
@@ -30,5 +33,8 @@ RUN npm run build
 FROM nginxinc/nginx-unprivileged:1.27.3-alpine AS prod
 COPY --chmod=755 nginx/05-require-api-origin.sh /docker-entrypoint.d/05-require-api-origin.sh
 COPY nginx/default.conf.template /etc/nginx/templates/default.conf.template
+# Safe by default: a site nobody opened to search engines stays out of them. Production sets
+# ROBOTS_TAG="index, follow" on purpose.
+ENV ROBOTS_TAG="noindex, nofollow"
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 8080

@@ -1,4 +1,4 @@
-# Rendered at container start by the nginx image (envsubst): only ${API_ORIGIN} is ours; nginx
+# Rendered at container start by the nginx image (envsubst): only ${API_ORIGIN} and ${ROBOTS_TAG} are ours; nginx
 # variables like $uri are left alone because they are not defined in the environment.
 server {
     listen 8080;
@@ -8,8 +8,11 @@ server {
 
     # Security headers (ADR-025). Declared once here: no location below uses add_header, so
     # nginx does not drop them (add_header in a location would replace these, not extend them).
-    # HSTS is set by Coolify's proxy, which terminates HTTPS.
+    # HSTS is set here: Coolify's proxy does not add it (checked on the staging, 2026-11-13).
+    # 30 days, like the API (DJANGO_HSTS_SECONDS); preload is a promise that is hard to undo.
     add_header Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self' ${API_ORIGIN}; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'" always;
+    add_header Strict-Transport-Security "max-age=2592000; includeSubDomains" always;
+    add_header X-Robots-Tag "${ROBOTS_TAG}" always;
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "DENY" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;

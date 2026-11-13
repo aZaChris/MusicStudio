@@ -19,10 +19,11 @@ Il proprietario porta il portale su Coolify dopo la review di un amico, con due 
 - **Intestazioni di sicurezza**, dichiarate una volta a livello di server. Un `add_header` dentro una `location` le sostituirebbe tutte, quindi le `location` non ne usano:
   - `Content-Security-Policy`: script, stili e font solo dal portale stesso, connessioni solo verso il portale e l'origine delle API, nessun iframe da altri siti, niente plugin;
   - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (browser vecchi), `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` che spegne fotocamera, microfono, posizione e pagamenti, `Cross-Origin-Opener-Policy: same-origin`;
-  - HSTS lo imposta il proxy di Coolify, che termina l'HTTPS.
+  - `Strict-Transport-Security` (30 giorni, come le API): lo imposta nginx. Si pensava lo facesse il proxy di Coolify, ma sullo staging, il 13 novembre 2026, non c'era;
+  - `X-Robots-Tag`, deciso dalla variabile `ROBOTS_TAG`: `noindex, nofollow` per impostazione predefinita, e la produzione lo apre a mano con `index, follow`. Così un ambiente nuovo o dimenticato non finisce su Google.
 - **Fallire subito**: uno script all'avvio del container controlla `API_ORIGIN`. Se manca o non è `https://` (o localhost), il container non parte.
 - **Origini separate**: portale e API hanno domini diversi. Le API accettano chiamate dal browser solo dall'origine del portale (`CORS_ALLOWED_ORIGINS`).
-- **Prova in CI**: il job `web-image` costruisce l'immagine, la avvia e controlla utente, fallback, health, intestazioni e il rifiuto di partire senza `API_ORIGIN`.
+- **Prova in CI**: il job `web-image` costruisce l'immagine, la avvia e controlla utente, fallback, health, intestazioni, l'indicizzazione (chiusa per impostazione predefinita, aperta se richiesto) e il rifiuto di partire senza `API_ORIGIN`.
 
 ## Alternative scartate
 
