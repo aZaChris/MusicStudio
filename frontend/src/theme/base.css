@@ -929,3 +929,61 @@ select.ms-input {
   border-top: 1px solid var(--line);
   color: var(--ink-2);
 }
+
+/* Theme / language switches (components/Preferences.tsx): fixed-size icon buttons, so toggling
+   never changes the layout. */
+.ms-seg {
+  --seg-line: var(--field-border);
+  --seg-fg: var(--ink-2);
+  --seg-on-bg: var(--ink);
+  --seg-on-fg: var(--paper);
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  flex: none;
+  border: 1.5px solid var(--seg-line);
+  border-radius: var(--radius-pill);
+}
+.ms-seg--on-plum {
+  --seg-line: var(--plum-soft);
+  --seg-fg: var(--on-plum);
+  --seg-on-bg: var(--on-plum);
+  --seg-on-fg: var(--plum);
+}
+.ms-seg button {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--seg-fg);
+  cursor: pointer;
+  opacity: 0.65;
+  transition:
+    background var(--duration-fast),
+    opacity var(--duration-fast);
+}
+.ms-seg button:hover {
+  opacity: 1;
+}
+.ms-seg button[aria-pressed='true'] {
+  background: var(--seg-on-bg);
+  color: var(--seg-on-fg);
+  opacity: 1;
+}
+.ms-seg button:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+/* A flag is its own colour: the highlight is a ring, not a filled background. */
+.ms-seg button[lang][aria-pressed='true'] {
+  background: transparent;
+  box-shadow: 0 0 0 2px var(--seg-on-bg);
+}
+.ms-seg svg {
+  flex: none;
+}

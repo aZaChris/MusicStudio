@@ -4,6 +4,7 @@ import { Link, Navigate, useNavigate } from 'react-router-dom'
 
 import { ApiError, apiFetch } from '../api/client'
 import { errorMessage } from '../api/errors'
+import { LanguageToggle, ThemeToggle } from '../components/Preferences'
 import { Icon, Logo } from '../components/ui'
 import { useAuth } from './useAuth'
 
@@ -17,7 +18,7 @@ const NOTES = [
 ]
 
 export function Login() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { user, notice, login, verifyMfa } = useAuth()
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
@@ -67,8 +68,6 @@ export function Login() {
       setError(errorMessage(err, t))
     }
   }
-
-  const isItalian = i18n.language.startsWith('it')
 
   return (
     <div className="login-page">
@@ -184,21 +183,8 @@ export function Login() {
             </div>
           )}
           <div className="row-between">
-            <span className="ms-help">{t('auth.language')}</span>
-            <div className="ms-filters" style={{ flexWrap: 'nowrap' }}>
-              {(['it', 'en'] as const).map((lng) => (
-                <button
-                  key={lng}
-                  type="button"
-                  className="ms-filter"
-                  style={{ height: 36 }}
-                  aria-pressed={lng === 'it' ? isItalian : !isItalian}
-                  onClick={() => i18n.changeLanguage(lng)}
-                >
-                  {lng.toUpperCase()}
-                </button>
-              ))}
-            </div>
+            <LanguageToggle />
+            <ThemeToggle />
           </div>
         </form>
       </section>
