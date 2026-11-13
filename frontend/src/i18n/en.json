@@ -189,6 +189,7 @@
     "firstName": "First name",
     "lastName": "Last name",
     "studioName": "Studio name",
+    "studioNameHint": "Teaching on your own? Use your own name: you are the studio.",
     "acceptTerms": "I accept the terms and the privacy notice",
     "submit": "Create account",
     "haveAccount": "I already have an account",

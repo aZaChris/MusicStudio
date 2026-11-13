@@ -8,6 +8,14 @@ import { renderApp } from '../test/utils'
 const fill = (label: string, value: string) =>
   fireEvent.change(screen.getByLabelText(label), { target: { value } })
 
+test('the studio name field tells a solo teacher what to write', async () => {
+  installFakeApi()
+  renderApp('/register')
+
+  const field = await screen.findByLabelText('Studio name')
+  expect(field).toHaveAccessibleDescription('Teaching on your own? Use your own name: you are the studio.')
+})
+
 test('a studio owner signs up and is told to check the email', async () => {
   const api = installFakeApi({ 'POST /auth/register/': { status: 202, body: { detail: 'check_email' } } })
   renderApp('/register')
