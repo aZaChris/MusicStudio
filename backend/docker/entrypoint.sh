@@ -12,7 +12,10 @@ case "$role" in
       python manage.py migrate --noinput
     fi
     # No gunicorn access log: RequestIdMiddleware writes one JSON line per request (ADR-019).
+    # --no-control-socket: gunicorn 25.1+ opens a control socket under $HOME for `gunicornc`,
+    # which we do not use; the non-root uid has no writable home, so it logged a permission error.
     exec gunicorn config.wsgi:application \
+      --no-control-socket \
       --bind "0.0.0.0:${PORT:-8000}" \
       --workers "${WEB_CONCURRENCY:-3}" \
       --timeout "${GUNICORN_TIMEOUT:-30}"

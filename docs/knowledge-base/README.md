@@ -27,3 +27,4 @@ Problemi non banali risolti nel progetto: sintomo, causa radice, verifica, soluz
 | [font-titoli-tema-chiaro.md](font-titoli-tema-chiaro.md) | Nel tema chiaro i titoli usavano il font di ripiego: l'override di `--font-display` perdeva per specificità contro il selettore dei token |
 | [tzdata-sparito-con-kombu.md](tzdata-sparito-con-kombu.md) | Celery 5.7 ha tolto `tzdata` su Linux: i fusi orari arrivavano per caso da kombu; ora è dichiarato e un test lo garantisce |
 | [packaging-mancante-nell-immagine-celery.md](packaging-mancante-nell-immagine-celery.md) | `worker` e `beat` in crash-loop su Coolify: kombu 5.7 importa `packaging` senza dichiararlo e l’immagine usa `--no-dev`; ora è dichiarato e la build lo verifica |
+| [gunicorn-control-socket-permesso-negato.md](gunicorn-control-socket-permesso-negato.md) | Gunicorn 25.1+ apre un socket di controllo in `$HOME`; il container non root non ha una home scrivibile e loggava `Permission denied`: ora è disattivato |
