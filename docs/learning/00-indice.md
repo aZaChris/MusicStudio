@@ -125,6 +125,10 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/sicurezza-di-una-spa.md` — XSS, CSP, dove tenere i token nel browser.
 - `concetti/deploy-di-una-spa-con-nginx.md` — fallback delle rotte, cache, intestazioni, utente non root.
 
+### Concetti (pubblicazione)
+
+- `concetti/indicizzazione-e-sitemap.md` — metadati, `robots.txt`, sitemap, `noindex` di default, la trappola del fallback della SPA.
+
 ### Concetti (fase 7)
 
 - `concetti/account-e-token-monouso.md` — risposte uguali, link a uso singolo, inviti con hash, blocco dell'account.
@@ -147,7 +151,7 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 ### Ripasso
 
 - `glossario.md` — ogni termine tecnico in italiano semplice.
-- `colloquio/domande-e-risposte.md` — 42 domande con risposta modello e punto debole.
+- `colloquio/domande-e-risposte.md` — 43 domande con risposta modello e punto debole.
 
 ## Formato dei documenti di concetto
 

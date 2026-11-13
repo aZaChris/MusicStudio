@@ -20,6 +20,8 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 
 **B-tree index.** Il tipo di indice più comune in PostgreSQL: una struttura ordinata che trova valori e intervalli in pochi passi.
 
+**Canonical (link canonico).** Un tag che dice a Google qual è l'indirizzo ufficiale di una pagina, quando si può raggiungere da più strade.
+
 **Celery.** Una libreria Python per eseguire task in background, fuori dalle richieste HTTP.
 
 **Celery Beat.** Il processo di Celery che lancia i task a orari prestabiliti, come un cron.
@@ -66,6 +68,8 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 
 **JWT (JSON Web Token).** Un token firmato che il client manda a ogni richiesta per dimostrare chi è.
 
+**Lighthouse.** Uno strumento di Google, dentro il browser, che controlla una pagina e dà voti su prestazioni, accessibilità e SEO.
+
 **Liveness probe.** Il controllo "il processo è vivo?". Se fallisce, il container va riavviato.
 
 **Lockfile.** Il file che fissa le versioni esatte di tutte le dipendenze (`uv.lock`), per installazioni identiche ovunque.
@@ -81,6 +85,10 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **mypy.** Lo strumento che controlla i tipi in Python senza eseguire il codice.
 
 **N+1 query problem.** Una query per la lista, più una query per ogni elemento. Fa crescere il lavoro del database con i dati.
+
+**noindex (X-Robots-Tag).** Un'intestazione HTTP che dice ai motori di ricerca di non mostrare quella pagina nei risultati. In MusicStudio è il valore predefinito del sito, e l'API lo manda sempre.
+
+**Open Graph.** Tag nella pagina che decidono titolo, descrizione e immagine dell'anteprima quando si condivide un link su un social o in una chat.
 
 **OpenAPI.** Un formato standard per descrivere un'API. Da qui si genera la documentazione interattiva.
 
@@ -104,6 +112,8 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 
 **Reverse proxy.** Il server che sta davanti all'applicazione, riceve le richieste da Internet e le inoltra. In Coolify gestisce anche HTTPS.
 
+**robots.txt.** Un file a un indirizzo fisso che dice ai crawler dove possono entrare. Non decide l'indicizzazione: per quella servono `noindex` o i tag nella pagina.
+
 **RPO / RTO.** Recovery Point Objective: quanti dati puoi perdere. Recovery Time Objective: quanto tempo serve per ripartire.
 
 **ruff.** Uno strumento molto veloce per lint e formattazione del codice Python.
@@ -121,6 +131,8 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **Service layer.** Lo strato di funzioni che contiene le operazioni di business di scrittura.
 
 **Sidecar.** Un container di supporto accanto a quello principale, come il nostro servizio di backup.
+
+**Sitemap.** Un file XML con l'elenco degli indirizzi di un sito da proporre ai motori di ricerca. In MusicStudio contiene solo le pagine pubbliche.
 
 **Spec-kit.** Il flusso di lavoro che usiamo: constitution, specifica, piano, task, implementazione.
 
@@ -299,4 +311,3 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **Retention (conservazione).** Per quanto tempo si tengono i dati prima di cancellarli o anonimizzarli.
 
 **TOTP.** Il codice di sei cifre che cambia ogni 30 secondi, calcolato da un segreto e dall'ora (RFC 6238).
-
