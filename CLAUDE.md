@@ -129,9 +129,5 @@ whenever serializers/views change.
 - On a machine where PostgreSQL has a role named after the Linux user (peer auth), use
   `DATABASE_URL=postgres://$USER@/musicstudio` (empty host = Unix socket). `localhost` goes
   over TCP and asks for a password; a URL-encoded socket path is read as a hostname.
-- README screenshots (`scripts/readme-screenshots.mjs`): start the API with
-  `THROTTLE_LOGIN=100/min` (it logs in six times; the 5/min limit returns 429) and serve the SPA
-  with `vite preview`, not `vite dev`: WSL's `ERR_NETWORK_CHANGED` aborts the dev server's
-  hundreds of module requests.
 - Never print or read credential files (`.env*` except `.env.example`, `.pgpass`); they are
   git-ignored.

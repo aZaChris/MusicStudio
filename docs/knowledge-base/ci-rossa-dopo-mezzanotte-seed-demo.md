@@ -16,5 +16,5 @@ Il fallimento riportava due intervalli identici alle 23:00 UTC. In locale, ora U
 È lo stesso errore già visto con le durate: un confronto tra date va fatto nello stesso fuso da entrambe le parti. Un test che dipende dall'ora del giorno non fallisce quando lo si scrive, ma quando la CI gira a un'ora sfortunata. I test che usano "adesso" vanno provati con l'ora fissata a più valori, soprattutto vicino a mezzanotte e al cambio dell'ora.
 
 ## Riferimenti
-- `backend/apps/common/management/commands/seed_demo.py`, `backend/apps/common/tests/test_seed_demo.py`
+- `backend/apps/common/management/commands/seed_demo.py`, `backend/apps/common/tests/test_seed_demo.py` (rimossi il 13 novembre 2026 insieme ai dati demo: la lezione sul confronto tra giorno UTC e giorno di Roma resta valida)
 - `docs/knowledge-base/fine-lezione-e-ora-legale.md` (lo stesso tipo di errore sulle durate)

@@ -21,7 +21,7 @@ body:
     attributes:
       label: Steps to reproduce
       placeholder: |
-        1. Log in as owner@example.com (seed_demo)
+        1. Sign in with a studio account
         2. Open …
     validations:
       required: true

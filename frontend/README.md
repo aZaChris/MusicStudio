@@ -35,8 +35,8 @@ npm ci
 VITE_API_BASE_URL=http://localhost:8000/api/v1 npm run dev     # http://localhost:5173
 ```
 
-The backend must allow the origin: `CORS_ALLOWED_ORIGINS=http://localhost:5173`. Demo accounts
-come from the backend's `manage.py seed_demo` (password `password123`).
+The backend must allow the origin: `CORS_ALLOWED_ORIGINS=http://localhost:5173`. Create an
+account from the portal's sign-up page, or with the backend's `manage.py create_teacher`.
 
 ## Checks (the same run in CI)
 

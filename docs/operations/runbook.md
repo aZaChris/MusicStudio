@@ -26,9 +26,9 @@ Prima del dominio definitivo si usa un **ambiente di staging**: una seconda riso
 - `SENTRY_ENVIRONMENT=staging`, così gli errori dello staging non si mescolano a quelli della produzione.
 - `ROBOTS_TAG` **non impostata**: lo staging resta nascosto ai motori di ricerca.
 - Stripe con chiavi di **test**, come sempre.
-- Dati di prova: `python manage.py seed_demo --force` dal terminale del container `backend`. Crea account con password nota (`password123`): **solo in staging**, mai in produzione.
+- Nessun dato di prova automatico: gli account si creano con la registrazione o con `create_teacher` (vedi "Partire con dati veri"). Il comando `seed_demo` non esiste più.
 
-## Partire con dati veri (senza `seed_demo`)
+## Partire con dati veri
 
 Dal terminale del container `backend`. La password non si passa mai sulla riga di comando (finirebbe nella cronologia della shell): il comando la chiede due volte, oppure la legge dalla variabile `ACCOUNT_PASSWORD` se è impostata. Deve superare i controlli di Django (almeno 8 caratteri, non troppo comune, non solo numeri).
 
@@ -36,7 +36,7 @@ Dal terminale del container `backend`. La password non si passa mai sulla riga d
 2. Studenti, pacchetti e lezioni si inseriscono dall'app e dal portale web (pulsanti "Nuovo studente", "Nuovo pacchetto", "Programma lezione").
 3. Un genitore (portale in sola lettura): serve l'id dello studente, che si legge nell'indirizzo della pagina dello studente (`/students/7`). Poi `python manage.py create_parent --email genitore@dominio.it --student-id 7`. Con più figli si ripete `--student-id`. Lo stesso comando su un genitore già esistente aggiunge solo i collegamenti.
 
-Gli account di `seed_demo` (`owner@example.com` e gli altri) restano nel database finché non li togli. Prima di usare lo staging con persone vere, eliminali (con l'admin di Django se è attivo, insieme allo studio "Studio di Musica Bianchi") e non rilanciare `seed_demo`. Un'eliminazione automatica non c'è ancora.
+Se un database ha ancora account di prova creati in passato dal vecchio `seed_demo` (`owner@example.com` e gli altri), vanno tolti prima di usarlo con persone vere: la via più pulita è azzerare i dati (vedi "Azzerare un database di prova").
 
 Le verifiche dopo il deploy, la misura con `scripts/measure-resources.sh` e la checklist "go / no-go" si fanno qui, prima di pubblicare il dominio vero.
 
@@ -58,6 +58,16 @@ Le verifiche dopo il deploy, la misura con `scripts/measure-resources.sh` e la c
    - `FRONTEND_URL`: l'indirizzo pubblico del portale. Entra nei link delle email e, come `VITE_SITE_URL`, nella build: da lì vengono il link canonico, l'anteprima social, `robots.txt` e `sitemap.xml`. Senza, il portale funziona ma non ha sitemap. Cambiarla ricostruisce il portale.
    - `ROBOTS_TAG`: **non impostarla**. Il portale manda `noindex, nofollow`, quindi resta fuori dai motori di ricerca. Si imposta `index, follow` solo in produzione, quando i testi di privacy sono definitivi, e con un riavvio del servizio `web` (non serve ricostruirlo). Il backend manda sempre `noindex`.
 8. Avvia il deploy. Al primo avvio il `backend` applica le migrazioni (`RUN_MIGRATIONS=1`).
+
+## Azzerare un database di prova
+
+Serve per togliere tutti i dati di prova (account, studi, studenti, lezioni, pagamenti, registro delle attività, inviti) da una risorsa che resta in piedi. **È irreversibile: mai su dati veri.**
+
+1. Dal terminale del container `backend`: `python manage.py flush --noinput`. Svuota tutte le tabelle e mantiene lo schema, quindi non serve rifare le migrazioni.
+2. Dal terminale del container `redis`: `redis-cli FLUSHALL`. Svuota le code di Celery, i contatori dei limiti di richieste e la cache.
+3. Ricomincia con una registrazione nuova dal portale, o con `create_teacher` (vedi "Partire con dati veri").
+
+Dopo l'azzeramento si può cambiare `FIELD_ENCRYPTION_KEYS` senza perdere niente: non esistono più note cifrate con la chiave vecchia. La strada alternativa, più drastica, è eliminare i volumi `db-data` e `redis-data` della risorsa e ridistribuire: serve quando si vuole anche una password del database nuova.
 
 ## Verifiche dopo ogni deploy
 

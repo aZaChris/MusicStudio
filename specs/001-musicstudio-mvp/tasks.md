@@ -242,7 +242,7 @@ and roster (see T024/T036) — this phase wires the automation, not the UI flag.
 - [x] T054 [P] Frontend Vitest smoke tests for Dashboard, Roster, and ParentPortal render
       paths in `frontend/src/features/**/*.test.tsx`
 - [X] T055 Run `specs/001-musicstudio-mvp/quickstart.md` end-to-end against the Docker Compose
-      stack and fix any drift found. Closed on 2026-11-13 on the production stack
+      stack and fix any drift found. Closed on 2026-11-13 (quickstart.md was removed afterwards with the demo data; see Git history) on the production stack
       (`docker-compose.coolify.yml`) deployed to the Coolify staging; earlier runs (2026-11-12)
       covered migrations, `seed_demo` and US1-US3 on a real PostgreSQL 18 without Docker.
       Found and fixed: `worker` and `beat` crash-looped in the image (kombu 5.7 needs `packaging`,
