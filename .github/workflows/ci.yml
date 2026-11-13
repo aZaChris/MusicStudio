@@ -192,3 +192,17 @@ jobs:
           grep -qi "permissions-policy:" headers.txt
           ! grep -qi "^server: nginx/" headers.txt
           docker rm -f web
+
+  backend-image:
+    # Builds the backend image the way Coolify does (no dev group). The tests run with the dev
+    # dependencies, so they cannot see a runtime import that only the image is missing.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Build the backend image
+        run: docker build backend --target runtime -t musicstudio-backend
+
+      - name: Celery's Redis transport imports in the runtime image
+        run: docker run --rm --entrypoint python musicstudio-backend -c "import kombu.transport.redis"
