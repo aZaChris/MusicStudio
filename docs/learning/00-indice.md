@@ -199,7 +199,7 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Backup:** copia giornaliera cifrata fuori dal server con rclone (`copy`, non `sync`); prova di ripristino eseguita su 78.000 lezioni: 87.254 righe identiche, 20 secondi.
 - **Load test:** Locust con 50 utenti, zero errori, p95 delle letture tra 62 e 560 ms su un portatile; il login è limitato dalla CPU (PBKDF2).
 - **Qualità:** da 171 a 219 test, copertura 96%.
-- **Aperto (serve il proprietario):** deploy reale su Coolify e misura del rollback; DSN di Sentry; bucket e prova di ripristino dal bucket vero; load test sul server; branch protection su GitHub. Restano anche la prova end-to-end con una sandbox Stripe reale e la coerenza dello studio garantita solo dai service.
+- **Aperto (serve il proprietario):** deploy di produzione su Coolify e misura del rollback (lo staging è fatto: 13 novembre 2026); DSN di Sentry; bucket e prova di ripristino dal bucket vero; load test sul server; branch protection su GitHub. Restano anche la prova end-to-end con una sandbox Stripe reale e la coerenza dello studio garantita solo dai service.
 
 ## Riepilogo del Web 1 (portale web)
 
@@ -209,7 +209,7 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Deploy:** immagine con versioni fissate, nginx senza privilegi, fallback delle rotte, CSP stretta e altre intestazioni, nessuna porta pubblicata, CORS limitato al portale; un test vieta le porte nel compose, un job della CI prova l'immagine vera.
 - **Qualità:** TypeScript strict attivato, oxlint senza avvisi, Prettier, da 3 a 48 test, CI dedicata, README per la review, verifica end-to-end 10 su 10.
 - **Dopo la review (10 novembre):** il revisore esterno ha approvato tutto tranne i backup, che gestisce sul server che ospita il deploy: i servizi di backup sono diventati opzionali (ADR-026). Il primo deploy avverrà su un dominio di staging.
-- **Aperto (serve il proprietario):** deploy in staging; prova dell'immagine in locale quando Docker sarà attivo in WSL; refresh token in cookie httpOnly come passo successivo.
+- **Aperto (serve il proprietario):** deploy in produzione (lo staging è in piedi dal 13 novembre 2026); prova dell'immagine in locale quando Docker sarà attivo in WSL; refresh token in cookie httpOnly come passo successivo.
 
 ## Riepilogo della fase 7 (sicurezza, privacy e account)
 
@@ -220,4 +220,4 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Bug trovato dai test:** Celery scriveva il token d'invito nei log; corretto con un filtro (knowledge base).
 - **CI:** il passo `check --deploy` mancava delle variabili nuove; corretto. Nuovo job con gitleaks sulla cronologia.
 - **Qualità:** 740 test del backend, copertura circa 96%, ruff, mypy, migrazioni e contratto OpenAPI verdi.
-- **Aperto:** il passo finale della fase (giro del quickstart, script per NotebookLM); la scansione gitleaks mai eseguita in locale; le bozze legali da far validare (T057); la prova delle email con un fornitore SMTP vero (T058); l'app mobile (nota in `specs/007-security-privacy-accounts/mobile-followup.md`).
+- **Aperto:** il passo finale della fase (giro del quickstart, script per NotebookLM); la scansione gitleaks mai eseguita in locale; le bozze legali da far validare (T057); la prova delle email con un fornitore SMTP vero (T058, fatta su staging il 13 novembre 2026: conferma, reset e inviti arrivano); l'app mobile (nota in `specs/007-security-privacy-accounts/mobile-followup.md`).

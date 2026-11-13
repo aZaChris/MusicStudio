@@ -24,6 +24,7 @@ Prima del dominio definitivo si usa un **ambiente di staging**: una seconda riso
 - **Domini propri**, per esempio `https://app-staging.tuodominio.it:8080` per `web` e `https://api-staging.tuodominio.it:8000` per `backend`; `API_PUBLIC_URL` punta all'API di staging.
 - **Database e segreti propri**: Coolify genera credenziali nuove per la nuova risorsa. Mai i dati veri della produzione.
 - `SENTRY_ENVIRONMENT=staging`, così gli errori dello staging non si mescolano a quelli della produzione.
+- `ROBOTS_TAG` **non impostata**: lo staging resta nascosto ai motori di ricerca.
 - Stripe con chiavi di **test**, come sempre.
 - Dati di prova: `python manage.py seed_demo --force` dal terminale del container `backend`. Crea account con password nota (`password123`): **solo in staging**, mai in produzione.
 
@@ -54,6 +55,8 @@ Le verifiche dopo il deploy, la misura con `scripts/measure-resources.sh` e la c
    - sul servizio `web` imposta il dominio con il suffisso della porta del container, per esempio `https://app.tuodominio.it:8080`;
    - imposta `API_PUBLIC_URL` con l'indirizzo pubblico delle API, senza percorso, per esempio `https://api.tuodominio.it`. Serve due volte: entra nella build del portale e nella Content-Security-Policy. Se manca o non inizia con `https://`, il container del portale non parte, apposta;
    - `CORS_ALLOWED_ORIGINS` del backend vale per default l'indirizzo del servizio `web`: le API accettano chiamate dal browser solo dal portale. Se il dominio del portale è diverso, impostalo a mano.
+   - `FRONTEND_URL`: l'indirizzo pubblico del portale. Entra nei link delle email e, come `VITE_SITE_URL`, nella build: da lì vengono il link canonico, l'anteprima social, `robots.txt` e `sitemap.xml`. Senza, il portale funziona ma non ha sitemap. Cambiarla ricostruisce il portale.
+   - `ROBOTS_TAG`: **non impostarla**. Il portale manda `noindex, nofollow`, quindi resta fuori dai motori di ricerca. Si imposta `index, follow` solo in produzione, quando i testi di privacy sono definitivi, e con un riavvio del servizio `web` (non serve ricostruirlo). Il backend manda sempre `noindex`.
 8. Avvia il deploy. Al primo avvio il `backend` applica le migrazioni (`RUN_MIGRATIONS=1`).
 
 ## Verifiche dopo ogni deploy
@@ -64,6 +67,10 @@ Le verifiche dopo il deploy, la misura con `scripts/measure-resources.sh` e la c
 4. Dal terminale del container `backend` in Coolify: `python manage.py raise_test_error`. L'errore deve comparire in Sentry entro un minuto, senza token né email.
 5. In Coolify tutti i servizi devono risultare "healthy". Il `worker` impiega fino a un minuto.
 6. Apri il portale, fai login e ricarica una pagina interna, per esempio `/students`: deve riapparire il portale, non un errore 404. Negli strumenti per sviluppatori del browser, la risposta della pagina deve avere l'intestazione `Content-Security-Policy`.
+7. `curl -I` sul portale mostra `content-security-policy`, `strict-transport-security` e `x-robots-tag: noindex, nofollow` (o `index, follow` se l'hai aperto). `curl -I` sul backend mostra `x-robots-tag: noindex, nofollow`.
+8. `/robots.txt` è un file di testo con `Allow: /` e, se `FRONTEND_URL` è impostata, la riga `Sitemap:`; `/sitemap.xml` elenca solo `/` e `/register`. Se `/robots.txt` risponde con una pagina HTML, il fallback del portale sta rispondendo al posto del file.
+9. Nessuna porta delle nostre app è pubblicata: dall'esterno le porte 8080 e 8000 risultano chiuse, e in `docker ps` non c'è `0.0.0.0` davanti.
+10. Nel log del `backend`, dopo l'avvio, non compare nessuna riga di errore (in particolare niente `Control server error`).
 
 ## Rollback
 
@@ -125,7 +132,7 @@ La procedura è nello script `scripts/restore-drill.sh` e la prova eseguita è r
 
 ## Cose che restano da fare a mano
 
-- Il primo deploy reale e la misura del tempo di rollback.
+- Il deploy di produzione e la misura del tempo di rollback (lo staging è stato fatto il 13 novembre 2026).
 - L'account Sentry e il DSN.
 - La prova di ripristino da un backup vero di chi amministra il server.
 - La protezione del branch su GitHub, così la CI rossa blocca il merge.

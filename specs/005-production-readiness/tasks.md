@@ -35,6 +35,8 @@
 - [X] T016 [US2] `manage.py check --deploy` with prod settings and dummy env in `.github/workflows/ci.yml`; fix any warning it raises; test that `/health/ready/` never returns exception text in `backend/apps/common/tests/` (or existing health tests)
 - [X] T017 [US2] Italian runbook `docs/operations/runbook.md`: first deploy, secrets, rollback, secret rotation, restore, owner checklist
 - [ ] T018 [US2] 👤 Deploy on Coolify following the runbook; verify HTTPS + `/health/ready/` + rollback time
+      — Staging deployed and verified on 2026-11-13 (T055, spec 001); production deploy and the
+      rollback timing are still open.
 
 ## Phase 6: US6 — Stripe webhook allowlist (P3)
 
