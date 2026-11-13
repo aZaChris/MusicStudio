@@ -15,7 +15,7 @@ const FEATURES: { key: 'lessons' | 'packages' | 'payments' | 'parents'; icon: Ic
 ]
 const SAFETY = ['studios', 'notes', 'rights', 'twoStep'] as const
 const STEPS = ['account', 'students', 'parents'] as const
-// Real screens of the portal at phone width, captured by scripts/readme-screenshots.mjs.
+// Real screens of the portal at phone width, captured once from the portal against the real API.
 const GALLERY = ['home', 'student', 'payments', 'parent'] as const
 
 /** A phone drawn in CSS around a real screenshot: no image of a device to license or keep in sync. */

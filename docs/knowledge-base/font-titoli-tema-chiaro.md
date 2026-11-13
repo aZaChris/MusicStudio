@@ -47,5 +47,5 @@ la stessa specificità del selettore dei token e vince perché arriva dopo nel b
 ## Riferimenti
 
 - `frontend/src/theme/base.css`, `frontend/src/theme/tokens.css`
-- `scripts/readme-screenshots.mjs`
+- `scripts/readme-screenshots.mjs` (rimosso il 13 novembre 2026; resta nella cronologia di Git)
 - MDN, "Specificity": https://developer.mozilla.org/en-US/docs/Web/CSS/Specificity

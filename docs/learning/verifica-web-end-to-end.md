@@ -1,5 +1,7 @@
 # Verifica end-to-end del portale web contro il backend Django
 
+> Registro storico del 10 novembre 2026. Lo script di verifica e i dati demo (`seed_demo`) sono stati rimossi il 13 novembre 2026: restano nella cronologia di Git.
+
 Questo documento registra la prova del portale web contro il backend vero. I test con Vitest provano il codice della SPA con la rete simulata; qui la build di produzione della SPA parla con Django, che parla con PostgreSQL.
 
 ## Come è stata fatta

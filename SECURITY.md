@@ -16,8 +16,8 @@ Only the latest release on `main` receives fixes.
 
 - The Django API (`backend/`), the web portal (`frontend/`) and the mobile app (branch `mobile`).
 - Stripe runs in **test mode only**: no real card data is ever processed.
-- Demo credentials in `seed_demo` (`password123`) are intentional: the command refuses to run
-  with `DEBUG=False` unless forced with `--force`.
+- The repository contains no demo accounts and no default credentials. Accounts are created by
+  registration, by invitation, or by the operator's `create_teacher` / `create_parent` commands.
 
 ## How security is checked
 

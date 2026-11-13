@@ -67,8 +67,9 @@ non-obvious decision and study notes (in Italian) that explain the concept behin
 | **Landing** | **On a phone** |
 | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/landing-dark.png"><img src="docs/assets/screenshots/landing-light.png" alt="The public landing page"></picture> | <picture><source media="(prefers-color-scheme: dark)" srcset="docs/assets/screenshots/home-mobile-dark.png"><img src="docs/assets/screenshots/home-mobile-light.png" alt="The portal at phone width" width="260"></picture> |
 
-Light or dark follows your GitHub theme. Screenshots are taken from the production build against
-the real API with demo data (`scripts/readme-screenshots.mjs`).
+Light or dark follows your GitHub theme. The screenshots are of the production build against the real
+API with sample data, taken once; the script that made them was removed together with the demo data
+(see the git history).
 
 ## Architecture
 
@@ -144,7 +145,6 @@ With Docker:
 ```bash
 cp .env.example .env
 docker compose up --build                                  # API on http://localhost:8000
-docker compose exec backend python manage.py seed_demo    # demo data (DEBUG only)
 docker compose --profile frontend up                       # web portal on http://localhost:5173
 ```
 
@@ -153,13 +153,15 @@ Without Docker (PostgreSQL reachable through `DATABASE_URL`):
 ```bash
 cd backend && uv sync
 cp ../.env.example .env                                    # then point DATABASE_URL at your PostgreSQL
-uv run python manage.py migrate && uv run python manage.py seed_demo
+uv run python manage.py migrate
 uv run python manage.py runserver
 cd ../frontend && npm ci && npm run dev
 ```
 
-Demo logins (password `password123`): `owner@example.com`, `solo.teacher@example.com`,
-`parent@example.com`. API docs at `http://localhost:8000/api/docs/`.
+There are no demo accounts and no default credentials: register from the portal, or create the first
+account from the backend terminal (the command asks for the password and never takes it on the command
+line): `python manage.py create_teacher --email you@example.com --studio-name "Your studio"`.
+API docs at `http://localhost:8000/api/docs/`.
 
 ### Quality gate (the same as CI)
 
