@@ -14,6 +14,9 @@ dependencies = [
     "djangorestframework-simplejwt>=5.5.1",
     "drf-spectacular>=0.30.0",
     "gunicorn>=26.2.0",
+    # kombu 5.7 imports it in its Redis transport but does not declare it; without it the
+    # worker and beat crash in the production image (uv sync --no-dev).
+    "packaging>=24",
     "psycopg[binary]>=3",
     "redis>=5",
     "sentry-sdk[celery,django]>=2",
