@@ -15,6 +15,26 @@ describe('dashboard', () => {
     expect(screen.getByText(/Giulia Rossi — Running low/)).toBeInTheDocument()
   })
 
+  test('greets by first name, and the sidebar shows the full name, not the email', async () => {
+    signedInAs(teacherMe, { 'GET /dashboard/': { status: 200, body: dashboard() } })
+    renderApp('/')
+
+    expect(await screen.findByRole('heading', { name: 'Hi, Mario' })).toBeInTheDocument()
+    expect(screen.getByText('Mario Rossi')).toBeInTheDocument()
+    expect(screen.queryByText('mario.rossi@example.com')).not.toBeInTheDocument()
+  })
+
+  test('falls back to the email when the account has no name', async () => {
+    signedInAs(
+      { ...teacherMe, first_name: '', last_name: '' },
+      { 'GET /dashboard/': { status: 200, body: dashboard() } },
+    )
+    renderApp('/')
+
+    expect(await screen.findByRole('heading', { name: 'Hi, mario.rossi' })).toBeInTheDocument()
+    expect(screen.getByText('mario.rossi@example.com')).toBeInTheDocument()
+  })
+
   test('the home lists the four most recent payments, newest first', async () => {
     signedInAs(teacherMe, {
       'GET /dashboard/': { status: 200, body: dashboard() },

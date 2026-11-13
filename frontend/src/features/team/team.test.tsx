@@ -45,7 +45,7 @@ test('a teacher cannot open the team page and has no link to it', async () => {
   signedInAs(teacherMe, { 'GET /dashboard/': { status: 200, body: dashboard() } })
   renderApp('/team')
 
-  expect(await screen.findByText('Hi, mario.rossi')).toBeInTheDocument()
+  expect(await screen.findByText('Hi, Mario')).toBeInTheDocument()
   expect(screen.queryByRole('link', { name: 'Team' })).not.toBeInTheDocument()
 })
 

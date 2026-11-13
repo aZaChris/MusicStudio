@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
+import { fullName } from '../lib/names'
 import { LanguageToggle, ThemeToggle } from './Preferences'
 import { Avatar, Icon, Logo, type IconName } from './ui'
 
@@ -47,9 +48,9 @@ export function Sidebar() {
       </div>
 
       <div className="ms-sidebar__foot">
-        <Avatar name={user?.email ?? '?'} index={3} circle />
+        <Avatar name={user ? fullName(user) : '?'} index={3} circle />
         <div className="ms-sidebar__foot-text">
-          <span>{user?.email}</span>
+          <span>{user ? fullName(user) : ''}</span>
           <span className="ms-sidebar__role">{user ? t(`auth.role.${user.role}`) : ''}</span>
         </div>
         <button type="button" className="ms-btn ms-btn--on-plum" onClick={logout}>

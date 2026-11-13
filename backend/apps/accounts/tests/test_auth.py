@@ -71,3 +71,15 @@ def test_me_always_has_both_profile_keys(role):
     assert "teacher" in body and "parent_account" in body
     assert (body["teacher"] is None) == (role == "parent")
     assert (body["parent_account"] is None) == (role == "teacher")
+
+
+def test_me_returns_the_name_the_portal_greets_with():
+    # The SPA shows "Ciao, <first name>" and "<first> <last>"; without these fields it fell back
+    # to the part of the email before the "@".
+    from apps.common.factories import UserFactory
+    from apps.common.tests.helpers import client_for
+
+    user = UserFactory(first_name="Christian", last_name="Seminerio")
+    body = client_for(user).get("/api/v1/auth/me/").json()
+
+    assert (body["first_name"], body["last_name"]) == ("Christian", "Seminerio")

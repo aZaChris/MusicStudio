@@ -30,6 +30,9 @@ class MeSerializer(serializers.ModelSerializer):
     # A user has at most one profile; the missing one is null. allow_null documents that.
     teacher = TeacherProfileSerializer(read_only=True, allow_null=True)
     parent_account = ParentProfileSerializer(read_only=True, allow_null=True)
+    # Always present (possibly empty): typed clients must not have to guard against undefined.
+    first_name = serializers.CharField(read_only=True)
+    last_name = serializers.CharField(read_only=True)
     mfa_enabled = serializers.SerializerMethodField()
 
     def get_mfa_enabled(self, obj: User) -> bool:
@@ -40,6 +43,8 @@ class MeSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "email",
+            "first_name",
+            "last_name",
             "role",
             "preferred_language",
             "email_verified",
