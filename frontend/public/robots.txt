@@ -1,0 +1,4 @@
+# Whether the site may be indexed is decided by the X-Robots-Tag header (ROBOTS_TAG, noindex by
+# default). Do not Disallow here: a crawler that cannot fetch a page never sees its noindex.
+User-agent: *
+Allow: /
