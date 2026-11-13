@@ -61,6 +61,8 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     # First: the request id must exist before anything logs (ADR-019).
     "apps.common.logging.RequestIdMiddleware",
+    # The API is not for search engines: noindex on every response, static files included.
+    "apps.common.robots.noindex_middleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
