@@ -15,6 +15,8 @@ WORKDIR /app
 # Dependencies first: this layer is cached until pyproject.toml/uv.lock change.
 COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev --no-install-project
+# Fail the build, not the deploy, if a runtime import is missing without the dev group.
+RUN python -c "import kombu.transport.redis"
 
 COPY . .
 # collectstatic imports production settings, which refuse to load without their
