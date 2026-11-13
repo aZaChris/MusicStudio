@@ -25,10 +25,10 @@ documentation is a deliverable, and the owner studies everything that is built h
 | 1 Foundations | `specs/002-production-foundations` | done |
 | 2 Domain | `specs/003-domain-integrity` | done |
 | 3 Celery & payments | `specs/004-celery-payments` | done |
-| 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (owner tasks open: real Coolify deploy T018, bucket drill T024) |
+| 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (staging deployed and walked through on 2026-11-13, T055; owner tasks open: production deploy T018, bucket drill T024) |
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
-| Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (owner: Coolify deploy + external review T017; image run locally once Docker works in WSL) |
-| 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | done (owner: T058 SMTP check on staging) |
+| Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (owner: production deploy (staging is up since 2026-11-13) + external review T017; image run locally once Docker works in WSL) |
+| 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | done (T058 SMTP check done on staging, 2026-11-13) |
 
 The mobile app is on branch `mobile` (own CLAUDE.md and constitution); it reads the backend
 contract from `main`.
