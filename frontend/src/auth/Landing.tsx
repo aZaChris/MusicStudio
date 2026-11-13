@@ -3,6 +3,7 @@ import { type CSSProperties, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 
 import { AppDownload } from '../components/AppDownload'
+import { LanguageToggle, ThemeToggle } from '../components/Preferences'
 import { Beats, Icon, Logo, type IconName } from '../components/ui'
 import { useTheme } from '../theme/useTheme'
 
@@ -74,31 +75,13 @@ function VideoTour() {
 
 /** What a visitor sees before signing in: what the product is, and how to start. */
 export function Landing() {
-  const { t, i18n } = useTranslation()
-  const { theme, toggleTheme } = useTheme()
-  const isItalian = i18n.language.startsWith('it')
+  const { t } = useTranslation()
 
   return (
     <div className="landing">
       <header className="landing-bar">
         <Logo size={40} />
         <nav className="landing-bar__tools" aria-label={t('landing.nav')}>
-          <button
-            type="button"
-            className="ms-btn ms-btn--secondary ms-btn--s"
-            onClick={toggleTheme}
-            aria-label={t('theme.toggle')}
-          >
-            {theme === 'dark' ? t('theme.light') : t('theme.dark')}
-          </button>
-          <button
-            type="button"
-            className="ms-btn ms-btn--secondary ms-btn--s"
-            onClick={() => i18n.changeLanguage(isItalian ? 'en' : 'it')}
-            aria-label={isItalian ? 'Switch to English' : 'Passa all’italiano'}
-          >
-            {isItalian ? 'EN' : 'IT'}
-          </button>
           <a href="#landing-steps" className="landing-bar__link">
             {t('landing.stepsTitle')}
           </a>
@@ -111,6 +94,8 @@ export function Landing() {
           <Link to="/register" className="ms-btn ms-btn--primary ms-btn--s">
             {t('landing.start')}
           </Link>
+          <ThemeToggle />
+          <LanguageToggle />
         </nav>
       </header>
 

@@ -43,5 +43,5 @@ test('the portal is read-only: no action changes data', async () => {
   await screen.findByText('Bravissima')
 
   const actions = screen.getAllByRole('button').map((b) => b.getAttribute('aria-label') ?? b.textContent)
-  expect(actions).toEqual(['Toggle light/dark theme', 'Passa all’italiano', 'Log out'])
+  expect(actions).toEqual(['Light', 'Dark', 'Italiano', 'English', 'Log out'])
 })

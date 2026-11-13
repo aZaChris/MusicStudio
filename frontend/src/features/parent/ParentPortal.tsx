@@ -5,18 +5,17 @@ import { Link } from 'react-router-dom'
 
 import { useAuth } from '../../auth/useAuth'
 import { AppDownload } from '../../components/AppDownload'
+import { LanguageToggle, ThemeToggle } from '../../components/Preferences'
 import { QueryState } from '../../components/QueryState'
 import { Beats, Icon, Logo, StatusChip } from '../../components/ui'
 import { lessonTone, paymentTone } from '../../components/tones'
 import { formatDateTime, formatDay } from '../../lib/dates'
-import { useTheme } from '../../theme/useTheme'
 import { useStudentLessons, useStudents } from '../teacher/api/students'
 import { usePayments } from '../teacher/api/payments'
 
 export function ParentPortal() {
   const { t, i18n } = useTranslation()
   const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const studentsQuery = useStudents()
   const students = studentsQuery.data ?? []
   const [selectedId, setSelectedId] = useState<number | null>(null)
@@ -28,7 +27,6 @@ export function ParentPortal() {
   const payments = usePayments(activeId) // filtered by the server: ?student=<id>
 
   const isItalian = i18n.language.startsWith('it')
-  const toggleLanguage = () => i18n.changeLanguage(isItalian ? 'en' : 'it')
   const money = new Intl.NumberFormat(isItalian ? 'it-IT' : 'en-GB', { style: 'currency', currency: 'EUR' })
 
   // The earliest lesson still to come.
@@ -51,26 +49,11 @@ export function ParentPortal() {
           <span className="muted" style={{ color: 'var(--plum-soft)', fontSize: 14 }}>
             {user?.email}
           </span>
-          <button
-            type="button"
-            className="ms-btn ms-btn--on-plum"
-            onClick={toggleTheme}
-            title={t('theme.toggle')}
-            aria-label={t('theme.toggle')}
-          >
-            {theme === 'dark' ? t('theme.light') : t('theme.dark')}
-          </button>
-          <button
-            type="button"
-            className="ms-btn ms-btn--on-plum"
-            onClick={toggleLanguage}
-            aria-label={isItalian ? 'Switch to English' : 'Passa all’italiano'}
-          >
-            {isItalian ? 'EN' : 'IT'}
-          </button>
           <Link to="/privacy" className="ms-btn ms-btn--on-plum">
             {t('nav.privacy')}
           </Link>
+          <ThemeToggle onPlum />
+          <LanguageToggle onPlum />
           <button type="button" className="ms-btn ms-btn--on-plum" onClick={logout}>
             {t('auth.logout')}
           </button>

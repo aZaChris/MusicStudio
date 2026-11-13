@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useLocation } from 'react-router-dom'
 
 import { useAuth } from '../auth/useAuth'
-import { useTheme } from '../theme/useTheme'
+import { LanguageToggle, ThemeToggle } from './Preferences'
 import { Avatar, Icon, Logo, type IconName } from './ui'
 
 type NavKey = 'nav.dashboard' | 'nav.students' | 'nav.payments' | 'nav.team' | 'nav.audit' | 'nav.account'
@@ -16,13 +16,10 @@ const NAV_ITEMS: { to: string; icon: IconName; key: NavKey; ownerOnly?: boolean 
 ]
 
 export function Sidebar() {
-  const { t, i18n } = useTranslation()
+  const { t } = useTranslation()
   const { user, logout } = useAuth()
-  const { theme, toggleTheme } = useTheme()
   const location = useLocation()
 
-  const isItalian = i18n.language.startsWith('it')
-  const toggleLanguage = () => i18n.changeLanguage(isItalian ? 'en' : 'it')
   // Students/:id belongs to the "Students" entry; "/" matches only itself.
   const isCurrent = (to: string) =>
     to === '/' ? location.pathname === '/' : location.pathname.startsWith(to)
@@ -45,23 +42,8 @@ export function Sidebar() {
       </nav>
 
       <div className="ms-sidebar__tools">
-        <button
-          type="button"
-          className="ms-btn ms-btn--on-plum"
-          onClick={toggleTheme}
-          title={t('theme.toggle')}
-          aria-label={t('theme.toggle')}
-        >
-          {theme === 'dark' ? t('theme.light') : t('theme.dark')}
-        </button>
-        <button
-          type="button"
-          className="ms-btn ms-btn--on-plum"
-          onClick={toggleLanguage}
-          aria-label={isItalian ? 'Switch to English' : 'Passa all’italiano'}
-        >
-          {isItalian ? 'EN' : 'IT'}
-        </button>
+        <ThemeToggle onPlum />
+        <LanguageToggle onPlum />
       </div>
 
       <div className="ms-sidebar__foot">

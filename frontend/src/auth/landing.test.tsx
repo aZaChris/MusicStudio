@@ -26,7 +26,7 @@ test('the landing speaks Italian on request', async () => {
   installFakeApi()
   renderApp('/')
 
-  fireEvent.click(await screen.findByRole('button', { name: 'Passa all’italiano' }))
+  fireEvent.click(await screen.findByRole('button', { name: 'Italiano' }))
 
   expect((await screen.findAllByRole('link', { name: 'Inizia gratis' }))[0]).toHaveAttribute(
     'href',
@@ -50,7 +50,7 @@ test('the landing shows real phone screens that follow the theme', async () => {
   expect(await screen.findByRole('heading', { name: 'Take a look inside' })).toBeInTheDocument()
   const parent = screen.getByRole('img', { name: 'The parent portal' })
   const before = parent.getAttribute('src')
-  fireEvent.click(screen.getByRole('button', { name: /dark|light/i }))
+  fireEvent.click(screen.getByRole('button', { name: /^(dark|light)$/i, pressed: false }))
   expect(parent.getAttribute('src')).not.toBe(before)
   expect(parent.getAttribute('src')).toMatch(/^\/showcase\/parent-(light|dark)\.jpg$/)
 })
