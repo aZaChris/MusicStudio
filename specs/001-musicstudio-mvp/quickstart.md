@@ -1,86 +1,118 @@
-# Quickstart: validate MusicStudio MVP end-to-end
+# Quickstart: validate MusicStudio end-to-end
 
-> **Status**: everything below Docker itself has already been verified from this
-> environment (WSL without Docker integration enabled) against a local sqlite DB:
-> migrations apply cleanly, `seed_demo` runs, all 26 backend tests pass, `ruff check`
-> is clean, the OpenAPI schema generates with zero warnings, and a full login →
-> dashboard → students → docs smoke test via `APIClient` succeeded. What has **not**
-> been run from here is `docker compose up` itself and the actual browser walkthrough
-> below — do that from a machine with Docker (e.g. enable WSL integration in Docker
-> Desktop, or run from Windows/macOS/Linux directly) to close the loop.
+Two ways to run the stack, and what each one proves:
 
-## Prerequisites
+| Track | Compose file | Use it to check |
+|---|---|---|
+| **A. Local** | `docker-compose.yml` | the whole product with demo data: user stories US1–US4 |
+| **B. Coolify (staging)** | `docker-compose.coolify.yml` | the production image and settings: build, start-up order, health checks, Celery Beat, real SMTP |
 
-- Docker + Docker Compose installed.
-- `infra/.env` populated from `infra/.env.example` (DB creds, Django `SECRET_KEY`, JWT
-  signing key, SMTP settings for reminder emails — console backend is fine locally).
+Track B never uses `seed_demo`: its accounts share the password `password123` and a staging
+server is public. Staging is checked with a real sign-up instead.
 
-## Bring the stack up
+> **Status (2026-11-13)**: migrations, `seed_demo`, the API walk for US1–US3 and the reminder
+> logic (US4, run twice: one email, no duplicate, a cancelled lesson gets none) have been
+> verified against a real PostgreSQL without Docker. Track A and B as written below have not
+> been run end to end yet; T055 in `tasks.md` stays open until they are.
 
-```bash
-cd infra
-docker compose up --build
-```
+## Track A: local stack
 
-This starts: `db` (Postgres), `redis`, `backend` (Django on :8000), `celery-worker`,
-`celery-beat`, `frontend` (Vite dev server on :5173).
-
-## Seed a demo scenario
+Prerequisites: Docker with Compose v2 (in WSL, enable the Docker Desktop integration).
 
 ```bash
-docker compose exec backend python manage.py migrate
-docker compose exec backend python manage.py seed_demo
+cp .env.example .env          # defaults work for a local run; the console email backend is fine
+docker compose --profile frontend up --build
 ```
 
-`seed_demo` (a management command, see tasks.md) creates: one solo teacher, one
-studio_owner with 2 teachers, a handful of students with active packages (including one at
-1 lesson remaining to exercise the low-package warning), one parent account linked to one
-student, and one lesson starting ~24h from now on an active student (to exercise the
-reminder sweep).
+This starts `db` (PostgreSQL 16), `redis`, `backend` (Django, port 8000), `worker`, `beat` and,
+because of the `frontend` profile, the Vite dev server on port 5173. The backend applies the
+migrations by itself at start-up.
 
-## Validate User Story 1 — teacher week + lesson completion (spec.md US1)
-
-1. Log in at `http://localhost:5173` as the seeded teacher.
-2. Confirm the dashboard shows this week's calendar, next 3 upcoming lessons, pending
-   payments count, active students count — matches `GET /api/v1/dashboard/`.
-3. Mark today's seeded lesson complete with a note.
-4. Confirm the student's `lessons_remaining` decreased by 1 (roster view and
-   `GET /api/v1/students/{id}/` agree).
-5. Re-submit the same completion (retry) — confirm the count does NOT decrement again
-   (`POST /api/v1/lessons/{id}/complete/` is idempotent).
-
-## Validate User Story 2 — roster, student detail, payments (spec.md US2)
-
-1. Open the roster — confirm each row shows package/remaining/payment status.
-2. Open the low-package student — confirm the low-package flag is visible.
-3. Register a manual payment (`POST /api/v1/payments/`) — confirm it appears in the
-   payments list with the correct status.
-
-## Validate User Story 3 — parent portal isolation (spec.md US3)
-
-1. Log in (separate browser/session) as the seeded parent.
-2. Confirm only their linked student's data is visible anywhere in the portal.
-3. Attempt `GET /api/v1/students/{other_student_id}/` (a student NOT linked to this parent)
-   directly against the API — confirm `404`, not the other student's data.
-4. Confirm the lesson completed in US1, with its note, is visible read-only here.
-
-## Validate User Story 4 — reminders (spec.md US4)
-
-1. Confirm the seeded ~24h-out lesson has `reminder_sent_at` set after the Celery Beat sweep
-   runs (check `celery-beat`/`celery-worker` logs, or query the Lesson via Django admin/API).
-2. Confirm exactly one reminder is logged/sent for it (idempotency — running the sweep twice
-   doesn't double-send).
-3. Cancel a different seeded lesson before its reminder window and confirm no reminder fires
-   for it.
-
-## API documentation check
-
-- `GET /api/docs/` renders Swagger UI from the drf-spectacular schema with all endpoints in
-  `contracts/api.md` present.
-
-## Automated test suites (what CI/local `test` commands should run)
+Wait until `docker compose ps` shows every service as `healthy`, then:
 
 ```bash
-docker compose exec backend pytest        # models, permission boundaries, package decrement, payment transitions
-docker compose exec frontend npm test     # component/flow tests
+curl -s localhost:8000/health/ready/                          # 200: database and Redis are reachable
+docker compose exec backend python manage.py seed_demo        # demo data
 ```
+
+`seed_demo` creates a solo teacher (`solo.teacher@example.com`), a studio owner
+(`owner@example.com`) with a second teacher (`teacher2@example.com`), students with active
+packages (one with a single lesson left), a parent (`parent@example.com`) linked to that
+student, and a lesson about 24 hours from now. The password for all of them is `password123`.
+
+### US1: the teacher's week and completing a lesson
+
+1. Open `http://localhost:5173` and log in as the teacher.
+2. The dashboard shows the week, the next lessons, the pending payments and the active
+   students; the numbers match `GET /api/v1/dashboard/`.
+3. Complete today's lesson with a note.
+4. The student's remaining lessons drop by 1 (roster and student page agree).
+5. Send the same completion again (a retry): the count must not drop twice.
+
+### US2: roster, student page, payments
+
+1. The roster shows package, remaining lessons and payment status for each student.
+2. The student with one lesson left shows the low-package warning.
+3. Register a manual payment: it appears in the payments list with the right status.
+
+### US3: the parent portal
+
+1. In a separate browser session, log in as `parent@example.com`.
+2. Only the linked student is visible anywhere.
+3. `GET /api/v1/students/{id}/` for a student who is not linked answers `404`, not the data.
+4. The lesson completed in US1, with its note, is visible read-only.
+
+### US4: reminders
+
+The sweep runs every 15 minutes and looks at lessons starting 23h45 to 24h from now. The seeded
+lesson sits right at the edge, so to avoid waiting up to 15 minutes, move it into the window:
+
+```bash
+docker compose exec backend python manage.py shell -c "
+import datetime
+from django.utils import timezone
+from apps.lessons.models import Lesson
+l = Lesson.objects.filter(status='scheduled', reminder_sent_at__isnull=True).order_by('-start_time').first()
+l.start_time = timezone.now() + datetime.timedelta(hours=23, minutes=52); l.save()
+print(l.pk, l.start_time)"
+```
+
+1. Within 15 minutes the `beat` log shows the task being sent and the `worker` log shows it
+   running. This is the one thing only Docker proves: the scheduler fires by itself.
+2. The lesson now has `reminder_sent_at` set, and one email for the parent is printed in the
+   `worker` log (console backend).
+3. The sweep runs again 15 minutes later: no second email (it is idempotent).
+4. Cancel another scheduled lesson before its window: no reminder appears for it.
+
+### API documentation
+
+`http://localhost:8000/api/docs/` shows Swagger UI with the endpoints of `contracts/api.md`.
+
+## Track B: Coolify staging
+
+Prerequisites: the project already exists in Coolify with its variables (the required ones,
+marked `:?` in `docker-compose.coolify.yml`, are `SMTP_*`, `DEFAULT_FROM_EMAIL` and
+`FIELD_ENCRYPTION_KEYS`). Use Stripe in test mode only.
+
+1. Deploy and wait. The deploy is good only when all six services are `healthy`: `db`, `redis`,
+   `backend`, `worker`, `beat` and `web` (the SPA behind nginx). The backend check is
+   `/health/ready/`, so a healthy backend already means PostgreSQL and Redis answer.
+2. Open the public URL: the landing loads and the video poster appears.
+3. Sign up as a teacher at `/register`, confirm the email (a real message through the SMTP
+   provider), log in.
+4. Create a student, invite a parent with an email address you control, and accept the
+   invitation in another browser session. The parent sees only that student.
+5. Schedule a lesson for that student starting in 23h50 from now.
+6. Check US4 as in track A: the `beat` log shows the sweep, the parent receives a real email
+   within 15 minutes, and a second sweep sends nothing.
+7. `/health/ready/` answers 200; stop `redis` for a minute and it must answer 503 (and the API
+   itself keeps working: throttles fail open); start it again and it returns to 200.
+
+## Automated test suites
+
+```bash
+cd backend && uv run pytest                  # coverage floor 90%
+cd frontend && npm test                      # Vitest, capped at 2 workers
+```
+
+CI runs both, plus lint, types, the OpenAPI check and the portal image build.
