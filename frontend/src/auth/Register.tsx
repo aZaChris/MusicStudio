@@ -59,10 +59,21 @@ export function Register() {
           {t('register.lastName')}
           <input className="ms-input" value={form.last_name} onChange={set('last_name')} required />
         </label>
-        <label className="ms-field">
-          {t('register.studioName')}
-          <input className="ms-input" value={form.studio_name} onChange={set('studio_name')} required />
-        </label>
+        <div className="ms-stack" style={{ gap: 6 }}>
+          <label className="ms-field">
+            {t('register.studioName')}
+            <input
+              className="ms-input"
+              value={form.studio_name}
+              onChange={set('studio_name')}
+              aria-describedby="studio-name-hint"
+              required
+            />
+          </label>
+          <span id="studio-name-hint" className="ms-help">
+            {t('register.studioNameHint')}
+          </span>
+        </div>
         <label className="ms-field">
           {t('auth.email')}
           <input

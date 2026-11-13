@@ -189,6 +189,7 @@
     "firstName": "Nome",
     "lastName": "Cognome",
     "studioName": "Nome dello studio",
+    "studioNameHint": "Insegni da solo? Scrivi il tuo nome: lo studio sei tu.",
     "acceptTerms": "Accetto i termini e l'informativa sulla privacy",
     "submit": "Crea account",
     "haveAccount": "Ho già un account",
