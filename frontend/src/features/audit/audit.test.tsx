@@ -46,5 +46,5 @@ test('a teacher is sent back home from the activity log', async () => {
   signedInAs(teacherMe, { 'GET /dashboard/': { status: 200, body: dashboard() } })
   renderApp('/audit')
 
-  expect(await screen.findByText('Hi, mario.rossi')).toBeInTheDocument()
+  expect(await screen.findByText('Hi, Mario')).toBeInTheDocument()
 })

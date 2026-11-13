@@ -3,6 +3,8 @@ import type { Dashboard, Lesson, Me, Payment, Student } from '../api/types'
 export const teacherMe: Me = {
   id: 1,
   email: 'mario.rossi@example.com',
+  first_name: 'Mario',
+  last_name: 'Rossi',
   role: 'teacher',
   preferred_language: 'en',
   teacher: { id: 10, studio: 100, is_owner: false },
@@ -14,6 +16,8 @@ export const teacherMe: Me = {
 export const parentMe: Me = {
   id: 2,
   email: 'anna@example.com',
+  first_name: 'Anna',
+  last_name: 'Bianchi',
   role: 'parent',
   preferred_language: 'en',
   teacher: null,
@@ -88,6 +92,8 @@ export const ownerMe: Me = {
   ...teacherMe,
   id: 3,
   email: 'titolare@example.com',
+  first_name: 'Teresa',
+  last_name: 'Neri',
   role: 'studio_owner',
   teacher: { id: 11, studio: 100, is_owner: true },
 }
@@ -95,6 +101,8 @@ export const ownerMe: Me = {
 export const studentMe: Me = {
   id: 4,
   email: 'luca@example.com',
+  first_name: 'Luca',
+  last_name: 'Verdi',
   role: 'student',
   preferred_language: 'en',
   teacher: null,

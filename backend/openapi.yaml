@@ -3333,6 +3333,12 @@ components:
           type: string
           format: email
           maxLength: 254
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
         role:
           $ref: '#/components/schemas/MeRoleEnum'
         preferred_language:
@@ -3354,7 +3360,9 @@ components:
           nullable: true
       required:
       - email
+      - first_name
       - id
+      - last_name
       - mfa_enabled
       - parent_account
       - role

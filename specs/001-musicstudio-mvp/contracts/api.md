@@ -16,7 +16,7 @@ so existence of other families' records is never leaked.
 |---|---|---|
 | POST | `/auth/token/` | obtain access+refresh JWT (email+password) |
 | POST | `/auth/token/refresh/` | refresh access token |
-| GET | `/auth/me/` | current user: id, email, role, `teacher` or `parent_account` sub-profile |
+| GET | `/auth/me/` | current user: id, email, first_name, last_name, role, `teacher` or `parent_account` sub-profile |
 
 ## Studios & Teachers (`apps/studios`) — studio_owner only for studio-wide reads
 

@@ -48,7 +48,7 @@ test('a teacher signs in and lands on the dashboard', async () => {
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'password123' } })
   fireEvent.click(screen.getByRole('button', { name: 'Log in' }))
 
-  expect(await screen.findByText('Hi, mario.rossi')).toBeInTheDocument()
+  expect(await screen.findByText('Hi, Mario')).toBeInTheDocument()
 })
 
 test('page load re-verifies the stored session and routes by the server role', async () => {
@@ -143,7 +143,10 @@ test("after logout and a new sign-in, nothing of the previous user's data is sho
   let release: () => void = () => undefined
   api.route({
     'POST /auth/token/': { status: 200, body: { access: 'b', refresh: 'r2' } },
-    'GET /auth/me/': { status: 200, body: { ...teacherMe, id: 9, email: 'luca@example.com' } },
+    'GET /auth/me/': {
+      status: 200,
+      body: { ...teacherMe, id: 9, email: 'luca@example.com', first_name: 'Luca' },
+    },
     'GET /dashboard/': () =>
       new Promise((resolve) => {
         release = () => resolve({ status: 200, body: dashboard({ active_students_count: 4 }) })
@@ -153,7 +156,7 @@ test("after logout and a new sign-in, nothing of the previous user's data is sho
   fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'pw' } })
   fireEvent.click(screen.getByRole('button', { name: 'Log in' }))
 
-  expect(await screen.findByText('Hi, luca')).toBeInTheDocument()
+  expect(await screen.findByText('Hi, Luca')).toBeInTheDocument()
   expect(screen.queryByText('12')).toBeNull() // while the new dashboard is still loading
   release()
   expect(await screen.findByText('4')).toBeInTheDocument()

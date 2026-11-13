@@ -12,6 +12,7 @@ import { formatDay } from '../../lib/dates'
 import { useAuth } from '../../auth/useAuth'
 import { useDashboard } from './api/lessons'
 import { usePayments } from './api/payments'
+import { firstName } from '../../lib/names'
 import { LessonCompleteModal } from './LessonCompleteModal'
 
 export function Dashboard() {
@@ -43,7 +44,7 @@ export function Dashboard() {
       <div className="page-head">
         <div className="page-head__text">
           <span className="page-eyebrow">{todayLabel}</span>
-          <h1 className="page-title">{t('dashboard.greeting', { name: user?.email.split('@')[0] ?? '' })}</h1>
+          <h1 className="page-title">{t('dashboard.greeting', { name: user ? firstName(user) : '' })}</h1>
         </div>
         <Link to="/payments" className="ms-btn ms-btn--primary">
           {t('payments.registerPayment')}

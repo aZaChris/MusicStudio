@@ -39,7 +39,7 @@ test('a signed-in teacher does not see the landing', async () => {
   signedInAs(teacherMe, { 'GET /dashboard/': { status: 200, body: dashboard() } })
   renderApp('/')
 
-  expect(await screen.findByText('Hi, mario.rossi')).toBeInTheDocument()
+  expect(await screen.findByText('Hi, Mario')).toBeInTheDocument()
   expect(screen.queryByText('What it does')).not.toBeInTheDocument()
 })
 

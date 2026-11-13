@@ -928,6 +928,8 @@ export interface components {
             readonly id: number;
             /** Format: email */
             email: string;
+            readonly first_name: string;
+            readonly last_name: string;
             role: components["schemas"]["MeRoleEnum"];
             preferred_language?: components["schemas"]["PreferredLanguageEnum"];
             email_verified?: boolean;

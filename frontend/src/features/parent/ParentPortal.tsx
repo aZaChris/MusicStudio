@@ -10,6 +10,7 @@ import { QueryState } from '../../components/QueryState'
 import { Beats, Icon, Logo, StatusChip } from '../../components/ui'
 import { lessonTone, paymentTone } from '../../components/tones'
 import { formatDateTime, formatDay } from '../../lib/dates'
+import { fullName } from '../../lib/names'
 import { useStudentLessons, useStudents } from '../teacher/api/students'
 import { usePayments } from '../teacher/api/payments'
 
@@ -47,7 +48,7 @@ export function ParentPortal() {
         </div>
         <div className="portal-header__tools">
           <span className="muted" style={{ color: 'var(--plum-soft)', fontSize: 14 }}>
-            {user?.email}
+            {user ? fullName(user) : ''}
           </span>
           <Link to="/privacy" className="ms-btn ms-btn--on-plum">
             {t('nav.privacy')}
