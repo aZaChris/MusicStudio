@@ -20,6 +20,7 @@ Il proprietario porta il portale su Coolify dopo la review di un amico, con due 
   - `Content-Security-Policy`: script, stili e font solo dal portale stesso, connessioni solo verso il portale e l'origine delle API, nessun iframe da altri siti, niente plugin;
   - `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY` (browser vecchi), `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy` che spegne fotocamera, microfono, posizione e pagamenti, `Cross-Origin-Opener-Policy: same-origin`;
   - `Strict-Transport-Security` (30 giorni, come le API): lo imposta nginx. Si pensava lo facesse il proxy di Coolify, ma sullo staging, il 13 novembre 2026, non c'era;
+  - `robots.txt` e `sitemap.xml` li genera la build (serve `VITE_SITE_URL`, perché la sitemap vuole indirizzi assoluti). La sitemap elenca solo le due pagine pubbliche, `/` e `/register`: niente accesso, niente aree private, niente API e niente file multimediali, video compreso. Senza `VITE_SITE_URL` non c'è sitemap;
   - `X-Robots-Tag`, deciso dalla variabile `ROBOTS_TAG`: `noindex, nofollow` per impostazione predefinita, e la produzione lo apre a mano con `index, follow`. Così un ambiente nuovo o dimenticato non finisce su Google.
 - **Fallire subito**: uno script all'avvio del container controlla `API_ORIGIN`. Se manca o non è `https://` (o localhost), il container non parte.
 - **Origini separate**: portale e API hanno domini diversi. Le API accettano chiamate dal browser solo dall'origine del portale (`CORS_ALLOWED_ORIGINS`).
