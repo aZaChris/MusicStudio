@@ -241,18 +241,22 @@ and roster (see T024/T036) — this phase wires the automation, not the UI flag.
       `frontend/src/features/**`
 - [x] T054 [P] Frontend Vitest smoke tests for Dashboard, Roster, and ParentPortal render
       paths in `frontend/src/features/**/*.test.tsx`
-- [ ] T055 Run `specs/001-musicstudio-mvp/quickstart.md` end-to-end against the Docker Compose
-      stack and fix any drift found — **blocked**: this environment has no Docker access
-      (WSL without Docker Desktop integration); everything short of `docker compose up`
-      itself was verified via sqlite (migrations, `seed_demo`, all 26 backend tests, `ruff`,
-      OpenAPI schema generation, an `APIClient` smoke walkthrough) — see the note at the top
-      of `quickstart.md`. Run this task from a machine with Docker to close the loop.
-      Re-run on 2026-11-12 against a real PostgreSQL 18 (no Docker, no Redis, no browser): migrate and
-      `seed_demo` OK; live API walkthrough OK for US1 (dashboard, completing a lesson takes the package
-      from 9 to 8, the retry leaves it at 8), US2 (roster, packages, payments list) and US3 (the parent
-      sees only their own student, others return 404); `/health/ready/` answers 503 with Redis down, as
-      designed; full suite 751 passed, coverage 95.83%. Still open: `docker compose up`, the browser
-      walk, and US4 (reminder sweep needs Redis/Celery; covered only by the automated tests).
+- [X] T055 Run `specs/001-musicstudio-mvp/quickstart.md` end-to-end against the Docker Compose
+      stack and fix any drift found. Closed on 2026-11-13 on the production stack
+      (`docker-compose.coolify.yml`) deployed to the Coolify staging; earlier runs (2026-11-12)
+      covered migrations, `seed_demo` and US1-US3 on a real PostgreSQL 18 without Docker.
+      Found and fixed: `worker` and `beat` crash-looped in the image (kombu 5.7 needs `packaging`,
+      not declared; see `docs/knowledge-base/packaging-mancante-nell-immagine-celery.md`), and
+      CI never built the backend image (new `backend-image` job).
+      Verified on staging: all six services healthy; `/health/ready/` 200 with database and Redis
+      ok; sign-up, password reset and invitations (teacher and parent) arrive by real SMTP; the
+      parent sees only their own student (US3); a lesson completed and a cash payment recorded
+      (US1, US2); Celery Beat fires by itself every 15 minutes, and the 10:45 UTC sweep sent one
+      reminder to the parent with the right time (US4); a cancelled lesson got no reminder; the
+      15-minute sweep after it (12:00 Rome time) sent no second email (reported by the owner).
+      Not run, by decision: the local `docker-compose.yml` (the Coolify stack is the one that
+      ships, and it passed; Docker is not enabled in this WSL distro anyway), and Redis down on
+      staging (the 503 was seen locally on 2026-11-12).
 - [x] T056 `.gitignore` review (env files, `__pycache__`, `node_modules`, build output) at
       repo root
 

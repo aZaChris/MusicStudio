@@ -10,10 +10,10 @@ Two ways to run the stack, and what each one proves:
 Track B never uses `seed_demo`: its accounts share the password `password123` and a staging
 server is public. Staging is checked with a real sign-up instead.
 
-> **Status (2026-11-13)**: migrations, `seed_demo`, the API walk for US1–US3 and the reminder
-> logic (US4, run twice: one email, no duplicate, a cancelled lesson gets none) have been
-> verified against a real PostgreSQL without Docker. Track A and B as written below have not
-> been run end to end yet; T055 in `tasks.md` stays open until they are.
+> **Status (2026-11-13)**: track B was run on the Coolify staging and passed (see T055 in
+> `tasks.md` for what was checked and what was not). Track A (`docker-compose.yml`) was not run
+> in a Docker environment, by decision: the Coolify stack is the one that ships. Its steps are
+> written from the compose file and the code.
 
 ## Track A: local stack
 
