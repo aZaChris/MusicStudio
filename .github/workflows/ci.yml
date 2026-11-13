@@ -204,6 +204,10 @@ jobs:
           curl -sI http://127.0.0.1:18081/ | grep -qi "^strict-transport-security: max-age=2592000"
           curl -fs http://127.0.0.1:18081/ | grep -q "https://www.example.com/showcase/musicstudio-poster.jpg"
           curl -fs http://127.0.0.1:18081/robots.txt | grep -q "^Allow: /"
+          curl -fs http://127.0.0.1:18081/robots.txt | grep -q "^Sitemap: https://www.example.com/sitemap.xml"
+          curl -fs http://127.0.0.1:18081/sitemap.xml | grep -q "<loc>https://www.example.com/</loc>"
+          curl -fs http://127.0.0.1:18081/sitemap.xml | grep -q "<loc>https://www.example.com/register</loc>"
+          ! curl -fs http://127.0.0.1:18081/sitemap.xml | grep -qi -E "video|\.mp4|/api"
           docker rm -f web-default web-open
 
   backend-image:
