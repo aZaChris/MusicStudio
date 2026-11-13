@@ -252,11 +252,11 @@ and roster (see T024/T036) — this phase wires the automation, not the UI flag.
       ok; sign-up, password reset and invitations (teacher and parent) arrive by real SMTP; the
       parent sees only their own student (US3); a lesson completed and a cash payment recorded
       (US1, US2); Celery Beat fires by itself every 15 minutes, and the 10:45 UTC sweep sent one
-      reminder to the parent with the right time (US4); a cancelled lesson got no reminder.
-      Not verified: the local `docker-compose.yml` was never run (Docker is not enabled in this
-      WSL distro); Redis down on staging was skipped (the 503 was seen locally on 2026-11-12);
-      "no second email at the next sweep" was checked on PostgreSQL locally, and on staging it
-      was left to the owner's check at 12:00 Rome time, not recorded here.
+      reminder to the parent with the right time (US4); a cancelled lesson got no reminder; the
+      15-minute sweep after it (12:00 Rome time) sent no second email (reported by the owner).
+      Not run, by decision: the local `docker-compose.yml` (the Coolify stack is the one that
+      ships, and it passed; Docker is not enabled in this WSL distro anyway), and Redis down on
+      staging (the 503 was seen locally on 2026-11-12).
 - [x] T056 `.gitignore` review (env files, `__pycache__`, `node_modules`, build output) at
       repo root
 

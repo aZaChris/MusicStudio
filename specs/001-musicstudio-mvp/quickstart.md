@@ -11,8 +11,9 @@ Track B never uses `seed_demo`: its accounts share the password `password123` an
 server is public. Staging is checked with a real sign-up instead.
 
 > **Status (2026-11-13)**: track B was run on the Coolify staging and passed (see T055 in
-> `tasks.md` for what was checked and what was not). Track A (`docker-compose.yml`) has not been
-> run in a Docker environment; its steps are written from the compose file and the code.
+> `tasks.md` for what was checked and what was not). Track A (`docker-compose.yml`) was not run
+> in a Docker environment, by decision: the Coolify stack is the one that ships. Its steps are
+> written from the compose file and the code.
 
 ## Track A: local stack
 
