@@ -1,4 +1,14 @@
-"""Write use-cases for payments: manual records and online checkout (Stripe)."""
+"""Scritture dei pagamenti: registrazione a mano e checkout online (Stripe).
+
+Qui vive la logica; le view e i task sono involucri sottili
+(docs/learning/concetti/service-layer-e-modular-monolith.md, ADR-002).
+Per i pagamenti online leggere prima docs/learning/concetti/pagamenti-online-stripe.md,
+ADR-013 (Stripe Checkout) e ADR-014 (webhook salvati, poi elaborati).
+
+FUTURO (pagamenti dentro l'app): `start_checkout` è il punto da cui partirebbe un pagamento
+reale. Prima di attivarlo servono le decisioni elencate in testa a models.py (ADR da scrivere,
+prossimo numero libero: ADR-034).
+"""
 
 import datetime
 import logging
@@ -20,7 +30,7 @@ from .models import CheckoutSession, Payment, WebhookEvent
 
 
 def ensure_package_matches_student(student: Student, package: Package | None) -> None:
-    """The one place that enforces "a payment's package belongs to the payment's student"."""
+    """L'unico punto che impone: il pacchetto di un pagamento appartiene al suo studente."""
     if package is not None and package.student_id != student.pk:
         raise ValidationError(
             {"package": "Package must belong to the same student as the payment."}
@@ -28,6 +38,8 @@ def ensure_package_matches_student(student: Student, package: Package | None) ->
 
 
 def _record_audit(payment: Payment, actor: Any) -> None:
+    # Ogni pagamento registrato lascia una traccia nel registro attività (ADR-031).
+    # Nei metadati metodo e importo; mai dati personali (docs/learning/concetti/audit-log.md).
     audit.record(
         audit.Action.PAYMENT_RECORD,
         actor=actor,
@@ -40,14 +52,15 @@ def _record_audit(payment: Payment, actor: Any) -> None:
 def create_payment(
     *, student: Student, package: Package | None = None, actor: Any = None, **fields: Any
 ) -> Payment:
-    """Record a payment by hand. `actor` is the signed-in user (None for the system)."""
+    """Registra un pagamento a mano. `actor` è l'utente collegato (None se è il sistema)."""
     ensure_package_matches_student(student, package)
     payment = Payment.objects.create(student=student, package=package, **fields)
     _record_audit(payment, actor)
     return payment
 
 
-# The only allowed status changes. "paid" is final: money records must not silently go back.
+# Le uniche variazioni di stato consentite. "paid" è definitivo: una registrazione di denaro
+# non deve tornare indietro in silenzio.
 ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     Payment.Status.PENDING: frozenset({Payment.Status.PAID, Payment.Status.OVERDUE}),
     Payment.Status.OVERDUE: frozenset({Payment.Status.PAID}),
@@ -56,11 +69,13 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
 
 
 def ensure_transition_allowed(current: str, target: str) -> None:
+    """Solleva ValidationError se il cambio di stato non è nella tabella qui sopra."""
     if target != current and target not in ALLOWED_TRANSITIONS[current]:
         raise ValidationError({"status": f"Cannot change status from {current} to {target}."})
 
 
 def update_payment(payment: Payment, **changes: Any) -> Payment:
+    """Modifica un pagamento controllando transizione di stato e coerenza del pacchetto."""
     if "status" in changes:
         ensure_transition_allowed(payment.status, changes["status"])
     for field, value in changes.items():
@@ -70,37 +85,42 @@ def update_payment(payment: Payment, **changes: Any) -> Payment:
     return payment
 
 
-# --- Online payments (phase 3, ADR-013/014) ---------------------------------------------
+# --- Pagamenti online (fase 3, ADR-013/014) ----------------------------------------------
 
 logger = logging.getLogger(__name__)
 
 
 class PackageAlreadyPaid(DomainConflict):
+    """Il pacchetto è già pagato: l'API risponde 409."""
+
     code = "package_already_paid"
 
 
 def package_is_paid(package: Package) -> bool:
+    """Vero se esiste almeno un pagamento "paid" per il pacchetto."""
     return Payment.objects.filter(package=package, status=Payment.Status.PAID).exists()
 
 
 def _cents(amount: Decimal) -> int:
+    # Stripe vuole interi in centesimi: si lavora con Decimal, mai con float, per i soldi.
     return int((amount * 100).quantize(Decimal("1")))
 
 
 def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
-    """Return an open checkout attempt for `package`, creating one if needed.
+    """Restituisce un tentativo di checkout aperto per `package`, creandolo se serve.
 
-    The package row is locked for the whole operation, Stripe call included: a double
-    click waits for the first request and then reuses its attempt instead of opening a
-    second payment page. The Stripe call carries an idempotency key, so the SDK's own
-    network retries cannot create duplicate sessions either. If Stripe fails, the
-    transaction rolls back and no attempt is stored.
+    La riga del pacchetto resta bloccata per tutta l'operazione, chiamata a Stripe compresa:
+    un doppio clic aspetta la prima richiesta e poi riusa il suo tentativo, invece di aprire
+    una seconda pagina di pagamento. La chiamata a Stripe porta una chiave di idempotenza,
+    quindi nemmeno i nuovi tentativi di rete dell'SDK possono creare sessioni doppie. Se Stripe
+    fallisce, la transazione torna indietro e nessun tentativo viene salvato.
     """
     if package_is_paid(package):
         raise PackageAlreadyPaid("This package is already paid.")
     with transaction.atomic():
-        # Lock and re-read: the price charged is the one in the database right now.
+        # Blocca e rilegge: il prezzo addebitato è quello nel database in questo momento.
         package = Package.objects.select_for_update().select_related("student").get(pk=package.pk)
+        # Un tentativo ancora valido (aperto, con almeno un minuto davanti) si riusa.
         reusable = (
             CheckoutSession.objects.filter(
                 package=package,
@@ -139,8 +159,8 @@ def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
 
 
 def record_webhook_event(event: dict[str, Any]) -> tuple[WebhookEvent, bool]:
-    """Store a verified event once; schedule processing only for the first delivery."""
-    from .tasks import process_webhook_event  # tasks import services: avoid a cycle
+    """Salva un evento verificato una volta sola; in coda solo alla prima consegna."""
+    from .tasks import process_webhook_event  # tasks importa services: evita un ciclo
 
     with transaction.atomic():
         stored, created = WebhookEvent.objects.get_or_create(
@@ -148,12 +168,14 @@ def record_webhook_event(event: dict[str, Any]) -> tuple[WebhookEvent, bool]:
             defaults={"type": event.get("type", ""), "payload": event},
         )
         if created:
-            # After commit: the worker must be able to read the row it is told to process.
+            # Dopo il commit: il worker deve poter leggere la riga che deve elaborare.
             transaction.on_commit(lambda: process_webhook_event.delay(stored.pk))
     return stored, created
 
 
+# Eventi che chiudono il pagamento come riuscito.
 FULFIL_EVENTS = {"checkout.session.completed", "checkout.session.async_payment_succeeded"}
+# Tutti gli eventi di cui ci occupiamo; gli altri si salvano e si ignorano.
 HANDLED_EVENTS = FULFIL_EVENTS | {
     "checkout.session.async_payment_failed",
     "checkout.session.expired",
@@ -161,11 +183,12 @@ HANDLED_EVENTS = FULFIL_EVENTS | {
 
 
 def process_webhook_event(event_pk: int) -> bool:
-    """Apply a stored event exactly once. Safe to call any number of times."""
+    """Applica un evento salvato esattamente una volta. Si può chiamare quante volte si vuole."""
     with transaction.atomic():
+        # Blocco di riga: due worker sullo stesso evento si accodano invece di sovrapporsi.
         event = WebhookEvent.objects.select_for_update().get(pk=event_pk)
         if event.processed_at is not None:
-            return False
+            return False  # già elaborato: nessun effetto
         event.attempts += 1
         if event.type in HANDLED_EVENTS:
             session = gateway.SessionInfo.from_dict(event.payload["data"]["object"])
@@ -176,6 +199,7 @@ def process_webhook_event(event_pk: int) -> bool:
 
 
 def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) -> None:
+    # Ritrova il tentativo dalla sessione di Stripe e ne aggiorna lo stato.
     checkout = (
         CheckoutSession.objects.select_for_update()
         .select_related("package__student")
@@ -183,6 +207,7 @@ def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) ->
         .first()
     )
     if checkout is None:
+        # Non è un errore: può essere un evento di un altro ambiente o di un test.
         logger.warning("Stripe session %s matches no checkout attempt; ignored", session.id)
         return
     apply_session_state(checkout, session, failed=failed)
@@ -191,13 +216,13 @@ def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) ->
 def apply_session_state(
     checkout: CheckoutSession, session: gateway.SessionInfo, *, failed: bool = False
 ) -> None:
-    """Move a (locked) checkout attempt to the state Stripe reports. Idempotent.
+    """Porta un tentativo (già bloccato) allo stato che Stripe riporta. Idempotente.
 
-    Fulfil only when the money is there: with delayed payment methods (e.g. SEPA debit)
-    the session completes as `unpaid` and the result arrives later.
+    Si completa solo quando i soldi ci sono: con metodi di pagamento differiti (per esempio
+    l'addebito SEPA) la sessione si chiude come `unpaid` e l'esito arriva più tardi.
     """
     if checkout.status != CheckoutSession.Status.OPEN:
-        return  # terminal states never change; replays are no-ops
+        return  # gli stati finali non cambiano più; le ripetizioni non fanno nulla
     if session.status == "complete" and session.payment_status in ("paid", "no_payment_required"):
         _fulfil(checkout, session)
     elif failed:
@@ -209,9 +234,11 @@ def apply_session_state(
 
 
 def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> None:
+    # Crea il pagamento "paid" e chiude il tentativo; il tutto dentro la transazione del chiamante.
     package = checkout.package
     if package_is_paid(package):
-        # Paid by hand meanwhile: the money was still taken, so record it and warn.
+        # Pagato a mano nel frattempo: i soldi sono stati comunque presi, quindi si registra
+        # e si avvisa nel log (rimborso da gestire a mano).
         logger.warning("Package %s was already paid; recording online payment too", package.pk)
     amount = (
         Decimal(session.amount_total) / 100 if session.amount_total is not None else checkout.amount
@@ -219,7 +246,7 @@ def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> None:
     payment = Payment.objects.create(
         student=package.student,
         package=package,
-        amount=amount,  # what Stripe actually charged, even if the price changed since
+        amount=amount,  # quanto Stripe ha davvero addebitato, anche se il prezzo è cambiato
         date=timezone.localdate(),
         method=Payment.Method.CARD,
         status=Payment.Status.PAID,
@@ -231,7 +258,7 @@ def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> None:
 
 
 def reconcile_open_checkouts(limit: int = 100) -> int:
-    """Safety net for lost webhooks: ask Stripe about open attempts past their expiry."""
+    """Rete di sicurezza per i webhook persi: chiede a Stripe dei tentativi aperti e scaduti."""
     stale = CheckoutSession.objects.filter(
         status=CheckoutSession.Status.OPEN,
         stripe_session_id__isnull=False,
@@ -239,7 +266,7 @@ def reconcile_open_checkouts(limit: int = 100) -> int:
     ).values_list("pk", "stripe_session_id")[:limit]
     resolved = 0
     for pk, session_id in stale:
-        if session_id is None:  # excluded by the filter; keeps the type checker honest
+        if session_id is None:  # escluso dal filtro; serve solo a mypy
             continue
         session = gateway.retrieve_checkout_session(session_id)
         with transaction.atomic():
