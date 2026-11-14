@@ -34,7 +34,8 @@
 - [X] T015 [US2] New env vars on backend/worker/beat in `docker-compose.coolify.yml`; `TRUSTED_PROXY_COUNT=1` default in prod
 - [X] T016 [US2] `manage.py check --deploy` with prod settings and dummy env in `.github/workflows/ci.yml`; fix any warning it raises; test that `/health/ready/` never returns exception text in `backend/apps/common/tests/` (or existing health tests)
 - [X] T017 [US2] Italian runbook `docs/operations/runbook.md`: first deploy, secrets, rollback, secret rotation, restore, owner checklist
-- [ ] T018 [US2] 👤 Deploy on Coolify following the runbook; verify HTTPS + `/health/ready/` + rollback time
+- [X] T018 [US2] 👤 Deploy on Coolify following the runbook; verify HTTPS + `/health/ready/` + rollback time
+      — Production deployed and checked on 2026-11-14: health 200, Sentry test error received (no token or email), CSP/HSTS/noindex headers, SPA reload on `/students`, `robots.txt`, ports 8000 and 8080 closed from outside, clean backend log. Rollback time deliberately not measured (owner decision, 2026-11-14).
       — Staging deployed and verified on 2026-11-13 (T055, spec 001); production deploy and the
       rollback timing are still open.
 
@@ -49,6 +50,7 @@
 - [X] T022 [US4] `scripts/restore-drill.sh` (dump or `--from-remote`, fresh DB, migrate check, row counts vs the dump's COPY blocks, elapsed time)
 - [X] T023 [US4] Execute the drill locally on a real dump of a seeded database; record in `docs/operations/restore-drill.md`; ADR-020 `docs/learning/adr/ADR-020-backup-off-site.md`
 - [ ] T024 [US4] 👤 Create bucket + rclone crypt credentials in Coolify; run the drill with `--from-remote`
+      — Deferred by the owner on 2026-11-14: production is live without the bucket drill. Until it is done, no off-site backup is verified.
 
 ## Phase 8: US5 — Load test (P3)
 
