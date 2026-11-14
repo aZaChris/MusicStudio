@@ -1,4 +1,12 @@
-"""Write use-cases for lessons (Constitution III business-critical paths)."""
+"""Scritture sulle lezioni (percorsi critici per il business, principio III della costituzione).
+
+Tre idee da conoscere prima di toccare questo file:
+1. Le sovrapposizioni le rifiuta il database, non il codice (docs/learning/concetti/
+   exclusion-constraint.md, ADR-009): qui si traduce solo l'errore in un 409.
+2. Le durate si calcolano in UTC (`end_of`), mai con l'orologio locale.
+3. Completare una lezione scala il pacchetto una volta sola, anche con doppio clic.
+Il perché del livello "services": docs/learning/concetti/service-layer-e-modular-monolith.md.
+"""
 
 import datetime
 from collections.abc import Callable
@@ -18,41 +26,44 @@ from .models import Lesson
 
 
 class LessonOverlapError(DomainConflict):
-    """The time slot is already taken by an active lesson (HTTP 409)."""
+    """Lo spazio in agenda è già occupato da una lezione attiva (HTTP 409)."""
 
     code = "lesson_overlap"
 
 
-# Constraint name → message. The database enforces the rule (ADR-009); we only translate.
+# Nome del vincolo → messaggio. La regola la impone il database (ADR-009); noi traduciamo.
 OVERLAP_MESSAGES = {
     "lesson_no_teacher_overlap": "The teacher already has a lesson in this time slot.",
     "lesson_no_student_overlap": "The student already has a lesson in this time slot.",
 }
 
 
-# Concurrent inserts into the same slot can deadlock on the exclusion constraint: each
-# transaction inserts its row, then waits for the other's uncommitted row while checking.
-# PostgreSQL aborts one of them (SQLSTATE 40P01). Retrying the loser once is enough: the
-# retry sees the winner's row and gets a normal constraint violation → 409.
+# Due inserimenti simultanei nello stesso spazio possono andare in deadlock sul vincolo di
+# esclusione: ogni transazione inserisce la sua riga, poi aspetta quella non ancora
+# confermata dell'altra mentre controlla. PostgreSQL ne annulla una (SQLSTATE 40P01). Basta
+# riprovare la perdente: al secondo giro vede la riga della vincente e ottiene una normale
+# violazione del vincolo → 409. Il caso è nei "Gotchas" di CLAUDE.md.
 MAX_DEADLOCK_RETRIES = 2
 
 
 def _guarded_write[T](write: Callable[[], T]) -> T:
-    """Run a lesson write in a savepoint; translate overlap violations into a 409.
+    """Esegue una scrittura di lezione in un savepoint; traduce le sovrapposizioni in 409.
 
-    The savepoint keeps the surrounding transaction usable after the error.
+    Il savepoint lascia utilizzabile la transazione esterna dopo l'errore.
     """
     for attempt in range(MAX_DEADLOCK_RETRIES + 1):
         try:
             with transaction.atomic():
                 return write()
         except IntegrityError as exc:
+            # Il nome del vincolo violato sta nei dettagli dell'errore di psycopg.
             diag = getattr(exc.__cause__, "diag", None)
             constraint = getattr(diag, "constraint_name", None)
             if constraint in OVERLAP_MESSAGES:
                 raise LessonOverlapError(OVERLAP_MESSAGES[constraint]) from exc
             raise
         except OperationalError as exc:
+            # Deadlock: si riprova (fino a MAX_DEADLOCK_RETRIES); altri errori risalgono.
             if isinstance(exc.__cause__, DeadlockDetected) and attempt < MAX_DEADLOCK_RETRIES:
                 continue
             raise
@@ -60,18 +71,19 @@ def _guarded_write[T](write: Callable[[], T]) -> T:
 
 
 def end_of(start: datetime.datetime, minutes: int) -> datetime.datetime:
-    """Real-time end of a lesson.
+    """Fine reale di una lezione.
 
-    Python adds a timedelta to an aware datetime on the *wall clock* of its time zone. DRF
-    hands us Europe/Rome datetimes, so on the night clocks go back 02:30 CEST + 60 min
-    would give 03:30 CET — two real hours later. Doing the arithmetic in UTC avoids it.
+    Python somma un timedelta a un datetime con fuso sull'*orologio da parete* di quel fuso.
+    DRF ci passa datetime Europe/Rome, quindi nella notte in cui le lancette tornano indietro
+    02:30 CEST + 60 minuti darebbe 03:30 CET, cioè due ore reali dopo. Calcolando in UTC si
+    evita l'errore.
     """
     return start.astimezone(datetime.UTC) + datetime.timedelta(minutes=minutes)
 
 
 def _ensure_package_matches_student(student: Student, package: Package | None) -> None:
-    # Scoping alone would allow another student of the same teacher; completing such a
-    # lesson would then decrement the wrong family's package.
+    # Lo scoping da solo permetterebbe un altro studente dello stesso insegnante; completare
+    # quella lezione scalerebbe il pacchetto della famiglia sbagliata.
     if package is not None and package.student_id != student.pk:
         raise ValidationError({"package": "Package must belong to the lesson's student."})
 
@@ -84,7 +96,8 @@ def create_lesson(
     package: Package | None = None,
     notes: str = "",
 ) -> Lesson:
-    """The teacher is always the student's teacher; the package defaults to the active one."""
+    """Crea una lezione. L'insegnante è sempre quello dello studente; il pacchetto, se non
+    indicato, è quello attivo dello studente."""
     if package is None:
         package = student.active_package
     _ensure_package_matches_student(student, package)
@@ -101,6 +114,7 @@ def create_lesson(
 
 
 def update_lesson(lesson: Lesson, **changes: Any) -> Lesson:
+    """Modifica una lezione e ricalcola la fine da inizio e durata."""
     duration = changes.pop("duration_minutes", lesson.duration_minutes)
     for field, value in changes.items():
         setattr(lesson, field, value)
@@ -114,11 +128,11 @@ def update_lesson(lesson: Lesson, **changes: Any) -> Lesson:
 
 @transaction.atomic
 def complete_lesson(lesson: Lesson, *, note: str = "") -> Lesson:
-    """Mark a lesson completed and draw down its package exactly once.
+    """Segna la lezione come svolta e scala il suo pacchetto esattamente una volta.
 
-    Idempotent and safe under concurrency: the lesson row is locked, so a double submit
-    waits for the first one and then sees `completed`. The package decrement is a single
-    guarded UPDATE that can never go below zero.
+    Idempotente e sicura con più richieste insieme: la riga della lezione è bloccata, quindi
+    un doppio invio aspetta il primo e poi trova `completed`. Lo scalo del pacchetto è un
+    singolo UPDATE con guardia che non può mai scendere sotto zero.
     """
     locked = Lesson.objects.select_for_update().get(pk=lesson.pk)
     if locked.status == Lesson.Status.COMPLETED:
@@ -127,21 +141,24 @@ def complete_lesson(lesson: Lesson, *, note: str = "") -> Lesson:
     locked.status = Lesson.Status.COMPLETED
     if note:
         locked.notes = note
-    # A cancelled lesson re-enters the agenda when completed: its slot may be taken.
+    # Una lezione annullata rientra in agenda quando viene completata: il suo spazio
+    # potrebbe essere stato preso nel frattempo (da qui `_guarded_write`).
     _guarded_write(lambda: locked.save(update_fields=["status", "notes", "updated_at"]))
 
     if locked.package_id is not None:
+        # Il filtro lessons_remaining__gt=0 è la guardia "mai sotto zero".
         Package.objects.filter(pk=locked.package_id, lessons_remaining__gt=0).update(
             lessons_remaining=F("lessons_remaining") - 1, updated_at=timezone.now()
         )
     return locked
 
 
+# Gli stati che l'API consente per annullare (usati anche dal serializer).
 CANCEL_STATUSES = (Lesson.Status.CANCELLED, Lesson.Status.NO_SHOW)
 
 
 def cancel_lesson(lesson: Lesson, *, status: str) -> Lesson:
-    """Cancel or mark no-show. A completed lesson stays completed (no refund of the package)."""
+    """Annulla o segna l'assenza. Una lezione svolta resta svolta (il pacchetto non si rimborsa)."""
     if status not in CANCEL_STATUSES:
         raise ValidationError({"status": "Status must be 'cancelled' or 'no_show'."})
     if lesson.status == Lesson.Status.COMPLETED:

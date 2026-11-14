@@ -1,12 +1,12 @@
-"""Dashboard cache with per-studio version keys (ADR-017).
+"""Cache della dashboard con chiavi a versione per studio (ADR-017).
 
-The dashboard of a studio is cached under a key that contains the studio's *version*.
-Any write to the studio's lessons, packages, payments or students bumps the version
-(`apps/common/signals.py`), so every old key becomes unreachable at once — no need to know
-which keys exist. Old entries simply expire (TTL).
+La dashboard di uno studio è in cache sotto una chiave che contiene la *versione* dello studio.
+Ogni scrittura su lezioni, pacchetti, pagamenti o studenti dello studio incrementa la versione
+(`apps/common/signals.py`): tutte le vecchie chiavi diventano irraggiungibili in un colpo, senza
+bisogno di sapere quali esistono. Le vecchie voci scadono da sole (TTL).
 
-If the cache is down, the dashboard is computed normally: a cache must never be a single
-point of failure.
+Se la cache è giù, la dashboard si calcola normalmente: una cache non deve mai essere un
+punto unico di fallimento. Spiegazione: docs/learning/concetti/caching.md.
 """
 
 import logging
@@ -23,30 +23,35 @@ logger = logging.getLogger(__name__)
 
 
 def _version_key(studio_id: int) -> str:
+    # Chiave Redis che tiene il numero di versione di uno studio.
     return f"dashboard:studio-version:{studio_id}"
 
 
 def studio_version(studio_id: int) -> int:
+    """Versione attuale della cache di uno studio (parte da 1)."""
     key = _version_key(studio_id)
-    cache.add(key, 1, timeout=None)  # no-op if it already exists
+    cache.add(key, 1, timeout=None)  # non fa nulla se la chiave esiste già
     version: int = cache.get(key) or 1
     return version
 
 
 def bump_studio_version(studio_id: int) -> None:
+    """Invalida tutta la dashboard dello studio alzando la versione."""
     try:
         cache.incr(_version_key(studio_id))
-    except ValueError:  # key missing (evicted or never set): any new value invalidates
+    except ValueError:  # chiave assente (espulsa o mai creata): qualsiasi valore nuovo invalida
         cache.set(_version_key(studio_id), 2, timeout=None)
     except Exception:
         logger.exception("Could not invalidate dashboard cache for studio %s", studio_id)
 
 
 def cached_dashboard(ctx: TenantContext, compute: Callable[[], Any]) -> Any:
-    """Return the dashboard for `ctx`, from the cache when the studio has not changed."""
+    """Restituisce la dashboard di `ctx`, dalla cache se lo studio non è cambiato."""
     if ctx.studio_id is None or ctx.is_parent:
-        return compute()  # parents span studios and rarely open the dashboard
+        return compute()  # i genitori coprono più studi e aprono di rado la dashboard
     try:
+        # La chiave contiene tutto ciò che cambia il risultato: studio, versione, ruolo,
+        # insegnante e giorno. Utenti con permessi diversi non condividono mai una voce.
         key = ":".join(
             str(part)
             for part in (
@@ -55,11 +60,12 @@ def cached_dashboard(ctx: TenantContext, compute: Callable[[], Any]) -> Any:
                 studio_version(ctx.studio_id),
                 ctx.role,
                 ctx.teacher_id,
-                timezone.localdate(),  # "this week" changes at midnight
+                timezone.localdate(),  # "questa settimana" cambia a mezzanotte
             )
         )
         hit = cache.get(key)
     except Exception:
+        # Cache non raggiungibile: si calcola senza, l'API non va giù (CLAUDE.md, "Gotchas").
         logger.exception("Dashboard cache unavailable; computing")
         return compute()
     if hit is not None:

@@ -1,3 +1,5 @@
+"""Configurazione dell'app Django `lessons`."""
+
 from django.apps import AppConfig
 
 

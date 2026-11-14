@@ -1,4 +1,9 @@
-"""Read queries for lessons and the teacher dashboard."""
+"""Letture di lezioni e dashboard dell'insegnante (solo query, nessuna scrittura).
+
+Le scritture stanno in services.py (docs/learning/concetti/service-layer-e-modular-monolith.md,
+ADR-002). Il numero di query è tenuto sotto controllo dai test sul budget di query
+(docs/learning/concetti/orm-e-problema-n-piu-1.md).
+"""
 
 import datetime
 from typing import Any
@@ -18,7 +23,7 @@ from .models import Lesson
 
 
 def parse_week(value: str | None) -> datetime.date:
-    """`?week=YYYY-MM-DD` (any day of the week); today when absent. Bad input → 400."""
+    """`?week=YYYY-MM-DD` (un giorno qualsiasi della settimana); oggi se assente. Errore → 400."""
     if not value:
         return timezone.localdate()
     try:
@@ -28,10 +33,10 @@ def parse_week(value: str | None) -> datetime.date:
 
 
 def week_bounds(anchor: datetime.date) -> tuple[datetime.datetime, datetime.datetime]:
-    """Monday 00:00 → next Monday 00:00 in the studio's timezone, as aware datetimes.
+    """Da lunedì 00:00 al lunedì successivo 00:00 nel fuso dello studio, come datetime con fuso.
 
-    A range on the raw column (instead of `start_time__date`) lets PostgreSQL use the
-    (teacher, start_time) index.
+    Un intervallo sulla colonna grezza (invece di `start_time__date`) permette a PostgreSQL di
+    usare l'indice (teacher, start_time): vedi docs/learning/concetti/indici-ed-explain.md.
     """
     monday = anchor - datetime.timedelta(days=anchor.weekday())
     start = timezone.make_aware(datetime.datetime.combine(monday, datetime.time.min))
@@ -39,15 +44,19 @@ def week_bounds(anchor: datetime.date) -> tuple[datetime.datetime, datetime.date
 
 
 def lessons_for(ctx: TenantContext) -> QuerySet[Lesson]:
+    """Le lezioni visibili all'utente. L'isolamento tra studi passa SEMPRE da `scope`
+    (docs/learning/concetti/isolamento-tenant-e-bola.md, ADR-010)."""
     return scope(Lesson.objects.select_related("student"), ctx, LESSON_PATHS)
 
 
 def lessons_in_week(ctx: TenantContext, anchor: datetime.date) -> QuerySet[Lesson]:
+    """Le lezioni della settimana che contiene `anchor`."""
     start, end = week_bounds(anchor)
     return lessons_for(ctx).filter(start_time__gte=start, start_time__lt=end)
 
 
 def upcoming_lessons_for(ctx: TenantContext, limit: int = 3) -> QuerySet[Lesson]:
+    """Le prossime lezioni in programma, dalla più vicina."""
     return (
         lessons_for(ctx)
         .filter(status=Lesson.Status.SCHEDULED, start_time__gte=timezone.now())
@@ -56,11 +65,15 @@ def upcoming_lessons_for(ctx: TenantContext, limit: int = 3) -> QuerySet[Lesson]
 
 
 def lessons_of_student(student: Student) -> QuerySet[Lesson]:
+    """Storico delle lezioni di uno studente, dalla più recente."""
     return student.lessons.select_related("student").order_by("-start_time")
 
 
 def low_package_students_for(ctx: TenantContext) -> QuerySet[Student]:
-    """Active students whose active package has 1..threshold lessons left — one query."""
+    """Studenti attivi il cui pacchetto attivo ha da 1 a "soglia" lezioni rimaste — una query.
+
+    La soglia è PACKAGE_LOW_THRESHOLD. Il pacchetto attivo è il più recente con lezioni residue.
+    """
     active_remaining = Subquery(
         Package.objects.filter(student=OuterRef("pk"), lessons_remaining__gt=0)
         .order_by("-purchase_date", "-id")
@@ -75,7 +88,7 @@ def low_package_students_for(ctx: TenantContext) -> QuerySet[Student]:
 
 
 def dashboard_for(ctx: TenantContext) -> dict[str, Any]:
-    """Five queries regardless of studio size (was 5 + one per student)."""
+    """Cinque query a prescindere dalla dimensione dello studio (prima: 5 più una per studente)."""
     pending_payments = scope(
         Payment.objects.filter(status=Payment.Status.PENDING), ctx, STUDENT_CHILD_PATHS
     )
