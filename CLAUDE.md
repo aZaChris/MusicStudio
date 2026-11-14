@@ -25,7 +25,7 @@ documentation is a deliverable, and the owner studies everything that is built h
 | 1 Foundations | `specs/002-production-foundations` | done |
 | 2 Domain | `specs/003-domain-integrity` | done |
 | 3 Celery & payments | `specs/004-celery-payments` | done |
-| 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (staging walked through 2026-11-13 (T055), production online and verified 2026-11-14 (T018); owner tasks open: rollback time, bucket drill T024, SPF/DKIM/DMARC so activation emails stop landing in spam) |
+| 4 Production (Coolify deploy, Sentry, JSON logs, Locust, off-site backups + restore drill, full OWASP, token revocation, Stripe IP allowlist) | `specs/005-production-readiness` | done (staging walked through 2026-11-13 (T055), production online and verified 2026-11-14 (T018); rollback time and bucket drill T024 deliberately deferred by the owner on 2026-11-14 (no verified off-site backup yet); open: SPF/DKIM/DMARC so activation emails stop landing in spam) |
 | 5 Polish (API versioning/deprecation, admin hardening, GDPR export, portfolio write-up) | — | later |
 | Web 1 SPA hardening (`frontend/`: rotating-token session, generated types, all pages, tests, CI) | `specs/006-web-spa-hardening` | done (production is online since 2026-11-14; owner: external review T017; image run locally once Docker works in WSL) |
 | 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | done (T058 SMTP check done on staging, 2026-11-13) |
