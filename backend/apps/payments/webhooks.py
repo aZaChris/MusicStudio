@@ -1,4 +1,10 @@
-"""Stripe webhook endpoint (ADR-014): check the source, verify, store once, ack fast."""
+"""Endpoint dei webhook di Stripe (ADR-014): controlla la provenienza, verifica, salva, risponde.
+
+Il flusso, in ordine: 1) l'IP deve essere quello di Stripe; 2) la firma deve essere valida;
+3) l'evento si salva una sola volta; 4) si risponde subito 200 e l'elaborazione vera la fa il
+worker Celery. Spiegazione: docs/learning/concetti/webhook-idempotenti.md. Il filtro per IP è
+l'ADR-021 (e docs/learning/concetti/ip-reale-dietro-proxy.md spiega come si legge l'IP vero).
+"""
 
 import ipaddress
 import logging
@@ -20,9 +26,14 @@ logger = logging.getLogger(__name__)
 
 
 def is_allowed_source(ip: str) -> bool:
-    """True when no allowlist is configured or `ip` is in it (single IPs or CIDR ranges)."""
+    """Vero se non c'è una lista di IP consentiti oppure `ip` ci sta dentro.
+
+    La lista (STRIPE_WEBHOOK_ALLOWED_IPS) accetta IP singoli o intervalli CIDR.
+    """
     allowed = settings.STRIPE_WEBHOOK_ALLOWED_IPS
     if not allowed:
+        # Lista vuota = controllo spento (sviluppo e test). In produzione va compilata:
+        # vedi docs/operations/runbook.md.
         return True
     try:
         address = ipaddress.ip_address(ip)
@@ -32,8 +43,11 @@ def is_allowed_source(ip: str) -> bool:
 
 
 class StripeWebhookView(APIView):
-    # Stripe authenticates with the signature, not with a user; it must never be throttled
-    # (it retries on errors, and a 429 would just generate more deliveries).
+    # Riceve gli eventi di Stripe. Niente utente: l'autenticazione è la firma.
+    # Commento e non docstring: i docstring delle view finiscono in openapi.yaml.
+
+    # Stripe si autentica con la firma, non con un utente; e non va mai limitato (riprova
+    # in caso di errore, quindi un 429 creerebbe solo altre consegne).
     authentication_classes = ()
     permission_classes = (AllowAny,)
     throttle_classes = ()
@@ -50,13 +64,14 @@ class StripeWebhookView(APIView):
     def post(self, request: Request) -> Response:
         ip = client_ip(request)
         if not is_allowed_source(ip):
-            # Before any parsing: an outsider cannot even make us compute the HMAC.
+            # Prima di qualsiasi lettura: un estraneo non può nemmeno farci calcolare l'HMAC.
             logger.warning("Stripe webhook refused from non-allowlisted address %s", ip)
             return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
         try:
-            # request.body = raw bytes; never request.data (re-serialising breaks the HMAC).
+            # request.body = byte grezzi; mai request.data (ri-serializzare rompe l'HMAC).
             event = gateway.verify_event(request.body, request.headers.get("Stripe-Signature"))
         except gateway.InvalidWebhook:
             return Response({"detail": "Invalid signature."}, status=status.HTTP_400_BAD_REQUEST)
+        # Un doppione non fa danni: record_webhook_event lo riconosce e non rimette in coda.
         record_webhook_event(event)
         return Response({"received": True})

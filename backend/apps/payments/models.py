@@ -1,3 +1,15 @@
+"""Modelli dei pagamenti: pagamento registrato, tentativo di checkout, evento webhook.
+
+Per studiare: docs/learning/concetti/pagamenti-online-stripe.md (visione d'insieme),
+ADR-013 (perché Stripe Checkout) e ADR-014 (perché i webhook si salvano prima di elaborarli).
+
+FUTURO (pagamenti dentro l'app): oggi l'app non muove soldi veri, registra e basta. Se un
+giorno si vorrà far pagare dall'app (PostePay, PayPal, carte) serviranno: un nuovo ADR che
+sostituisca ADR-013 (oggi una chiave `sk_live_` blocca l'avvio, vedi config/settings/prod.py),
+la scelta di chi incassa (Stripe Connect per ogni insegnante/studio, oppure un conto unico con
+obblighi fiscali e legali) e un campo su questi modelli per distinguere il fornitore.
+"""
+
 import uuid
 
 from django.conf import settings
@@ -8,18 +20,34 @@ from apps.students.models import Student
 
 
 class Payment(models.Model):
+    """Un pagamento registrato: a mano dall'insegnante oppure creato dal webhook online.
+
+    Sia i pagamenti manuali sia quelli online finiscono in questa tabella, così lo storico
+    di uno studente è uno solo.
+    """
+
     class Method(models.TextChoices):
+        # Come è stato pagato. Descrive un pagamento GIÀ avvenuto: non dice quali metodi
+        # l'insegnante accetta.
         CASH = "cash", "Cash"
         BANK_TRANSFER = "bank_transfer", "Bank transfer"
         MANUAL_ENTRY = "manual_entry", "Manual entry"
         CARD = "card", "Online (Stripe)"
+        # FUTURO (metodi di pagamento accettati): per far dichiarare a insegnanti e studi
+        # IBAN, PayPal, Satispay o "contanti a fine lezione" serve un modello a parte,
+        # per esempio `PaymentInstruction` legato allo studio, in sola lettura per i
+        # genitori. L'IBAN è un dato personale: va cifrato come le note
+        # (docs/learning/concetti/cifratura-dei-campi.md, ADR-030).
 
     class Status(models.TextChoices):
         PAID = "paid", "Paid"
         PENDING = "pending", "Pending"
         OVERDUE = "overdue", "Overdue"
 
+    # Lo studente cancellato porta con sé i suoi pagamenti (CASCADE). La cancellazione GDPR
+    # però è un'anonimizzazione, non un delete: vedi ADR-032 e apps/privacy.
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="payments")
+    # Se il pacchetto sparisce il pagamento resta (SET_NULL): è una traccia contabile.
     package = models.ForeignKey(
         Package, on_delete=models.SET_NULL, null=True, blank=True, related_name="payments"
     )
@@ -27,8 +55,9 @@ class Payment(models.Model):
     date = models.DateField()
     method = models.CharField(max_length=20, choices=Method.choices)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
-    # Set only for online payments. OneToOne = at most one payment per checkout attempt,
-    # enforced by the database even if a webhook is processed twice (ADR-014).
+    # Valorizzato solo per i pagamenti online. OneToOne = al massimo un pagamento per
+    # tentativo di checkout, garantito dal database anche se un webhook arriva due volte
+    # (ADR-014).
     checkout = models.OneToOneField(
         "payments.CheckoutSession",
         on_delete=models.PROTECT,
@@ -42,9 +71,10 @@ class Payment(models.Model):
     class Meta:
         ordering = ["-date", "-id"]
         indexes = [
-            # Latest payment of a student (roster subquery) and the student's history.
+            # Ultimo pagamento di uno studente (sottoquery dell'elenco) e storico dello
+            # studente. Perché gli indici: docs/learning/concetti/indici-ed-explain.md.
             models.Index(fields=["student", "-date"], name="payment_student_date_idx"),
-            # Dashboard "pending payments" count and the ?status= filter.
+            # Conteggio dei pagamenti in sospeso nella dashboard e filtro ?status=.
             models.Index(fields=["status"], name="payment_status_idx"),
         ]
 
@@ -52,10 +82,13 @@ class Payment(models.Model):
         return f"{self.student} — {self.amount} ({self.status})"
 
     def tenant_keys(self) -> tuple[int, int]:
+        # Chiavi usate dai permessi per oggetto: (studio, insegnante) del proprietario.
+        # Vedi docs/learning/concetti/isolamento-tenant-e-bola.md e ADR-011.
         return self.student.studio_id, self.student.teacher_id
 
     def clean(self) -> None:
-        # Same rule as the API, for the Django admin (which calls full_clean()).
+        # Stessa regola dell'API, valida anche nell'admin di Django (che chiama full_clean()).
+        # Import locale: services importa i modelli, un import in cima farebbe un ciclo.
         from .services import ensure_package_matches_student
 
         if self.student_id is not None:
@@ -63,7 +96,11 @@ class Payment(models.Model):
 
 
 class CheckoutSession(models.Model):
-    """One online payment attempt for a package (a Stripe Checkout Session) — ADR-013."""
+    """Un tentativo di pagamento online per un pacchetto (una Checkout Session di Stripe).
+
+    ADR-013. Il tentativo nasce "open" e diventa completed, failed o expired: da lì in poi
+    non cambia più (vedi `apply_session_state` in services.py).
+    """
 
     class Status(models.TextChoices):
         OPEN = "open", "Open"
@@ -71,14 +108,18 @@ class CheckoutSession(models.Model):
         FAILED = "failed", "Failed"
         EXPIRED = "expired", "Expired"
 
-    # UUID: used in the Stripe idempotency key and metadata, not guessable in URLs.
+    # UUID: finisce nella chiave di idempotenza e nei metadati di Stripe, e non è
+    # indovinabile negli URL.
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     package = models.ForeignKey(Package, on_delete=models.CASCADE, related_name="checkouts")
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True
     )
+    # Unico: è il legame col lato Stripe e serve a ritrovare il tentativo dal webhook.
     stripe_session_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
     url = models.URLField(max_length=2000, blank=True)
+    # Importo e valuta sono copiati qui al momento della creazione: se il prezzo del
+    # pacchetto cambia dopo, il tentativo resta quello che il pagante ha visto.
     amount = models.DecimalField(max_digits=8, decimal_places=2)
     currency = models.CharField(max_length=3)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
@@ -89,7 +130,8 @@ class CheckoutSession(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["package", "status"], name="checkout_package_status_idx"),
-            # Hourly reconciliation: open attempts past their expiry.
+            # Riconciliazione oraria: tentativi ancora aperti oltre la scadenza. È un indice
+            # parziale (solo le righe "open"): resta piccolo anche con molto storico.
             models.Index(
                 fields=["expires_at"],
                 name="checkout_open_expiry_idx",
@@ -102,10 +144,11 @@ class CheckoutSession(models.Model):
 
 
 class WebhookEvent(models.Model):
-    """A Stripe notification, stored once by its event id (ADR-014).
+    """Una notifica di Stripe, salvata una volta sola per id evento (ADR-014).
 
-    The unique `stripe_event_id` turns Stripe's retries and duplicates into no-ops;
-    `processed_at` makes the processing task idempotent.
+    L'unicità di `stripe_event_id` trasforma i tentativi ripetuti e i doppioni di Stripe in
+    operazioni senza effetto; `processed_at` rende idempotente il task che li elabora.
+    Spiegazione completa: docs/learning/concetti/webhook-idempotenti.md.
     """
 
     stripe_event_id = models.CharField(max_length=255, unique=True)
@@ -113,6 +156,7 @@ class WebhookEvent(models.Model):
     payload = models.JSONField()
     received_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
+    # Quante volte l'elaborazione è partita: utile per capire eventi che si bloccano.
     attempts = models.PositiveSmallIntegerField(default=0)
 
     def __str__(self) -> str:
