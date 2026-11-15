@@ -170,15 +170,28 @@ def instructions_for_studio(ctx: TenantContext) -> PaymentInstructions | None:
     return PaymentInstructions.objects.filter(studio_id=ctx.studio_id).first()
 
 
-def instructions_for_open_packages(ctx: TenantContext) -> list[PaymentInstructions]:
-    """Le istruzioni degli studi in cui chi chiama ha almeno un pacchetto ancora da pagare.
+def instructions_for_open_packages(
+    ctx: TenantContext,
+) -> list[tuple[PaymentInstructions, list[int]]]:
+    """Le istruzioni degli studi in cui chi chiama ha un pacchetto ancora da pagare, con gli
+    studenti (visibili a chi chiama) che ce l'hanno: il portale mostra le istruzioni accanto
+    al pacchetto di quello studente e a nessun altro.
 
-    Per un genitore con figli in due studi sono due elenchi, ognuno accanto ai pacchetti giusti.
-    Due query in tutto (pacchetti aperti come sottoquery, poi le istruzioni), qualunque sia il
-    numero di pacchetti. Studi senza istruzioni, o con la riga vuota, non compaiono.
+    Per un genitore con figli in due studi sono due voci. Due query in tutto (le coppie
+    studio-studente dei pacchetti aperti, poi le istruzioni), qualunque sia il numero di
+    pacchetti. Studi senza istruzioni, o con la riga vuota, non compaiono.
     """
     from .services import has_content  # services importa selectors: evita il ciclo
 
-    studio_ids = open_packages(ctx).values("student__studio_id")
-    rows = PaymentInstructions.objects.filter(studio_id__in=studio_ids).select_related("studio")
-    return [row for row in rows.order_by("studio_id") if has_content(row)]
+    pairs = open_packages(ctx).values_list("student__studio_id", "student_id").distinct()
+    students_by_studio: dict[int, set[int]] = {}
+    for studio_id, student_id in pairs:
+        students_by_studio.setdefault(studio_id, set()).add(student_id)
+    rows = PaymentInstructions.objects.filter(studio_id__in=students_by_studio).select_related(
+        "studio"
+    )
+    return [
+        (row, sorted(students_by_studio[row.studio_id]))
+        for row in rows.order_by("studio_id")
+        if has_content(row)
+    ]

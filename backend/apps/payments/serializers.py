@@ -173,6 +173,8 @@ class OpenInstructionsSerializer(PaymentInstructionsSerializer):
     # il pagamento avviene fuori da MusicStudio e non viene verificato.
     studio_id = serializers.IntegerField()
     studio_name = serializers.CharField()
+    # Gli studenti di chi chiama che hanno un pacchetto aperto in questo studio.
+    student_ids = serializers.ListField(child=serializers.IntegerField())
     notice = serializers.CharField()
 
 

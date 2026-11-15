@@ -7,7 +7,8 @@
     "team": "Team",
     "audit": "Activity log",
     "account": "Account",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "instructions": "How to pay"
   },
   "dashboard": {
     "greeting": "Hi, {{name}}",
@@ -120,7 +121,12 @@
     "noNextLesson": "No lesson scheduled",
     "remaining_one": "{{count}} lesson left in the package",
     "remaining_other": "{{count}} lessons left in the package",
-    "paymentsHint": "To pay or correct an amount, write to the studio."
+    "paymentsHint": "To pay or correct an amount, write to the studio.",
+    "howToPay": "How to pay",
+    "payOutside": "You pay outside MusicStudio. The teacher marks the payment as received; MusicStudio does not check any bank.",
+    "payIban": "IBAN",
+    "payHolder": "Account holder",
+    "payBank": "Bank"
   },
   "auth": {
     "login": "Log in",
@@ -437,5 +443,22 @@
     "installHint": "Android will ask you to allow installing from this source: that is normal, because the app is not on the Play Store yet.",
     "comingSoon": "The Android version is coming soon.",
     "iphone": "The iPhone version is not available yet."
+  },
+  "instructions": {
+    "title": "How to pay",
+    "intro": "Parents see these details beside their children's open packages. They pay outside MusicStudio and you mark the payment as received: MusicStudio never moves or checks money.",
+    "readOnly": "Only the studio owner can change these details.",
+    "holder": "Account holder",
+    "iban": "IBAN",
+    "bank": "Bank (optional)",
+    "note": "Note for parents (optional)",
+    "noteHint": "For example what to write as the transfer reason.",
+    "links": "Payment links (up to 5, https only)",
+    "linkLabel": "Label",
+    "linkUrl": "Address",
+    "addLink": "Add a link",
+    "removeLink": "Remove",
+    "save": "Save",
+    "saved": "Saved."
   }
 }

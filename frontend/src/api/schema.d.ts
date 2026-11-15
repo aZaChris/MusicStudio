@@ -1086,6 +1086,7 @@ export interface components {
             readonly updated_at: string | null;
             studio_id: number;
             studio_name: string;
+            student_ids: number[];
             notice: string;
         };
         /**

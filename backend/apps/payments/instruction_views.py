@@ -93,8 +93,9 @@ class OpenInstructionsView(APIView):
                 **_present(row),
                 "studio_id": row.studio_id,
                 "studio_name": row.studio.name,
+                "student_ids": student_ids,
                 "notice": NOTICE,
             }
-            for row in rows
+            for row, student_ids in rows
         ]
         return Response(OpenInstructionsSerializer(data, many=True).data)  # type: ignore[arg-type]

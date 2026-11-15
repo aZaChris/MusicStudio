@@ -155,6 +155,7 @@ def test_a_parent_sees_the_instructions_beside_an_open_package_only():
     assert len(rows) == 1
     row = rows[0]
     assert row["studio_id"] == owner.studio.pk and row["studio_name"] == owner.studio.name
+    assert row["student_ids"] == [student.pk]
     assert row["iban"] == IBAN and row["links"][0]["label"] == "PayPal"
     assert "not verified" in row["notice"]
 
@@ -213,3 +214,18 @@ def test_staff_cannot_use_the_family_endpoint():
 
     assert client_for(owner.user).get(OPEN).status_code == 403
     assert APIClient().get(OPEN).status_code == 401
+
+
+def test_the_list_says_which_children_have_an_open_package_so_siblings_do_not_mix():
+    owner = make_studio_owner()
+    _save(owner)
+    parent = ParentAccountFactory()
+    owing, settled = StudentFactory(teacher=owner), StudentFactory(teacher=owner)
+    for child in (owing, settled):
+        link_parent_to_student(parent, child)
+    PackageFactory(student=owing)  # still to pay
+    PaymentFactory(student=settled, package=PackageFactory(student=settled))  # already paid
+
+    rows = client_for(parent.user).get(OPEN).data
+
+    assert len(rows) == 1 and rows[0]["student_ids"] == [owing.pk]

@@ -7,7 +7,8 @@
     "team": "Squadra",
     "audit": "Registro attività",
     "account": "Account",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "instructions": "Come pagare"
   },
   "dashboard": {
     "greeting": "Ciao, {{name}}",
@@ -120,7 +121,12 @@
     "noNextLesson": "Nessuna lezione in programma",
     "remaining_one": "{{count}} lezione rimasta nel pacchetto",
     "remaining_other": "{{count}} lezioni rimaste nel pacchetto",
-    "paymentsHint": "Per pagare o correggere un importo, scrivi allo studio."
+    "paymentsHint": "Per pagare o correggere un importo, scrivi allo studio.",
+    "howToPay": "Come pagare",
+    "payOutside": "Paghi fuori da MusicStudio. L'insegnante segna il pagamento come ricevuto; MusicStudio non controlla nessuna banca.",
+    "payIban": "IBAN",
+    "payHolder": "Intestatario",
+    "payBank": "Banca"
   },
   "auth": {
     "login": "Accedi",
@@ -437,5 +443,22 @@
     "installHint": "Android ti chiederà di consentire l'installazione da questa fonte: è normale, perché l'app non è ancora sul Play Store.",
     "comingSoon": "La versione per Android arriva a breve.",
     "iphone": "La versione per iPhone non è ancora disponibile."
+  },
+  "instructions": {
+    "title": "Come pagare",
+    "intro": "I genitori vedono questi dati accanto ai pacchetti ancora da pagare dei loro figli. Pagano fuori da MusicStudio e tu segni il pagamento come ricevuto: MusicStudio non muove né controlla denaro.",
+    "readOnly": "Solo il titolare dello studio può modificare questi dati.",
+    "holder": "Intestatario del conto",
+    "iban": "IBAN",
+    "bank": "Banca (facoltativa)",
+    "note": "Nota per i genitori (facoltativa)",
+    "noteHint": "Per esempio cosa scrivere nella causale del bonifico.",
+    "links": "Link di pagamento (fino a 5, solo https)",
+    "linkLabel": "Etichetta",
+    "linkUrl": "Indirizzo",
+    "addLink": "Aggiungi un link",
+    "removeLink": "Rimuovi",
+    "save": "Salva",
+    "saved": "Salvato."
   }
 }

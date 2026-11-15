@@ -141,8 +141,8 @@ def test_register_endpoints_hold_a_constant_query_count():
 
 
 def test_payment_instructions_endpoints_hold_a_constant_query_count():
-    # Phase 8: the parent's list is the tenant lookup plus ONE query (the open packages are a
-    # subquery of the instructions read), whether the family has 1 or 15 open packages.
+    # Phase 8: the parent's list is the tenant lookup, one query for the (studio, student) pairs
+    # of the open packages and one for the instructions, whether the family has 1 or 15.
     from apps.common.factories import PackageFactory
     from apps.payments.models import PaymentInstructions
 
@@ -160,5 +160,5 @@ def test_payment_instructions_endpoints_hold_a_constant_query_count():
     for _ in range(14):
         PackageFactory(student=student)
 
-    assert open_one == _count(parent.user, "/api/v1/payment-instructions/open/") == 2
+    assert open_one == _count(parent.user, "/api/v1/payment-instructions/open/") == 3
     assert owner_read == _count(owner.user, "/api/v1/payment-instructions/") == 2

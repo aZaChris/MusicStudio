@@ -61,7 +61,7 @@ reversal row), `status` (`paid`, `pending`, `overdue`, `reversed`, `reversal`), 
 |---|---|---|---|
 | GET | `payment-instructions/` | owner, teacher (own studio) | 200 `{account_holder, iban, bank_name, note, links: [{label, url}], updated_at}`; all fields empty if none saved. |
 | PUT | `payment-instructions/` | owner only (teacher 403) | Full replacement of the same body. Validation: IBAN format and checksum (`iban` error), holder required when an IBAN is given, at most 5 links, each `https` with a label of 1–40 characters. Empty body clears the instructions. Audit `instructions.change` lists changed field names only. |
-| GET | `payment-instructions/open/` | parent, adult student | 200 list of `{studio_id, studio_name, account_holder, iban, bank_name, note, links, notice}` for each studio that has at least one open package among the caller's visible students; `notice` is the fixed statement that payment happens outside MusicStudio and is not verified. Empty list when there is nothing to pay or nothing saved. |
+| GET | `payment-instructions/open/` | parent, adult student | 200 list of `{studio_id, studio_name, student_ids, account_holder, iban, bank_name, note, links, notice}` (`student_ids`: the caller's students who have an open package in that studio, so the portal shows the details beside the right child only) for each studio that has at least one open package among the caller's visible students; `notice` is the fixed statement that payment happens outside MusicStudio and is not verified. Empty list when there is nothing to pay or nothing saved. |
 
 Anonymous requests: 401. A user of another studio gets only their own studio's data by
 construction (there is no id in these paths). The parent portal matches a package to its
