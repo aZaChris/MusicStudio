@@ -1,3 +1,9 @@
+"""Studente, account genitore e collegamento genitore-studente.
+
+Spiegazione: docs/learning/concetti/multi-tenancy.md (isolamento per studio) e
+docs/learning/concetti/gdpr-per-sviluppatori.md (anonimizzazione).
+"""
+
 from typing import TYPE_CHECKING
 
 from django.conf import settings
@@ -8,21 +14,24 @@ from apps.studios.models import Studio, Teacher
 if TYPE_CHECKING:
     from apps.packages.models import Package
 
-# Name of the attribute filled by students.selectors.active_packages_prefetch().
+# Nome dell'attributo riempito da students.selectors.active_packages_prefetch().
 ACTIVE_PACKAGES_ATTR = "active_packages"
 
 
 class Student(models.Model):
+    # Chi prende lezioni. Il dato personale più delicato dell'app (spesso un minore).
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     instrument = models.CharField(max_length=100)
     teacher = models.ForeignKey(Teacher, on_delete=models.CASCADE, related_name="students")
-    # Tenant of the student and of everything hanging off it (lessons, packages, payments).
-    # Always equal to teacher.studio; set by students.services (ADR-010).
+    # Tenant dello studente e di tutto ciò che ne dipende (lezioni, pacchetti, pagamenti).
+    # Sempre uguale a teacher.studio; lo imposta students.services (ADR-010). È duplicato di
+    # proposito: filtrare per studio direttamente evita un join in ogni query.
     studio = models.ForeignKey(Studio, on_delete=models.PROTECT, related_name="students")
     is_active = models.BooleanField(default=True)
-    # Set by the teacher. Only adults may get an account of their own; minors are reached
-    # through a parent. A flag, not a birth date: minimisation (constitution X).
+    # Lo imposta l'insegnante. Solo gli adulti possono avere un account proprio; i minori si
+    # raggiungono tramite un genitore. Un flag e non la data di nascita: minimizzazione dei dati
+    # (constitution X).
     is_adult = models.BooleanField(default=False, db_default=False)
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
@@ -31,7 +40,8 @@ class Student(models.Model):
         on_delete=models.SET_NULL,
         related_name="student_profile",
     )
-    # Set when erasure or retention replaced the personal data (ADR-032).
+    # Valorizzato quando la cancellazione o la conservazione hanno sostituito i dati personali
+    # (ADR-032): la riga resta, con i dati anonimi.
     anonymised_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -43,7 +53,7 @@ class Student(models.Model):
         return f"{self.first_name} {self.last_name}"
 
     def tenant_keys(self) -> tuple[int, int]:
-        """(studio id, responsible teacher id) — used by object-level permissions."""
+        # (id studio, id insegnante responsabile): li usano i permessi per oggetto (ADR-011).
         return self.studio_id, self.teacher_id
 
     @property
@@ -52,11 +62,9 @@ class Student(models.Model):
 
     @property
     def active_package(self) -> "Package | None":
-        """Newest package with lessons left.
-
-        Uses the prefetched list when the queryset came from a selector (no query);
-        falls back to one query otherwise (single-object paths such as create).
-        """
+        # Il pacchetto più recente con lezioni rimaste. Usa la lista già caricata quando il
+        # queryset viene da un selector (nessuna query); altrimenti fa una query sola (percorsi a
+        # oggetto singolo, come la creazione).
         prefetched: list[Package] | None = getattr(self, ACTIVE_PACKAGES_ATTR, None)
         if prefetched is not None:
             return prefetched[0] if prefetched else None
@@ -66,6 +74,7 @@ class Student(models.Model):
 
 
 class ParentAccount(models.Model):
+    # Account di un genitore: vede gli studenti collegati, anche di studi diversi.
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="parent_account"
     )
@@ -79,6 +88,7 @@ class ParentAccount(models.Model):
 
 
 class ParentStudentLink(models.Model):
+    # Tabella intermedia esplicita genitore-studente. L'unicità evita collegamenti doppi.
     parent = models.ForeignKey(ParentAccount, on_delete=models.CASCADE)
     student = models.ForeignKey(Student, on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)

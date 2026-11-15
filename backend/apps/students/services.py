@@ -1,4 +1,4 @@
-"""Write use-cases for students."""
+"""Scritture degli studenti (services, ADR-002)."""
 
 from typing import Any
 
@@ -12,7 +12,11 @@ from .models import Student
 
 
 def create_student(ctx: TenantContext, **fields: Any) -> Student:
-    """A student belongs to the teacher who creates it (owners included) and their studio."""
+    """Uno studente appartiene all'insegnante che lo crea (titolare compreso) e al suo studio.
+
+    Studio e insegnante vengono sempre dal contesto, mai dal client: così non si può creare uno
+    studente in uno studio altrui (ADR-010).
+    """
     if ctx.teacher_id is None or ctx.studio_id is None:
         raise ValidationError("Only users with a teacher profile can create students.")
     return Student.objects.create(teacher_id=ctx.teacher_id, studio_id=ctx.studio_id, **fields)
@@ -20,10 +24,10 @@ def create_student(ctx: TenantContext, **fields: Any) -> Student:
 
 @transaction.atomic
 def reassign_student(student: Student, teacher: Teacher) -> Student:
-    """Give a student to another teacher of the same studio.
+    """Passa uno studente a un altro insegnante dello stesso studio.
 
-    Existing lessons keep their teacher: history stays truthful and the new teacher's
-    agenda cannot be broken by lessons they never scheduled.
+    Le lezioni esistenti restano all'insegnante di prima: lo storico resta veritiero e l'agenda
+    del nuovo insegnante non si rompe per lezioni che non ha fissato lui.
     """
     if teacher.studio_id != student.studio_id:
         raise ValidationError({"teacher": "The teacher must belong to the student's studio."})
