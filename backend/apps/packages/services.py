@@ -1,4 +1,4 @@
-"""Write use-cases for packages."""
+"""Scritture dei pacchetti (services). Le view non toccano il modello direttamente (ADR-002)."""
 
 import datetime
 from decimal import Decimal
@@ -16,7 +16,12 @@ def create_package(
     price: Decimal,
     expiry_date: datetime.date | None = None,
 ) -> Package:
-    """A new package starts full: remaining = total. Clients cannot choose otherwise."""
+    """Crea un pacchetto nuovo, sempre pieno: rimanenti = totali.
+
+    Il client non può scegliere `lessons_remaining`: il serializer lo tratta in sola lettura.
+    Da qui in poi lo scala solo `lessons.services.complete_lesson`, quando una lezione si
+    svolge. Così il saldo non si può falsare dall'API.
+    """
     return Package.objects.create(
         student=student,
         total_lessons=total_lessons,
