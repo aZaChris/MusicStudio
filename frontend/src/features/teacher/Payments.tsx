@@ -7,8 +7,10 @@ import { ErrorText, QueryState } from '../../components/QueryState'
 import { Icon, StatusChip } from '../../components/ui'
 import { paymentTone } from '../../components/tones'
 import { formatDay, localDateISO } from '../../lib/dates'
+import { monthPeriod, type Period } from '../../lib/period'
 import { useRegisterPayment, usePayments } from './api/payments'
 import { useStudents } from './api/students'
+import { RegisterPanel } from './RegisterPanel'
 import { ReversePaymentDialog } from './ReversePaymentDialog'
 
 // Online card payments come from Stripe webhooks, never from this form.
@@ -24,7 +26,9 @@ const displayStatus = (p: Payment) => (p.reversed ? 'reversed' : p.status)
 
 export function Payments() {
   const { t, i18n } = useTranslation()
-  const payments = usePayments()
+  // The register shows one period at a time (default: this month); the server filters.
+  const [period, setPeriod] = useState<Period>(() => monthPeriod(localDateISO().slice(0, 7)))
+  const payments = usePayments(undefined, period)
   const { data: students } = useStudents()
   const registerPayment = useRegisterPayment()
 
@@ -61,6 +65,8 @@ export function Payments() {
         <span className="page-eyebrow">{t('payments.toCollect', { count: toCollect })}</span>
         <h1 className="page-title">{t('payments.title')}</h1>
       </div>
+
+      <RegisterPanel period={period} onChange={setPeriod} money={money} />
 
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, alignItems: 'flex-start' }}>
         <section className="panel" style={{ flex: '999 1 520px', minWidth: 0, gap: 16 }}>

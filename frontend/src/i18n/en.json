@@ -205,7 +205,7 @@
     "expiresOn": "expires on {{date}}"
   },
   "register": {
-    "title": "Create your studio account",
+    "title": "Cash register",
     "hint": "For studio owners. Teachers and parents join by invitation.",
     "firstName": "First name",
     "lastName": "Last name",
@@ -215,7 +215,24 @@
     "submit": "Create account",
     "haveAccount": "I already have an account",
     "checkEmailTitle": "Check your email",
-    "checkEmail": "If the address can be used, we sent a link to confirm it. It is valid for 48 hours."
+    "checkEmail": "If the address can be used, we sent a link to confirm it. It is valid for 48 hours.",
+    "mode": {
+      "day": "Day",
+      "month": "Month",
+      "range": "Custom period"
+    },
+    "from": "From",
+    "to": "To",
+    "received": "Received",
+    "reversed": "Reversed",
+    "net": "Net",
+    "totals": "Totals for the period",
+    "invalidPeriod": "The start of the period is after its end.",
+    "tooLong": "Exports cover at most one year. Choose a shorter period to export.",
+    "export": {
+      "csv": "Export CSV",
+      "pdf": "Export PDF"
+    }
   },
   "confirm": {
     "title": "Confirm your email",

@@ -121,6 +121,8 @@ export interface RequestOptions {
   body?: unknown
   /** false for login: no bearer, and a 401 means "wrong credentials", not "refresh". */
   auth?: boolean
+  /** Accept header; JSON unless a file is being downloaded. */
+  accept?: string
 }
 
 function urlFor(path: string): string {
@@ -133,7 +135,7 @@ async function send(path: string, options: RequestOptions, token: string | null)
     return await fetch(urlFor(path), {
       method: options.method ?? 'GET',
       headers: {
-        Accept: 'application/json',
+        Accept: options.accept ?? 'application/json',
         ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
@@ -144,7 +146,8 @@ async function send(path: string, options: RequestOptions, token: string | null)
   }
 }
 
-export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
+/** One authenticated request: refresh once on a 401, throw ApiError on any failure. */
+async function request(path: string, options: RequestOptions): Promise<Response> {
   const auth = options.auth ?? true
   let token = auth ? (accessToken ?? (await refreshAccess())) : null
   let res = await send(path, options, token)
@@ -159,8 +162,24 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   }
 
   if (!res.ok) throw toApiError(res.status, await res.json().catch(() => null))
+  return res
+}
+
+export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  const res = await request(path, options)
   if (res.status === 204 || res.status === 205) return undefined as T
   return (await res.json()) as T
+}
+
+/**
+ * Download a file (CSV, PDF) through the authenticated client: the access token stays in memory
+ * and never goes into a URL (research R13). The file name comes from Content-Disposition.
+ */
+export async function apiDownload(path: string): Promise<{ blob: Blob; filename: string }> {
+  const res = await request(path, { accept: '*/*' })
+  const disposition = res.headers.get('Content-Disposition') ?? ''
+  const filename = /filename="?([^";]+)"?/.exec(disposition)?.[1] ?? 'download'
+  return { blob: await res.blob(), filename }
 }
 
 /**

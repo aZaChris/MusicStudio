@@ -205,7 +205,7 @@
     "expiresOn": "scade il {{date}}"
   },
   "register": {
-    "title": "Crea l'account del tuo studio",
+    "title": "Registro di cassa",
     "hint": "Per i titolari di uno studio. Insegnanti e genitori entrano su invito.",
     "firstName": "Nome",
     "lastName": "Cognome",
@@ -215,7 +215,24 @@
     "submit": "Crea account",
     "haveAccount": "Ho già un account",
     "checkEmailTitle": "Controlla la tua email",
-    "checkEmail": "Se l'indirizzo è utilizzabile, ti abbiamo mandato un link per confermarlo. Vale 48 ore."
+    "checkEmail": "Se l'indirizzo è utilizzabile, ti abbiamo mandato un link per confermarlo. Vale 48 ore.",
+    "mode": {
+      "day": "Giorno",
+      "month": "Mese",
+      "range": "Periodo libero"
+    },
+    "from": "Dal",
+    "to": "Al",
+    "received": "Incassato",
+    "reversed": "Stornato",
+    "net": "Netto",
+    "totals": "Totali del periodo",
+    "invalidPeriod": "L'inizio del periodo è dopo la sua fine.",
+    "tooLong": "Le esportazioni coprono al massimo un anno. Scegli un periodo più breve per esportare.",
+    "export": {
+      "csv": "Esporta CSV",
+      "pdf": "Esporta PDF"
+    }
   },
   "confirm": {
     "title": "Conferma la tua email",

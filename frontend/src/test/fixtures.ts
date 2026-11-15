@@ -1,4 +1,4 @@
-import type { Dashboard, Lesson, Me, Payment, Student } from '../api/types'
+import type { Dashboard, Lesson, Me, Payment, RegisterSummary, Student } from '../api/types'
 
 export const teacherMe: Me = {
   id: 1,
@@ -115,3 +115,16 @@ export const studentMe: Me = {
   email_verified: true,
   mfa_enabled: false,
 }
+
+export const registerSummary = (over: Partial<RegisterSummary> = {}): RegisterSummary => ({
+  period: { from: '2026-11-01', to: '2026-11-30' },
+  totals: { received: '250.00', reversed: '100.00', net: '150.00' },
+  by_method: [
+    { method: 'cash', received: '100.00', reversed: '0.00', net: '100.00' },
+    { method: 'bank_transfer', received: '100.00', reversed: '100.00', net: '0.00' },
+    { method: 'manual_entry', received: '20.00', reversed: '0.00', net: '20.00' },
+    { method: 'card', received: '30.00', reversed: '0.00', net: '30.00' },
+  ],
+  counts: { paid: 5, pending: 1, overdue: 1, reversal: 1 },
+  ...over,
+})
