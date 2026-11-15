@@ -52,7 +52,8 @@ def test_cross_tenant_payment_update_to_foreign_student_is_rejected():
 def test_payment_update_with_package_of_other_student_is_rejected():
     student = StudentFactory()
     sibling_package = PackageFactory(student=StudentFactory(teacher=student.teacher))
-    payment = Payment.objects.create(student=student, **PAYLOAD)
+    # Pending: a paid entry is final (phase 8) and would answer 409 before the package check.
+    payment = Payment.objects.create(student=student, **{**PAYLOAD, "status": "pending"})
 
     res = client_for(student.teacher.user).patch(
         f"/api/v1/payments/{payment.id}/", {"package": sibling_package.id}
