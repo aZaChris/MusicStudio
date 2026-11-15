@@ -1,4 +1,7 @@
-"""The API is for the app, not for search engines: every response says "do not index"."""
+"""L'API è per l'app, non per i motori di ricerca: ogni risposta dice "non indicizzare".
+
+Spiegazione: docs/learning/concetti/indicizzazione-e-sitemap.md.
+"""
 
 from collections.abc import Callable
 

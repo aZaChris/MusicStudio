@@ -1,10 +1,11 @@
-"""DRF permission classes (ADR-011).
+"""Classi di permesso di DRF (ADR-011).
 
-Two levels:
-- `has_permission` (view level): may this role call this action at all?
-- `has_object_permission` (object level): may this user change *this* object?
-What a user can see is decided earlier, by the scoped queryset (`scoping.py`): objects
-outside the tenant are 404 before any permission runs.
+Due livelli:
+- `has_permission` (livello view): questo ruolo può chiamare questa azione?
+- `has_object_permission` (livello oggetto): questo utente può cambiare *questo* oggetto?
+Che cosa un utente può vedere si decide prima, dal queryset con ambito (`scoping.py`): gli
+oggetti fuori dal tenant danno 404 prima ancora che un permesso venga valutato.
+Spiegazione: docs/learning/concetti/permessi-drf.md.
 """
 
 from typing import Any
@@ -18,9 +19,9 @@ from .tenancy import get_tenant
 
 
 class IsTeacherOrStudioOwner(BasePermission):
-    """Write access for teacher/studio_owner; read access for any authenticated user.
+    """Scrittura per insegnanti e titolari; lettura per qualunque utente autenticato.
 
-    What a reader actually sees is still decided by the scoped queryset.
+    Ciò che un lettore vede davvero lo decide comunque il queryset con ambito.
     """
 
     def has_permission(self, request: Request, view: Any) -> bool:
@@ -33,6 +34,7 @@ class IsTeacherOrStudioOwner(BasePermission):
 
 
 class IsStudioOwner(BasePermission):
+    # Solo il titolare dello studio (gestione dello studio, registro delle azioni).
     def has_permission(self, request: Request, view: Any) -> bool:
         user = request.user
         return bool(
@@ -41,9 +43,9 @@ class IsStudioOwner(BasePermission):
 
 
 class CanWriteTenantObject(BasePermission):
-    """Object-level write rule: owners write anything in their studio, teachers write the
-    objects of their own students, parents never write. Reads are always allowed here
-    (visibility was already enforced by the scoped queryset).
+    """Regola di scrittura per oggetto: i titolari scrivono tutto nel loro studio, gli insegnanti
+    gli oggetti dei propri studenti, i genitori mai. Qui le letture passano sempre (la
+    visibilità l'ha già imposta il queryset con ambito).
     """
 
     def has_object_permission(self, request: Request, view: Any, obj: Any) -> bool:

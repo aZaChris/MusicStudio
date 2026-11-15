@@ -1,3 +1,5 @@
+"""Invia un errore di prova a Sentry e ai log, per controllare la configurazione dopo un deploy."""
+
 import logging
 from typing import Any
 

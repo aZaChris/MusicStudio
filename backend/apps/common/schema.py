@@ -1,9 +1,11 @@
-"""OpenAPI contract helpers (ADR-012).
+"""Strumenti per il contratto OpenAPI (ADR-012).
 
-- `MusicStudioAutoSchema` tags every operation with its domain app (lessons, payments...).
-- `add_error_responses` documents, in one place, the error responses every client must
-  handle, with shared schemas, instead of repeating `@extend_schema(responses=...)` on
-  every view (which is easy to forget).
+- `MusicStudioAutoSchema` etichetta ogni operazione con la sua app di dominio (lessons,
+  payments...).
+- `add_error_responses` documenta in un posto solo le risposte di errore che ogni client deve
+  gestire, con schemi condivisi, invece di ripetere `@extend_schema(responses=...)` su ogni
+  view (cosa facile da dimenticare). Il testo delle risposte resta in inglese: è il contratto.
+Spiegazione: docs/learning/concetti/openapi-e-contratti.md.
 """
 
 from typing import Any
@@ -13,13 +15,14 @@ from drf_spectacular.openapi import AutoSchema
 ERROR_REF = {"$ref": "#/components/schemas/Error"}
 VALIDATION_REF = {"$ref": "#/components/schemas/ValidationError"}
 
-# Write operations that can hit the lesson overlap constraints (409).
+# Scritture che possono urtare i vincoli di sovrapposizione delle lezioni (409).
 CONFLICT_PATHS = ("/api/v1/lessons/",)
 
 
 class MusicStudioAutoSchema(AutoSchema):
+    # Classe di schema usata da drf-spectacular (SPECTACULAR_SETTINGS in config/settings).
     def get_tags(self) -> list[str]:
-        module = type(self.view).__module__  # e.g. "apps.lessons.views"
+        module = type(self.view).__module__  # es. "apps.lessons.views"
         if module.startswith("rest_framework_simplejwt"):
             return ["accounts"]
         parts = module.split(".")
@@ -36,7 +39,7 @@ def _json(description: str, schema: dict[str, Any]) -> dict[str, Any]:
 def add_error_responses(
     result: dict[str, Any], generator: Any, request: Any, public: bool
 ) -> dict[str, Any]:
-    """Postprocessing hook: shared error components + per-operation error responses."""
+    """Hook di postprocessing: componenti di errore condivisi e risposte per operazione."""
     schemas = result.setdefault("components", {}).setdefault("schemas", {})
     schemas["Error"] = {
         "type": "object",

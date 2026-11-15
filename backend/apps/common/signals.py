@@ -1,8 +1,9 @@
-"""Cache invalidation on writes (ADR-017).
+"""Invalidazione della cache a ogni scrittura (ADR-017).
 
-Signals are used on purpose here: they fire on every ORM write path — services, the
-Django admin, DRF `destroy`, management commands — which explicit calls in services would
-miss. Limitation to remember: `QuerySet.update()` and `bulk_create()` do not send signals.
+Qui i segnali sono una scelta voluta: scattano su ogni percorso di scrittura dell'ORM (service,
+admin di Django, `destroy` di DRF, comandi di gestione), che chiamate esplicite nei service
+perderebbero. Limite da ricordare: `QuerySet.update()` e `bulk_create()` non inviano segnali.
+Spiegazione: docs/learning/concetti/caching.md.
 """
 
 from typing import Any
@@ -18,6 +19,8 @@ from apps.students.models import Student
 
 
 def _studio_of(instance: Any) -> int | None:
+    # Lo studio si ricava dallo studente (o è lo studente stesso): lezioni, pacchetti e pagamenti
+    # non hanno una colonna studio propria.
     if isinstance(instance, Student):
         studio_id: int | None = instance.studio_id
         return studio_id
@@ -30,12 +33,13 @@ def _studio_of(instance: Any) -> int | None:
 def invalidate_dashboard(sender: Any, instance: Any, **kwargs: Any) -> None:
     studio_id = _studio_of(instance)
     if studio_id is not None:
-        # After commit: a rolled-back write must not invalidate, and a reader must not
-        # rebuild the cache from data that is not committed yet.
+        # Dopo il commit: una scrittura annullata non deve invalidare, e un lettore non deve
+        # ricostruire la cache con dati non ancora confermati.
         transaction.on_commit(lambda: bump_studio_version(studio_id))
 
 
 def connect() -> None:
+    # `dispatch_uid` rende il collegamento idempotente: chiamarlo due volte non duplica i segnali.
     for model in (Lesson, Package, Payment, Student):
         post_save.connect(invalidate_dashboard, sender=model, dispatch_uid=f"dash-save-{model}")
         post_delete.connect(invalidate_dashboard, sender=model, dispatch_uid=f"dash-del-{model}")

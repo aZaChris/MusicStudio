@@ -1,4 +1,4 @@
-"""Shared test factories — used across apps' test suites, not itself a test module."""
+"""Factory condivise per i test: le usano le suite di più app, non è un modulo di test."""
 
 import datetime
 
@@ -43,7 +43,7 @@ class TeacherFactory(factory.django.DjangoModelFactory[Teacher]):
         model = Teacher
 
     user = factory.SubFactory(UserFactory, role=User.Role.TEACHER)
-    studio = factory.SubFactory(StudioFactory)  # every teacher belongs to a studio (ADR-010)
+    studio = factory.SubFactory(StudioFactory)  # ogni insegnante appartiene a uno studio (ADR-010)
     is_owner = False
 
 
@@ -70,12 +70,12 @@ class PackageFactory(factory.django.DjangoModelFactory[Package]):
 
 
 def _factory_start(n: int) -> datetime.datetime:
-    """Start time of the n-th factory lesson: 31 minutes apart, cycling within ~20h.
+    """Inizio dell'n-esima lezione della factory: a 31 minuti l'una dall'altra, ciclo di ~20 ore.
 
-    The spacing keeps lessons of the same teacher or student from tripping the overlap
-    constraints. The lesson list shows the current week by default, so a start that would
-    fall past the end of the week (Sunday evening, Europe/Rome) moves back one week:
-    otherwise the list would be empty and the tests would fail only on Sunday nights.
+    La distanza evita che lezioni dello stesso insegnante o studente urtino i vincoli di
+    sovrapposizione. L'elenco delle lezioni mostra di default la settimana corrente, quindi un
+    inizio oltre la fine della settimana (domenica sera, Europe/Rome) torna indietro di una
+    settimana: altrimenti l'elenco sarebbe vuoto e i test fallirebbero solo la domenica sera.
     """
     now = datetime.datetime.now(datetime.UTC)
     start = now + datetime.timedelta(hours=1, minutes=31 * (n % 40))
@@ -106,7 +106,7 @@ def link_parent_to_student(parent: ParentAccount, student: Student) -> ParentStu
 
 
 def make_student_account(student: Student) -> User:
-    """Give an adult student their own read-only account (phase 7)."""
+    """Dà a uno studente adulto un account proprio, in sola lettura (fase 7)."""
     user = UserFactory(role=User.Role.STUDENT)
     student.is_adult = True
     student.user = user

@@ -1,9 +1,10 @@
-"""The caller's real address behind reverse proxies (ADR-021).
+"""L'indirizzo reale di chi chiama, dietro i reverse proxy (ADR-021).
 
-Each proxy *appends* the address it received the connection from to `X-Forwarded-For`.
-Everything to the left of what our own proxies appended was written by the client and
-can be forged, so we count `TRUSTED_PROXY_COUNT` entries from the right and never read the
-left-most value. With 0 trusted proxies (local dev) the socket address is the truth.
+Ogni proxy *aggiunge in coda* a `X-Forwarded-For` l'indirizzo da cui ha ricevuto la connessione.
+Tutto ciò che sta a sinistra di quanto aggiunto dai nostri proxy l'ha scritto il client e si
+può falsificare: quindi si contano `TRUSTED_PROXY_COUNT` voci da destra e non si legge mai il
+valore più a sinistra. Con 0 proxy fidati (sviluppo locale) vale l'indirizzo del socket.
+Spiegazione: docs/learning/concetti/ip-reale-dietro-proxy.md.
 """
 
 from django.conf import settings
@@ -18,6 +19,6 @@ def client_ip(request: HttpRequest) -> str:
     forwarded = [p.strip() for p in request.META.get("HTTP_X_FORWARDED_FOR", "").split(",")]
     forwarded = [p for p in forwarded if p]
     if len(forwarded) < trusted:
-        # Fewer entries than proxies: the request did not come through them all.
+        # Meno voci che proxy: la richiesta non è passata da tutti, ci si fida solo del socket.
         return remote
     return forwarded[-trusted]
