@@ -41,6 +41,12 @@ class IsTeacherOrOwnerRole(BasePermission):
         return getattr(request.user, "role", None) in (User.Role.TEACHER, User.Role.STUDIO_OWNER)
 
 
+class IsFamilyRole(BasePermission):
+    # Genitori e studenti adulti: le persone a cui si mostra come pagare (fase 8).
+    def has_permission(self, request: Request, view: Any) -> bool:
+        return getattr(request.user, "role", None) in (User.Role.PARENT, User.Role.STUDENT)
+
+
 class IsStudioOwner(BasePermission):
     # Solo il titolare dello studio (gestione dello studio, registro delle azioni).
     def has_permission(self, request: Request, view: Any) -> bool:

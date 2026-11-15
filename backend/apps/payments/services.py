@@ -14,6 +14,7 @@ import datetime
 import logging
 from decimal import Decimal
 from typing import Any
+from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -24,9 +25,10 @@ from apps.audit import services as audit
 from apps.common.exceptions import DomainConflict
 from apps.packages.models import Package
 from apps.students.models import Student
+from apps.studios.models import Studio
 
-from . import gateway, selectors
-from .models import CheckoutSession, Payment, WebhookEvent
+from . import gateway, iban, selectors
+from .models import CheckoutSession, Payment, PaymentInstructions, WebhookEvent
 
 
 def ensure_package_matches_student(student: Student, package: Package | None) -> None:
@@ -389,3 +391,84 @@ def reconcile_open_checkouts(limit: int = 100) -> int:
             apply_session_state(checkout, session)
             resolved += checkout.status != CheckoutSession.Status.OPEN
     return resolved
+
+
+# --- Istruzioni di pagamento dello studio (fase 8, ADR-036) -------------------------------
+
+MAX_LINKS = 5
+INSTRUCTION_FIELDS = ("account_holder", "iban", "bank_name", "note", "links")
+
+
+def _clean_links(raw: Any) -> list[dict[str, str]]:
+    """Fino a 5 link di pagamento esterni: etichetta di 1-40 caratteri e indirizzo `https`."""
+    links = list(raw or [])
+    if len(links) > MAX_LINKS:
+        raise ValidationError({"links": f"At most {MAX_LINKS} payment links are allowed."})
+    cleaned = []
+    for item in links:
+        label = str(item.get("label", "")).strip()
+        url = str(item.get("url", "")).strip()
+        parts = urlsplit(url)
+        if not 1 <= len(label) <= 40:
+            raise ValidationError({"links": "Each link needs a label of 1 to 40 characters."})
+        # Solo https: un link `http`, `javascript:` o `data:` non deve mai arrivare a un genitore.
+        if parts.scheme != "https" or not parts.netloc or len(url) > 500 or " " in url:
+            raise ValidationError({"links": "Each link must be a secure https address."})
+        cleaned.append({"label": label, "url": url})
+    return cleaned
+
+
+def _clean_instructions(data: dict[str, Any]) -> dict[str, Any]:
+    holder = str(data.get("account_holder", "")).strip()
+    raw_iban = str(data.get("iban", "")).strip()
+    cleaned_iban = iban.normalise(raw_iban)
+    if cleaned_iban and not iban.is_valid(cleaned_iban):
+        raise ValidationError({"iban": "This IBAN is not valid. Check it and try again."})
+    if cleaned_iban and not holder:
+        raise ValidationError({"account_holder": "The account holder is required with an IBAN."})
+    return {
+        "account_holder": holder,
+        "iban": cleaned_iban,
+        "bank_name": str(data.get("bank_name", "")).strip(),
+        "note": str(data.get("note", "")).strip(),
+        "links": _clean_links(data.get("links")),
+    }
+
+
+def has_content(instructions: PaymentInstructions) -> bool:
+    return any(getattr(instructions, field) for field in INSTRUCTION_FIELDS)
+
+
+@transaction.atomic
+def save_instructions(
+    studio: Studio, *, actor: Any, data: dict[str, Any]
+) -> PaymentInstructions | None:
+    """Salva (o svuota) le istruzioni dello studio. Restituisce None se ora non ce ne sono.
+
+    Un corpo tutto vuoto le cancella: nessuna riga con dati vuoti. Il registro delle azioni
+    riceve solo i NOMI dei campi cambiati, mai i loro valori: l'IBAN non deve finire altrove
+    (FR-023, SC-008). Non cambiando nulla non si scrive nulla.
+    """
+    new = _clean_instructions(data)
+    current = PaymentInstructions.objects.select_for_update().filter(studio=studio).first()
+    old = {f: getattr(current, f) for f in INSTRUCTION_FIELDS} if current else {}
+    changed = [f for f in INSTRUCTION_FIELDS if new[f] != old.get(f, [] if f == "links" else "")]
+    if not changed:
+        return current if current and has_content(current) else None
+    empty = not any(new.values())
+    if empty:
+        if current:
+            current.delete()
+        result = None
+    else:
+        result, _ = PaymentInstructions.objects.update_or_create(
+            studio=studio, defaults={**new, "updated_by": _author(actor)}
+        )
+    audit.record(
+        audit.Action.INSTRUCTIONS_CHANGE,
+        actor=actor,
+        target=result or current,
+        studio_id=studio.pk,
+        metadata={"fields": ",".join(changed), "cleared": empty},
+    )
+    return result

@@ -148,6 +148,34 @@ class RegisterSummarySerializer(serializers.Serializer[dict[str, Any]]):
     counts = RegisterCountsSerializer()
 
 
+class PaymentLinkSerializer(serializers.Serializer[dict[str, str]]):
+    # Un link di pagamento esterno (PayPal, Satispay...). Forma e `https` si controllano nel
+    # service: così la regola vale anche fuori dall'API.
+    # `label` è anche un attributo dei campi DRF: la metaclasse lo toglie dalla classe, quindi
+    # dichiararlo qui è sicuro, ma mypy non lo sa.
+    label = serializers.CharField(max_length=40)  # type: ignore[assignment]
+    url = serializers.CharField(max_length=500)
+
+
+class PaymentInstructionsSerializer(serializers.Serializer[dict[str, Any]]):
+    # Istruzioni di pagamento dello studio: lettura e sostituzione completa (PUT). Tutti i campi
+    # possono essere vuoti: un corpo tutto vuoto cancella le istruzioni.
+    account_holder = serializers.CharField(max_length=100, allow_blank=True, required=False)
+    iban = serializers.CharField(max_length=60, allow_blank=True, required=False)
+    bank_name = serializers.CharField(max_length=100, allow_blank=True, required=False)
+    note = serializers.CharField(max_length=200, allow_blank=True, required=False)
+    links = PaymentLinkSerializer(many=True, required=False)
+    updated_at = serializers.DateTimeField(read_only=True, allow_null=True)
+
+
+class OpenInstructionsSerializer(PaymentInstructionsSerializer):
+    # Per il genitore: le istruzioni di uno studio con in più chi è lo studio e la frase fissa che
+    # il pagamento avviene fuori da MusicStudio e non viene verificato.
+    studio_id = serializers.IntegerField()
+    studio_name = serializers.CharField()
+    notice = serializers.CharField()
+
+
 class CheckoutSerializer(serializers.Serializer[CheckoutSession]):
     """Response of POST /packages/{id}/checkout/: where to send the payer."""
 

@@ -196,3 +196,32 @@ class WebhookEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.type} {self.stripe_event_id}"
+
+
+class PaymentInstructions(models.Model):
+    """Come lo studio vuole essere pagato: un solo insieme per studio (fase 8, ADR-036).
+
+    Intestatario e IBAN sono cifrati a riposo (constitution X, ADR-030) e non compaiono mai nei
+    log, nei report di errore o nel registro delle azioni. MusicStudio non muove né verifica
+    denaro: i genitori pagano fuori dall'app e l'insegnante segna il pagamento come ricevuto.
+    """
+
+    studio = models.OneToOneField(
+        "studios.Studio", on_delete=models.CASCADE, related_name="payment_instructions"
+    )
+    account_holder = EncryptedTextField(blank=True)
+    iban = EncryptedTextField(blank=True)
+    bank_name = models.CharField(max_length=100, blank=True)
+    # Per esempio cosa scrivere nella causale del bonifico: non è un segreto, resta in chiaro.
+    note = models.CharField(max_length=200, blank=True)
+    # Elenco intero letto e scritto in blocco, mai interrogato: JSON basta (research R8).
+    # Fino a 5 voci {"label": ..., "url": ...}; il controllo è nel serializer.
+    links = models.JSONField(default=list, blank=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        # Nessun dato bancario nella rappresentazione testuale (finirebbe nell'admin e nei log).
+        return f"Payment instructions of studio #{self.studio_id}"

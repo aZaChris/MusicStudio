@@ -42,7 +42,11 @@ def test_credentials_and_emails_are_scrubbed():
 
 
 def test_bodies_of_auth_and_webhook_endpoints_are_dropped():
-    for path in ("/api/v1/auth/token/", "/api/v1/webhooks/stripe/"):
+    for path in (
+        "/api/v1/auth/token/",
+        "/api/v1/webhooks/stripe/",
+        "/api/v1/payment-instructions/",  # phase 8: IBAN and account holder
+    ):
         event = sentry.before_send(_event(f"https://api.example.com{path}"), {})
         assert "data" not in event["request"]
 

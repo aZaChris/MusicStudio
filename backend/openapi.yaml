@@ -1890,6 +1890,120 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/v1/payment-instructions/:
+    get:
+      operationId: v1_payment_instructions_retrieve
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInstructions'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      operationId: v1_payment_instructions_update
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentInstructionsRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentInstructionsRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentInstructionsRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentInstructions'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/payment-instructions/open/:
+    get:
+      operationId: v1_payment_instructions_open_list
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/OpenInstructions'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/payments/:
     get:
       operationId: v1_payments_list
@@ -3688,6 +3802,41 @@ components:
       required:
       - code
       - mfa_token
+    OpenInstructions:
+      type: object
+      properties:
+        account_holder:
+          type: string
+          maxLength: 100
+        iban:
+          type: string
+          maxLength: 60
+        bank_name:
+          type: string
+          maxLength: 100
+        note:
+          type: string
+          maxLength: 200
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentLink'
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        studio_id:
+          type: integer
+        studio_name:
+          type: string
+        notice:
+          type: string
+      required:
+      - notice
+      - studio_id
+      - studio_name
+      - updated_at
     OutcomeEnum:
       enum:
       - success
@@ -4162,6 +4311,77 @@ components:
       - reversed
       - student
       - student_name
+    PaymentInstructions:
+      type: object
+      properties:
+        account_holder:
+          type: string
+          maxLength: 100
+        iban:
+          type: string
+          maxLength: 60
+        bank_name:
+          type: string
+          maxLength: 100
+        note:
+          type: string
+          maxLength: 200
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentLink'
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - updated_at
+    PaymentInstructionsRequest:
+      type: object
+      properties:
+        account_holder:
+          type: string
+          maxLength: 100
+        iban:
+          type: string
+          maxLength: 60
+        bank_name:
+          type: string
+          maxLength: 100
+        note:
+          type: string
+          maxLength: 200
+        links:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentLinkRequest'
+    PaymentLink:
+      type: object
+      properties:
+        label:
+          type: string
+          maxLength: 40
+        url:
+          type: string
+          maxLength: 500
+      required:
+      - label
+      - url
+    PaymentLinkRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 40
+        url:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - label
+      - url
     PaymentRequest:
       type: object
       description: |-

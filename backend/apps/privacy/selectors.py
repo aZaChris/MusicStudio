@@ -12,7 +12,7 @@ from django.db.models import Prefetch, QuerySet
 from apps.accounts.models import User
 from apps.lessons.models import Lesson
 from apps.packages.models import Package
-from apps.payments.models import Payment
+from apps.payments.models import Payment, PaymentInstructions
 from apps.students.models import Student
 
 from .models import ConsentRecord
@@ -24,6 +24,30 @@ def students_of(user: User) -> QuerySet[Student]:
     if user.role == User.Role.STUDENT:
         return Student.objects.filter(user=user)
     return Student.objects.filter(parent_accounts__user=user)
+
+
+def _studio_block(user: User) -> dict[str, Any]:
+    # Per il titolare: il suo studio e le istruzioni di pagamento (decifrate: sono suoi dati).
+    # Degli studenti e dei pagamenti non si aggiunge nulla: i conti dello studio non sono dati
+    # personali del titolare (specs/008-cash-register-receipts/research.md, R15).
+    from apps.studios.models import Teacher
+
+    teacher = Teacher.objects.select_related("studio").filter(user=user, is_owner=True).first()
+    if teacher is None:
+        return {}
+    instructions = PaymentInstructions.objects.filter(studio=teacher.studio).first()
+    return {
+        "name": teacher.studio.name,
+        "payment_instructions": None
+        if instructions is None
+        else {
+            "account_holder": instructions.account_holder,
+            "iban": instructions.iban,
+            "bank_name": instructions.bank_name,
+            "note": instructions.note,
+            "links": instructions.links,
+        },
+    }
 
 
 def build_export(user: User) -> dict[str, Any]:
@@ -41,7 +65,7 @@ def build_export(user: User) -> dict[str, Any]:
     )
     consents = ConsentRecord.objects.filter(parent__user=user).prefetch_related("students")
     # Solo dati dell'account e dei figli collegati. Nessun dato di altri genitori o di altri studi.
-    return {
+    export: dict[str, Any] = {
         "account": {
             "email": user.email,
             "first_name": user.first_name,
@@ -104,3 +128,7 @@ def build_export(user: User) -> dict[str, Any]:
             for c in consents
         ],
     }
+    # Solo per il titolare: il suo studio e le istruzioni di pagamento (fase 8, FR-023).
+    if user.role == User.Role.STUDIO_OWNER:
+        export["studio"] = _studio_block(user)
+    return export

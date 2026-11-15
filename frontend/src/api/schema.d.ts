@@ -506,6 +506,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payment-instructions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payment_instructions_retrieve"];
+        put: operations["v1_payment_instructions_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment-instructions/open/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payment_instructions_open_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/": {
         parameters: {
             query?: never;
@@ -1044,6 +1076,18 @@ export interface components {
             mfa_token: string;
             code: string;
         };
+        OpenInstructions: {
+            account_holder?: string;
+            iban?: string;
+            bank_name?: string;
+            note?: string;
+            links?: components["schemas"]["PaymentLink"][];
+            /** Format: date-time */
+            readonly updated_at: string | null;
+            studio_id: number;
+            studio_name: string;
+            notice: string;
+        };
         /**
          * @description * `success` - Success
          *     * `failure` - Failure
@@ -1303,6 +1347,30 @@ export interface components {
             readonly reversal_id: number | null;
             readonly recorded_by: number | null;
             readonly reason: string;
+        };
+        PaymentInstructions: {
+            account_holder?: string;
+            iban?: string;
+            bank_name?: string;
+            note?: string;
+            links?: components["schemas"]["PaymentLink"][];
+            /** Format: date-time */
+            readonly updated_at: string | null;
+        };
+        PaymentInstructionsRequest: {
+            account_holder?: string;
+            iban?: string;
+            bank_name?: string;
+            note?: string;
+            links?: components["schemas"]["PaymentLinkRequest"][];
+        };
+        PaymentLink: {
+            label: string;
+            url: string;
+        };
+        PaymentLinkRequest: {
+            label: string;
+            url: string;
         };
         /**
          * @description Restrict writable related fields to objects the requesting user may see.
@@ -3697,6 +3765,159 @@ export interface operations {
             };
             /** @description Not found or outside your studio. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payment_instructions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentInstructions"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payment_instructions_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PaymentInstructionsRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaymentInstructionsRequest"];
+                "multipart/form-data": components["schemas"]["PaymentInstructionsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentInstructions"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payment_instructions_open_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenInstructions"][];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

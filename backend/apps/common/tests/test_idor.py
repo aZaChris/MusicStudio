@@ -114,6 +114,10 @@ ROUTES = {
     "payments/<pk>/reverse/",
     # Register endpoints take no id: the studio comes from the caller's own tenant context.
     # Role and scope cases: apps/payments/tests/test_register_scope.py.
+    # Payment instructions take no id either: the studio is the caller's own (see
+    # apps/payments/tests/test_instructions_cross_tenant.py).
+    "payment-instructions/",
+    "payment-instructions/open/",
     "payments/register/summary/",
     "payments/register/export/csv/",
     "payments/register/export/pdf/",

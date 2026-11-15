@@ -18,7 +18,7 @@ from apps.common.scoping import STUDENT_CHILD_PATHS, packages_visible_to, scope
 from apps.common.tenancy import TenantContext
 from apps.packages.models import Package
 
-from .models import Payment
+from .models import Payment, PaymentInstructions
 
 
 def payments_for(ctx: TenantContext) -> QuerySet[Payment]:
@@ -158,3 +158,27 @@ def register_rows(
             }
         )
     return rows
+
+
+# --- Istruzioni di pagamento (fase 8) ------------------------------------------------------
+
+
+def instructions_for_studio(ctx: TenantContext) -> PaymentInstructions | None:
+    """Le istruzioni del proprio studio, per titolare e insegnanti. Mai da un id nella richiesta."""
+    if ctx.studio_id is None or not (ctx.is_owner or ctx.is_teacher):
+        return None
+    return PaymentInstructions.objects.filter(studio_id=ctx.studio_id).first()
+
+
+def instructions_for_open_packages(ctx: TenantContext) -> list[PaymentInstructions]:
+    """Le istruzioni degli studi in cui chi chiama ha almeno un pacchetto ancora da pagare.
+
+    Per un genitore con figli in due studi sono due elenchi, ognuno accanto ai pacchetti giusti.
+    Due query in tutto (pacchetti aperti come sottoquery, poi le istruzioni), qualunque sia il
+    numero di pacchetti. Studi senza istruzioni, o con la riga vuota, non compaiono.
+    """
+    from .services import has_content  # services importa selectors: evita il ciclo
+
+    studio_ids = open_packages(ctx).values("student__studio_id")
+    rows = PaymentInstructions.objects.filter(studio_id__in=studio_ids).select_related("studio")
+    return [row for row in rows.order_by("studio_id") if has_content(row)]

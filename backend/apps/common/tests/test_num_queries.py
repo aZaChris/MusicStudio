@@ -138,3 +138,27 @@ def test_register_endpoints_hold_a_constant_query_count():
     # teacher, rows, and the audit entry written by the export
     assert csv_one == _count(teacher.user, "/api/v1/payments/register/export/csv/" + period) == 3
     assert list_one == _count(teacher.user, "/api/v1/payments/" + period) == 3
+
+
+def test_payment_instructions_endpoints_hold_a_constant_query_count():
+    # Phase 8: the parent's list is the tenant lookup plus ONE query (the open packages are a
+    # subquery of the instructions read), whether the family has 1 or 15 open packages.
+    from apps.common.factories import PackageFactory
+    from apps.payments.models import PaymentInstructions
+
+    owner = make_studio_owner()
+    PaymentInstructions.objects.create(
+        studio=owner.studio, account_holder="Studio", iban="IT60X0542811101000000123456"
+    )
+    parent = ParentAccountFactory()
+    student = StudentFactory(teacher=owner)
+    link_parent_to_student(parent, student)
+
+    PackageFactory(student=student)
+    open_one = _count(parent.user, "/api/v1/payment-instructions/open/")
+    owner_read = _count(owner.user, "/api/v1/payment-instructions/")
+    for _ in range(14):
+        PackageFactory(student=student)
+
+    assert open_one == _count(parent.user, "/api/v1/payment-instructions/open/") == 2
+    assert owner_read == _count(owner.user, "/api/v1/payment-instructions/") == 2

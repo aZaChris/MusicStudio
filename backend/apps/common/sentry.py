@@ -20,7 +20,7 @@ from .logging import request_id_var
 FILTERED = "[Filtered]"
 _SECRET_HEADERS = {"authorization", "cookie", "stripe-signature", "x-csrftoken"}
 # I corpi di queste rotte contengono password, token o eventi di pagamento: non si inviano mai.
-_SENSITIVE_PATHS = ("/auth/", "/webhooks/")
+_SENSITIVE_PATHS = ("/auth/", "/webhooks/", "/payment-instructions/")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 
 

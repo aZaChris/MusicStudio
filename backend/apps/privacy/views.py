@@ -40,6 +40,12 @@ class IsFamily(_Role):
     roles = (User.Role.PARENT, User.Role.STUDENT)
 
 
+class CanExport(_Role):
+    # Chi può scaricare i propri dati: le famiglie e, dalla fase 8, il titolare dello studio (che
+    # vi trova le istruzioni di pagamento). Gli insegnanti non hanno dati propri da scaricare.
+    roles = (User.Role.PARENT, User.Role.STUDENT, User.Role.STUDIO_OWNER)
+
+
 class CanErase(_Role):
     # Anche il titolare può chiudere l'account, ma solo se lo studio non ha più studenti
     # (privacy.services.StudioNotEmpty).
@@ -48,7 +54,7 @@ class CanErase(_Role):
 
 class ExportView(APIView):
     # GET: scarica un JSON con tutti i dati dell'account. Limitata da throttle (scope `privacy`).
-    permission_classes = [IsAuthenticated, IsFamily]
+    permission_classes = [IsAuthenticated, CanExport]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "privacy"
 

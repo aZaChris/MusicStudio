@@ -82,9 +82,13 @@ def test_adult_student_export_is_only_their_own_record(world):
     assert [c["id"] for c in data["children"]] == [world.a2.student.pk]
 
 
-def test_teachers_and_owners_have_no_family_export(world):
-    for name in ("teacher_a1", "owner_a"):
-        assert client_for(world.users[name]).get("/api/v1/privacy/export/").status_code == 403
+def test_teachers_have_no_export_and_owners_get_no_family_data(world):
+    # Phase 8: the studio owner can export their own account (with the studio's payment
+    # instructions), but never the students of the studio: those belong to the families.
+    assert client_for(world.users["teacher_a1"]).get("/api/v1/privacy/export/").status_code == 403
+    owner_export = client_for(world.users["owner_a"]).get("/api/v1/privacy/export/")
+    assert owner_export.status_code == 200
+    assert json.loads(owner_export.content)["children"] == []
     assert APIClient().get("/api/v1/privacy/export/").status_code == 401
 
 

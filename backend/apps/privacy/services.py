@@ -22,7 +22,7 @@ from apps.accounts.models import Invitation, MfaDevice, User
 from apps.audit import services as audit
 from apps.common.exceptions import DomainConflict
 from apps.lessons.models import Lesson
-from apps.payments.models import CheckoutSession, Payment
+from apps.payments.models import CheckoutSession, Payment, PaymentInstructions
 from apps.students.models import ParentAccount, ParentStudentLink, Student
 
 from . import selectors
@@ -127,6 +127,10 @@ def erase_account(user: User, password: str) -> None:
             and Teacher.objects.filter(user=user, is_owner=True).exists()
         ):
             raise StudioNotEmpty("The studio still has students.")
+        # Le istruzioni di pagamento (IBAN) sono dati del titolare: se ne vanno con l'account.
+        PaymentInstructions.objects.filter(
+            studio__teachers__user=user, studio__teachers__is_owner=True
+        ).delete()
     children = list(selectors.students_of(user))
     if CheckoutSession.objects.filter(
         package__student__in=children, status=CheckoutSession.Status.OPEN
