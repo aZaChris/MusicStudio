@@ -10,8 +10,12 @@ the generated types.
 1. **`status` of a payment gains `reversal`.** A correction is a new entry with that status. Any
    badge or filter that switches on `paid`, `pending`, `overdue` must treat `reversal` (and an
    original that reads `reversed: true`) as history, not as money to collect. Today the teacher
-   payments screen counts "to collect" as "not paid": a reversal row would be counted. This is the
-   one change that can make the app show a wrong number, so check it first.
+   payments screen counts "to collect" as "not paid" (checked on branch `mobile`, lines 59 and 60
+   of `src/app/(teacher)/payments.tsx`: `p.status !== "paid"`), so a reversal row would be counted
+   and shown under the "to collect" filter. This is the one change that can make the app show a
+   wrong number, so check it first. The web portal had the same line and now counts only
+   `pending` and `overdue`. The status chip labels go through `paymentStatusKey`, which also needs
+   a label for `reversal`.
 2. **New read-only fields on each payment**: `reversed` (bool), `reversal_of`, `reversal_id`,
    `receipt_number`, and, for teachers and owners only, `reason` and `recorded_by`. Parents never
    receive the last two.
