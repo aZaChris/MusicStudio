@@ -106,3 +106,61 @@ def test_account_flows_leave_no_personal_data_in_logs(caplog, django_capture_on_
         text = f"{record.getMessage()} {extras}"
         for value in sensitive:
             assert value not in text, f"{value[:6]}… found in log: {text[:120]}"
+
+
+def test_register_instruction_and_receipt_flows_leave_no_personal_data_in_logs(caplog):
+    # Phase 8: reverse a payment, export the register, save bank details, issue a receipt, and
+    # read a family's list, with every logger at DEBUG. Names, the reversal reason, the IBAN and
+    # the account holder must appear in no log record (constitution X, SC-008).
+    from apps.common.factories import (
+        PackageFactory,
+        ParentAccountFactory,
+        PaymentFactory,
+        StudentFactory,
+        link_parent_to_student,
+    )
+
+    caplog.set_level(logging.DEBUG)
+    owner = make_studio_owner()
+    student = StudentFactory(teacher=owner, first_name="Ottavia", last_name="Pentagramma")
+    PackageFactory(student=student)
+    payment = PaymentFactory(student=student, date="2026-11-03")
+    parent = ParentAccountFactory()
+    link_parent_to_student(parent, student)
+    iban, holder, reason = (
+        "IT60X0542811101000000123456",
+        "Orchestra Segreta SRL",
+        "Svista-Riservata",
+    )
+    staff = client_for(owner.user)
+
+    staff.put(
+        "/api/v1/payment-instructions/",
+        {"iban": iban, "account_holder": holder, "note": "Causale riservata"},
+        format="json",
+    )
+    staff.put(
+        "/api/v1/payment-instructions/",
+        {"iban": iban[:-1] + "9", "account_holder": holder},
+        format="json",
+    )
+    staff.post(f"/api/v1/payments/{payment.pk}/receipt/", {"language": "it"}, format="json")
+    staff.post(f"/api/v1/payments/{payment.pk}/reverse/", {"reason": reason}, format="json")
+    period = {"date_from": "2026-11-01", "date_to": "2026-11-30"}
+    staff.get("/api/v1/payments/register/summary/", period)
+    staff.get("/api/v1/payments/register/export/csv/", period)
+    staff.get("/api/v1/payments/register/export/pdf/", period)
+    staff.get("/api/v1/receipts/")
+    family = client_for(parent.user)
+    family.get("/api/v1/payment-instructions/open/")
+    family.get("/api/v1/receipts/")
+    staff.get("/api/v1/privacy/export/")
+
+    assert caplog.records, "the flows should have logged something"
+    sensitive = {iban, holder, reason, "Ottavia", "Pentagramma", "Causale riservata"}
+    standard = set(logging.LogRecord("n", 10, "p", 1, "m", (), None).__dict__) | {"message"}
+    for record in caplog.records:
+        extras = {k: v for k, v in record.__dict__.items() if k not in standard}
+        text = f"{record.getMessage()} {extras}"
+        for value in sensitive:
+            assert value not in text, f"{value[:6]}… found in log: {text[:120]}"
