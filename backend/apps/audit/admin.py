@@ -1,3 +1,5 @@
+"""Admin del registro: l'operatore può guardare le voci, mai crearle, modificarle o cancellarle."""
+
 from typing import Any
 
 from django.contrib import admin
@@ -8,7 +10,8 @@ from .models import AuditEntry
 
 @admin.register(AuditEntry)
 class AuditEntryAdmin(admin.ModelAdmin):
-    """Read-only: the operator can inspect entries, never edit or delete them."""
+    # Sola lettura: tutti e tre i permessi di scrittura sono negati. Un registro che l'operatore
+    # può riscrivere non prova niente (docs/learning/concetti/audit-log.md).
 
     list_display = (
         "created_at",
