@@ -2342,6 +2342,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/v1/payments/{id}/receipt/:
+    post:
+      operationId: v1_payments_receipt_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiptRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReceiptRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReceiptRequestRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receipt'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Receipt'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /api/v1/payments/{id}/reverse/:
     post:
       operationId: v1_payments_reverse_create
@@ -2696,6 +2763,89 @@ paths:
                 $ref: '#/components/schemas/Error'
         '403':
           description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/receipts/:
+    get:
+      operationId: v1_receipts_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - in: query
+        name: student
+        schema:
+          type: integer
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReceiptList'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/receipts/{id}/pdf/:
+    get:
+      operationId: v1_receipts_pdf_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: PDF attachment
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
           content:
             application/json:
               schema:
@@ -4049,6 +4199,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Payment'
+    PaginatedReceiptList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Receipt'
     PaginatedStudentList:
       type: object
       required:
@@ -4296,6 +4469,10 @@ components:
           type: integer
           nullable: true
           readOnly: true
+        receipt_number:
+          type: string
+          nullable: true
+          readOnly: true
         recorded_by:
           type: integer
           readOnly: true
@@ -4310,6 +4487,7 @@ components:
       - id
       - method
       - reason
+      - receipt_number
       - recorded_by
       - reversal_id
       - reversal_of
@@ -4447,6 +4625,60 @@ components:
           type: integer
       required:
       - teacher
+    Receipt:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        payment:
+          type: integer
+          readOnly: true
+        number:
+          type: string
+          readOnly: true
+        language:
+          allOf:
+          - $ref: '#/components/schemas/PreferredLanguageEnum'
+          readOnly: true
+        issued_at:
+          type: string
+          format: date-time
+          readOnly: true
+        cancelled:
+          type: boolean
+          readOnly: true
+        student_name:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          readOnly: true
+        date:
+          type: string
+          format: date
+          readOnly: true
+        method:
+          type: string
+          readOnly: true
+      required:
+      - amount
+      - cancelled
+      - date
+      - id
+      - issued_at
+      - language
+      - method
+      - number
+      - payment
+      - student_name
+    ReceiptRequestRequest:
+      type: object
+      properties:
+        language:
+          $ref: '#/components/schemas/PreferredLanguageEnum'
     RegisterCounts:
       type: object
       properties:
@@ -4620,6 +4852,10 @@ components:
           type: integer
           nullable: true
           readOnly: true
+        receipt_number:
+          type: string
+          nullable: true
+          readOnly: true
         recorded_by:
           type: integer
           readOnly: true
@@ -4637,6 +4873,7 @@ components:
       - id
       - method
       - reason
+      - receipt_number
       - recorded_by
       - refund
       - reversal_id

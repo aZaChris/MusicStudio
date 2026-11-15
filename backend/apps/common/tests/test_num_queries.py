@@ -162,3 +162,28 @@ def test_payment_instructions_endpoints_hold_a_constant_query_count():
 
     assert open_one == _count(parent.user, "/api/v1/payment-instructions/open/") == 3
     assert owner_read == _count(owner.user, "/api/v1/payment-instructions/") == 2
+
+
+def test_receipts_list_and_payments_with_receipts_hold_a_constant_query_count():
+    # Phase 8: receipt number, student name and the cancelled flag come from the same query
+    # (select_related), so more receipts do not mean more queries.
+    from apps.common.factories import PaymentFactory, make_reversal
+    from apps.payments.services import issue_receipt
+
+    teacher = TeacherFactory()
+
+    def seed(reverse: bool) -> None:
+        student = StudentFactory(teacher=teacher)
+        payment = PaymentFactory(student=student)
+        issue_receipt(payment, language="it", actor=teacher.user)
+        if reverse:
+            make_reversal(payment)
+
+    seed(False)
+    receipts_one = _count(teacher.user, "/api/v1/receipts/")
+    payments_one = _count(teacher.user, "/api/v1/payments/")
+    for i in range(19):
+        seed(i % 2 == 0)
+
+    assert receipts_one == _count(teacher.user, "/api/v1/receipts/") == 3  # teacher, count, rows
+    assert payments_one == _count(teacher.user, "/api/v1/payments/") == 3

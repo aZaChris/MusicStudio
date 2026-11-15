@@ -14,11 +14,11 @@ from django.db.models import Count, Exists, OuterRef, Q, QuerySet, Sum
 from django.utils import timezone
 
 from apps.common.exceptions import PeriodTooLong
-from apps.common.scoping import STUDENT_CHILD_PATHS, packages_visible_to, scope
+from apps.common.scoping import RECEIPT_PATHS, STUDENT_CHILD_PATHS, packages_visible_to, scope
 from apps.common.tenancy import TenantContext
 from apps.packages.models import Package
 
-from .models import Payment, PaymentInstructions
+from .models import Payment, PaymentInstructions, Receipt
 
 
 def payments_for(ctx: TenantContext) -> QuerySet[Payment]:
@@ -29,8 +29,11 @@ def payments_for(ctx: TenantContext) -> QuerySet[Payment]:
     un proprio studio: eredita quello dello studente, da qui STUDENT_CHILD_PATHS.
     `select_related("student")` evita una query per riga (concetti/orm-e-problema-n-piu-1.md).
     """
-    # `reversal` è nel select_related così il campo `reversed` del serializer non costa query.
-    return scope(Payment.objects.select_related("student", "reversal"), ctx, STUDENT_CHILD_PATHS)
+    # `reversal` e `receipt` sono nel select_related così `reversed` e `receipt_number` del
+    # serializer non costano una query per riga.
+    return scope(
+        Payment.objects.select_related("student", "reversal", "receipt"), ctx, STUDENT_CHILD_PATHS
+    )
 
 
 def effective_paid(qs: QuerySet[Payment]) -> QuerySet[Payment]:
@@ -129,13 +132,28 @@ def register_summary(
     }
 
 
+def is_reversed(payment: Payment) -> bool:
+    """Il pagamento ha uno storno? (Senza, Django solleva ObjectDoesNotExist sull'accesso.)"""
+    try:
+        return payment.reversal is not None
+    except ObjectDoesNotExist:
+        return False
+
+
+def _receipt_number(payment: Payment) -> str:
+    try:
+        return payment.receipt.number
+    except ObjectDoesNotExist:
+        return ""
+
+
 def register_rows(
     ctx: TenantContext, date_from: datetime.date, date_to: datetime.date
 ) -> list[dict[str, Any]]:
     """Le righe del registro per l'esportazione: una per pagamento, in ordine di data.
 
     Importo con segno (negativo per lo storno) e stato "visibile": un originale stornato si
-    legge `reversed`. Il numero di ricevuta si aggiunge con le ricevute (storia 4).
+    legge `reversed`. Il numero di ricevuta c'è se la ricevuta è stata emessa.
     """
     rows = []
     for payment in _payments_in_period(ctx, date_from, date_to).order_by("date", "id"):
@@ -147,7 +165,7 @@ def register_rows(
         rows.append(
             {
                 "date": payment.date,
-                "receipt_number": "",
+                "receipt_number": _receipt_number(payment),
                 "student": payment.student.full_name,
                 "method": payment.method,
                 "amount": -payment.amount if is_reversal else payment.amount,
@@ -195,3 +213,20 @@ def instructions_for_open_packages(
         for row in rows.order_by("studio_id")
         if has_content(row)
     ]
+
+
+# --- Ricevute (fase 8) ---------------------------------------------------------------------
+
+
+def receipts_for(ctx: TenantContext) -> QuerySet[Receipt]:
+    """Le ricevute emesse che chi chiama può vedere, e solo quelle.
+
+    Come per i pagamenti il filtro passa da `scope` (qui con RECEIPT_PATHS): il titolare vede lo
+    studio, l'insegnante i propri studenti, il genitore e lo studente adulto solo il proprio.
+    Pagamento, studente e storno sono nello stesso select_related: nessuna query per riga.
+    """
+    return scope(
+        Receipt.objects.select_related("payment__student", "payment__reversal"),
+        ctx,
+        RECEIPT_PATHS,
+    )

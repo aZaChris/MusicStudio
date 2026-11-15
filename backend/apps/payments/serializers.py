@@ -8,7 +8,7 @@ from rest_framework import serializers
 from apps.common.serializers import ScopedRelatedFieldsMixin
 from apps.common.tenancy import get_tenant
 
-from .models import CheckoutSession, Payment
+from .models import CheckoutSession, Payment, Receipt
 
 
 class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Payment]):
@@ -22,6 +22,7 @@ class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Pa
     # `reversed` e `reversal_id` si ricavano dalla riga di storno già caricata dal selector.
     reversed = serializers.SerializerMethodField()
     reversal_id = serializers.SerializerMethodField()
+    receipt_number = serializers.SerializerMethodField()
     # Chi ha creato la riga e perché è stata stornata: li vede solo il personale dello studio.
     # required=False: per genitori e studenti adulti i due campi mancano del tutto (vedi
     # to_representation), quindi nel contratto sono opzionali.
@@ -45,6 +46,7 @@ class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Pa
             "reversal_of",
             "reversed",
             "reversal_id",
+            "receipt_number",
             "recorded_by",
             "reason",
         ]
@@ -66,6 +68,14 @@ class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Pa
     def get_reversal_id(self, obj: Payment) -> int | None:
         reversal = self._reversal(obj)
         return reversal.pk if reversal else None
+
+    def get_receipt_number(self, obj: Payment) -> str | None:
+        # Dal select_related del selector: nessuna query. Senza ricevuta Django solleva
+        # RelatedObjectDoesNotExist (un ObjectDoesNotExist).
+        try:
+            return obj.receipt.number
+        except ObjectDoesNotExist:
+            return None
 
     def validate_status(self, value: str) -> str:
         # Lo storno nasce solo dal service `reverse_payment`: dall'API non si forgia.
@@ -176,6 +186,48 @@ class OpenInstructionsSerializer(PaymentInstructionsSerializer):
     # Gli studenti di chi chiama che hanno un pacchetto aperto in questo studio.
     student_ids = serializers.ListField(child=serializers.IntegerField())
     notice = serializers.CharField()
+
+
+class ReceiptRequestSerializer(serializers.Serializer[None]):
+    # Corpo di POST /payments/{id}/receipt/: la lingua è scelta alla prima emissione (it o en).
+    # Se manca si usa la lingua del portale di chi emette.
+    language = serializers.ChoiceField(choices=Receipt.Language.choices, required=False)
+
+
+class ReceiptSerializer(serializers.ModelSerializer[Receipt]):
+    # Una ricevuta emessa con i dati che il portale mostra nell'elenco. Il PDF si scarica da
+    # receipts/{id}/pdf/ e si genera dai dati attuali (ADR-035).
+    number = serializers.CharField(read_only=True)
+    cancelled = serializers.SerializerMethodField()
+    student_name = serializers.CharField(source="payment.student.full_name", read_only=True)
+    amount = serializers.DecimalField(
+        source="payment.amount", max_digits=8, decimal_places=2, read_only=True
+    )
+    date = serializers.DateField(source="payment.date", read_only=True)
+    method = serializers.CharField(source="payment.method", read_only=True)
+
+    class Meta:
+        model = Receipt
+        fields = [
+            "id",
+            "payment",
+            "number",
+            "language",
+            "issued_at",
+            "cancelled",
+            "student_name",
+            "amount",
+            "date",
+            "method",
+        ]
+        read_only_fields = fields
+
+    def get_cancelled(self, obj: Receipt) -> bool:
+        # "Annullata" se il pagamento è stato stornato (dal select_related del selector).
+        try:
+            return obj.payment.reversal is not None
+        except ObjectDoesNotExist:
+            return False
 
 
 class CheckoutSerializer(serializers.Serializer[CheckoutSession]):

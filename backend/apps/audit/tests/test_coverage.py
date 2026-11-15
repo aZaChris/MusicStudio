@@ -41,14 +41,7 @@ COVERED_ELSEWHERE = {
     "payment.delete",  # apps/payments/tests/test_register_integrity.py
     "register.export",  # apps/payments/tests/test_register_export.py
     "instructions.change",  # apps/payments/tests/test_instructions.py
-}
-
-
-# Fase 8: azioni già nell'elenco ma non ancora registrate dal loro service. Ogni storia della
-# fase toglie i propri nomi da qui quando aggiunge il test che le verifica (tasks.md, T016, T026,
-# T038, T049).
-PHASE_8_PENDING = {
-    "receipt.issue",
+    "receipt.issue",  # apps/payments/tests/test_receipts.py
 }
 
 
@@ -143,5 +136,5 @@ def test_manual_payment_is_audited_with_actor_and_studio():
 def test_every_action_has_a_check():
     here = set(re.findall(r'"([a-z]+(?:\.[a-z_]+)?)" in actions\(\)', Path(__file__).read_text()))
     here |= {"payment.record"}
-    missing = {a.value for a in AuditEntry.Action} - here - COVERED_ELSEWHERE - PHASE_8_PENDING
+    missing = {a.value for a in AuditEntry.Action} - here - COVERED_ELSEWHERE
     assert not missing, f"No test checks that these actions are recorded: {missing}"

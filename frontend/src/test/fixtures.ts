@@ -88,6 +88,7 @@ export const payment = (id: number, over: Partial<Payment> = {}): Payment => ({
   reversal_of: null,
   reversed: false,
   reversal_id: null,
+  receipt_number: null,
   recorded_by: 3,
   reason: '',
   ...over,

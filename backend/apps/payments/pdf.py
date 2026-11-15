@@ -28,6 +28,15 @@ LABELS: dict[str, dict[str, str]] = {
         "total": "Total",
         "produced": "Produced on {day}",
         "not_tax": "This document is not a tax document.",
+        "receipt_title": "Payment receipt",
+        "receipt_no": "Receipt no. {number}",
+        "studio": "Studio",
+        "student": "Student",
+        "amount": "Amount",
+        "date": "Date",
+        "receipt_not_tax": "This is a payment receipt. It is not a tax document.",
+        "cancelled": "CANCELLED",
+        "cancelled_note": "This payment was reversed: the receipt is no longer valid.",
         "cash": "Cash",
         "bank_transfer": "Bank transfer",
         "manual_entry": "Manual entry",
@@ -44,6 +53,15 @@ LABELS: dict[str, dict[str, str]] = {
         "total": "Totale",
         "produced": "Prodotto il {day}",
         "not_tax": "Questo documento non è un documento fiscale.",
+        "receipt_title": "Ricevuta di pagamento",
+        "receipt_no": "Ricevuta n. {number}",
+        "studio": "Studio",
+        "student": "Studente",
+        "amount": "Importo",
+        "date": "Data",
+        "receipt_not_tax": "Questa è una ricevuta di pagamento. Non è un documento fiscale.",
+        "cancelled": "ANNULLATA",
+        "cancelled_note": "Questo pagamento è stato stornato: la ricevuta non è più valida.",
         "cash": "Contanti",
         "bank_transfer": "Bonifico",
         "manual_entry": "Inserimento manuale",
@@ -133,3 +151,94 @@ def register_pdf(
 def _escape(value: str) -> str:
     # Paragraph interpreta un mini-HTML: i nomi con & < > non devono rompere il documento.
     return value.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+
+def receipt_pdf(
+    *,
+    studio_name: str,
+    student_name: str,
+    amount: Decimal,
+    day: datetime.date,
+    method: str,
+    number: str,
+    language: str = "it",
+    cancelled: bool = False,
+    compress: bool = True,
+) -> bytes:
+    """La ricevuta di un pagamento: studio, studente, importo, data, metodo e numero.
+
+    Solo questi dati (FR-029): niente coordinate bancarie, codici fiscali o dati di chi ha
+    pagato. Dice chiaramente di non essere un documento fiscale; se il pagamento è stato
+    stornato porta il segno "annullata", in alto e in diagonale su tutta la pagina.
+    """
+    text = labels(language)
+    styles = getSampleStyleSheet()
+    note = ParagraphStyle("note", parent=styles["Normal"], fontSize=10, textColor=colors.grey)
+    alert = ParagraphStyle(
+        "alert",
+        parent=styles["Normal"],
+        fontSize=12,
+        textColor=colors.red,
+        fontName="Helvetica-Bold",
+    )
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=25 * mm,
+        rightMargin=25 * mm,
+        topMargin=25 * mm,
+        bottomMargin=20 * mm,
+        title=f"{text['receipt_title']} {number}",
+        pageCompression=1 if compress else 0,
+        # Stesso input, stessi byte: senza `invariant` reportlab scrive data e id casuali nel PDF,
+        # e "rigenerare dà lo stesso contenuto" (FR-027) non sarebbe verificabile.
+        invariant=1,
+    )
+    rows = [
+        [text["studio"], studio_name],
+        [text["student"], student_name],
+        [text["amount"], _money(amount)],
+        [text["date"], _day(day, language)],
+        [text["method"], text.get(method, method)],
+    ]
+    table = Table(
+        [
+            [
+                Paragraph(f"<b>{label}</b>", styles["Normal"]),
+                Paragraph(_escape(value), styles["Normal"]),
+            ]
+            for label, value in rows
+        ],
+        colWidths=[40 * mm, 110 * mm],
+    )
+    table.setStyle(TableStyle([("LINEBELOW", (0, 0), (-1, -1), 0.3, colors.lightgrey)]))
+    story: list[Any] = [
+        Paragraph(text["receipt_title"], styles["Title"]),
+        Paragraph(f"<b>{text['receipt_no'].format(number=number)}</b>", styles["Heading2"]),
+    ]
+    if cancelled:
+        story += [
+            Paragraph(f"{text['cancelled']} — {text['cancelled_note']}", alert),
+            Spacer(1, 4 * mm),
+        ]
+    story += [
+        Spacer(1, 6 * mm),
+        table,
+        Spacer(1, 12 * mm),
+        Paragraph(text["receipt_not_tax"], note),
+    ]
+
+    def watermark(canvas: Any, _doc: Any) -> None:
+        if not cancelled:
+            return
+        canvas.saveState()
+        canvas.setFont("Helvetica-Bold", 90)
+        canvas.setFillColor(colors.Color(1, 0, 0, alpha=0.12))
+        canvas.translate(A4[0] / 2, A4[1] / 2)
+        canvas.rotate(40)
+        canvas.drawCentredString(0, 0, text["cancelled"])
+        canvas.restoreState()
+
+    doc.build(story, onFirstPage=watermark, onLaterPages=watermark)
+    return buffer.getvalue()

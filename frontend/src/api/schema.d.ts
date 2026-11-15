@@ -570,6 +570,22 @@ export interface paths {
         patch: operations["v1_payments_partial_update"];
         trace?: never;
     };
+    "/api/v1/payments/{id}/receipt/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_payments_receipt_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/{id}/reverse/": {
         parameters: {
             query?: never;
@@ -690,6 +706,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["v1_privacy_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/receipts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_receipts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/receipts/{id}/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_receipts_pdf_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1213,6 +1261,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Payment"][];
         };
+        PaginatedReceiptList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Receipt"][];
+        };
         PaginatedStudentList: {
             /** @example 123 */
             count: number;
@@ -1346,6 +1409,7 @@ export interface components {
             readonly reversal_of: number | null;
             readonly reversed: boolean;
             readonly reversal_id: number | null;
+            readonly receipt_number: string | null;
             readonly recorded_by: number | null;
             readonly reason: string;
         };
@@ -1409,6 +1473,24 @@ export interface components {
         /** @description Target teacher, validated against the owner's own studio only. */
         ReassignStudentRequest: {
             teacher: number;
+        };
+        Receipt: {
+            readonly id: number;
+            readonly payment: number;
+            readonly number: string;
+            readonly language: components["schemas"]["PreferredLanguageEnum"];
+            /** Format: date-time */
+            readonly issued_at: string;
+            readonly cancelled: boolean;
+            readonly student_name: string;
+            /** Format: decimal */
+            readonly amount: string;
+            /** Format: date */
+            readonly date: string;
+            readonly method: string;
+        };
+        ReceiptRequestRequest: {
+            language?: components["schemas"]["PreferredLanguageEnum"];
         };
         RegisterCounts: {
             paid: number;
@@ -1481,6 +1563,7 @@ export interface components {
             readonly reversal_of: number | null;
             readonly reversed: boolean;
             readonly reversal_id: number | null;
+            readonly receipt_number: string | null;
             readonly recorded_by: number | null;
             readonly reason: string;
             readonly refund: boolean;
@@ -4325,6 +4408,86 @@ export interface operations {
             };
         };
     };
+    v1_payments_receipt_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReceiptRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReceiptRequestRequest"];
+                "multipart/form-data": components["schemas"]["ReceiptRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Receipt"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Receipt"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found or outside your studio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     v1_payments_reverse_create: {
         parameters: {
             query?: never;
@@ -4755,6 +4918,112 @@ export interface operations {
             };
             /** @description Role or object not allowed. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_receipts_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                student?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedReceiptList"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_receipts_pdf_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF attachment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found or outside your studio. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

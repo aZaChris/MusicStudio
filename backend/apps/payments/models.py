@@ -225,3 +225,48 @@ class PaymentInstructions(models.Model):
     def __str__(self) -> str:
         # Nessun dato bancario nella rappresentazione testuale (finirebbe nell'admin e nei log).
         return f"Payment instructions of studio #{self.studio_id}"
+
+
+class Receipt(models.Model):
+    """Ricevuta di pagamento non fiscale di un pagamento incassato (fase 8, ADR-035).
+
+    Al massimo una per pagamento. Il numero è `AAAA-NNNN`, unico per studio e anno, assegnato una
+    volta sola alla prima emissione e mai cambiato né riusato. Il PDF non si salva: si genera al
+    momento dai dati attuali (un nome salvato sopravviverebbe a una richiesta di cancellazione).
+    Spiegazione: docs/learning/concetti/ricevute-non-fiscali.md.
+    """
+
+    class Language(models.TextChoices):
+        IT = "it", "Italiano"
+        EN = "en", "English"
+
+    # CASCADE solo per il job di conservazione dei pagamenti vecchi (10 anni): le ricevute
+    # seguono il loro pagamento. I numeri non si riusano comunque: si prende il massimo.
+    payment = models.OneToOneField(Payment, on_delete=models.CASCADE, related_name="receipt")
+    # Salvato (anche se ricavabile dallo studente) per poter dichiarare l'unicità del numero
+    # per studio direttamente nel database.
+    studio = models.ForeignKey("studios.Studio", on_delete=models.PROTECT, related_name="+")
+    year = models.PositiveSmallIntegerField()
+    sequence = models.PositiveIntegerField()
+    language = models.CharField(max_length=2, choices=Language.choices)
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    issued_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-year", "-sequence"]
+        constraints = [
+            # La rete di sicurezza dietro il lock: due ricevute dello stesso studio e anno non
+            # possono avere lo stesso numero, qualunque cosa faccia il codice.
+            models.UniqueConstraint(
+                fields=["studio", "year", "sequence"], name="unique_receipt_number_per_studio_year"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Receipt {self.number}"
+
+    @property
+    def number(self) -> str:
+        return f"{self.year}-{self.sequence:04d}"

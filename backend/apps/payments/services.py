@@ -19,6 +19,7 @@ from urllib.parse import urlsplit
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
+from django.db.models import Max
 from django.utils import timezone
 
 from apps.audit import services as audit
@@ -28,7 +29,7 @@ from apps.students.models import Student
 from apps.studios.models import Studio
 
 from . import gateway, iban, selectors
-from .models import CheckoutSession, Payment, PaymentInstructions, WebhookEvent
+from .models import CheckoutSession, Payment, PaymentInstructions, Receipt, WebhookEvent
 
 
 def ensure_package_matches_student(student: Student, package: Package | None) -> None:
@@ -472,3 +473,50 @@ def save_instructions(
         metadata={"fields": ",".join(changed), "cleared": empty},
     )
     return result
+
+
+# --- Ricevute non fiscali (fase 8, ADR-035) ------------------------------------------------
+
+
+def issue_receipt(payment: Payment, *, language: str, actor: Any) -> tuple[Receipt, bool]:
+    """Emette la ricevuta di un pagamento incassato. Restituisce (ricevuta, creata ora?).
+
+    Idempotente: se la ricevuta esiste già si restituisce quella, con lo stesso numero e la
+    stessa lingua. Altrimenti si blocca la riga dello studio (`select_for_update`, come
+    `add_teacher_to_studio`) e si prende `massimo + 1` per l'anno locale in corso: le emissioni
+    contemporanee dello stesso studio si mettono in coda, quindi i numeri sono distinti e senza
+    buchi; se la transazione annulla, il numero non è consumato. Si usa il massimo e non il
+    conteggio perché i numeri restino unici anche se le ricevute vecchie spariscono con la
+    conservazione. Il vincolo di unicità è la rete di sicurezza dietro il lock.
+    Solo un pagamento "paid" ha una ricevuta: non una riga di storno, non uno in sospeso.
+    """
+    if language not in Receipt.Language.values:
+        raise ValidationError({"language": "Choose it or en."})
+    with transaction.atomic():
+        payment = Payment.objects.select_for_update().select_related("student").get(pk=payment.pk)
+        if payment.status == Payment.Status.REVERSAL:
+            raise IsReversal("A reversal entry has no receipt.")
+        if payment.status != Payment.Status.PAID:
+            raise NotPaid("Only a paid entry has a receipt.")
+        existing = Receipt.objects.filter(payment=payment).first()
+        if existing is not None:
+            return existing, False
+        studio = Studio.objects.select_for_update().get(pk=payment.student.studio_id)
+        year = timezone.localdate().year
+        last = Receipt.objects.filter(studio=studio, year=year).aggregate(last=Max("sequence"))
+        receipt = Receipt.objects.create(
+            payment=payment,
+            studio=studio,
+            year=year,
+            sequence=(last["last"] or 0) + 1,
+            language=language,
+            issued_by=_author(actor),
+        )
+        audit.record(
+            audit.Action.RECEIPT_ISSUE,
+            actor=actor,
+            target=receipt,
+            studio_id=studio.pk,
+            metadata={"number": receipt.number},
+        )
+    return receipt, True

@@ -4,6 +4,7 @@ from django.urls import path
 from rest_framework.routers import DefaultRouter
 
 from .instruction_views import OpenInstructionsView, PaymentInstructionsView
+from .receipt_views import IssueReceiptView, ReceiptListView, ReceiptPdfView
 from .register_views import RegisterCsvExportView, RegisterPdfExportView, RegisterSummaryView
 from .views import PaymentViewSet
 from .webhooks import StripeWebhookView
@@ -12,6 +13,10 @@ router = DefaultRouter()
 router.register("payments", PaymentViewSet, basename="payment")
 
 urlpatterns = [
+    # Ricevute non fiscali (fase 8).
+    path("payments/<int:pk>/receipt/", IssueReceiptView.as_view(), name="payment-receipt"),
+    path("receipts/", ReceiptListView.as_view(), name="receipt-list"),
+    path("receipts/<int:pk>/pdf/", ReceiptPdfView.as_view(), name="receipt-pdf"),
     # Istruzioni di pagamento dello studio e, per le famiglie, quelle da mostrare (fase 8).
     path("payment-instructions/", PaymentInstructionsView.as_view(), name="payment-instructions"),
     path(

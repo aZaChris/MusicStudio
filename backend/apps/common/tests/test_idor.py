@@ -118,6 +118,10 @@ ROUTES = {
     # apps/payments/tests/test_instructions_cross_tenant.py).
     "payment-instructions/",
     "payment-instructions/open/",
+    # Receipts: cross-studio and family cases in apps/payments/tests/test_receipts_scope.py.
+    "payments/<pk>/receipt/",
+    "receipts/",
+    "receipts/<pk>/pdf/",
     "payments/register/summary/",
     "payments/register/export/csv/",
     "payments/register/export/pdf/",

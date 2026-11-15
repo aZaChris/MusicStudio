@@ -198,6 +198,9 @@ SPECTACULAR_SETTINGS = {
     # Fase 8: lo stato del pagamento (con "reversal") e altri `status` avevano un nome ambiguo.
     "ENUM_NAME_OVERRIDES": {
         "PaymentStatusEnum": "apps.payments.models.Payment.Status",
+        # Utente e ricevuta hanno la stessa coppia it/en: si tiene il nome che il contratto aveva
+        # già (PreferredLanguageEnum), così i tipi generati dai client non cambiano.
+        "PreferredLanguageEnum": "apps.accounts.models.User.Language",
     },
     # Separate request/response components: read-only fields are not required in requests.
     "COMPONENT_SPLIT_REQUEST": True,
