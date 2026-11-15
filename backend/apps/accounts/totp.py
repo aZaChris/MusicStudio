@@ -1,8 +1,9 @@
-"""TOTP (RFC 6238) with the standard library only (ADR-029).
+"""TOTP (RFC 6238) con la sola libreria standard (ADR-029).
 
-Six digits, 30-second steps, HMAC-SHA1: the combination every authenticator app supports.
-Verification accepts the previous, current and next step (clock drift) and refuses a step
-that was already used, so a code seen over a shoulder cannot be replayed.
+Sei cifre, passi di 30 secondi, HMAC-SHA1: la combinazione che ogni app di autenticazione
+supporta. La verifica accetta il passo precedente, quello corrente e il successivo (scarto
+dell'orologio) e rifiuta un passo già usato: un codice visto da sopra la spalla non si può
+riutilizzare. Spiegazione: docs/learning/concetti/mfa-totp.md.
 """
 
 import base64
@@ -18,11 +19,12 @@ WINDOW = 1
 
 
 def new_secret() -> str:
-    """160 random bits, base32 (the format authenticator apps expect)."""
+    """160 bit casuali, in base32 (il formato che le app di autenticazione si aspettano)."""
     return base64.b32encode(secrets.token_bytes(20)).decode()
 
 
 def code_at(secret: str, step: int, digits: int = DIGITS, algo: str = "sha1") -> str:
+    # HOTP dell'RFC 4226 applicato al numero del passo: HMAC, troncamento dinamico, modulo 10^cifre.
     key = base64.b32decode(secret, casefold=True)
     digest = hmac.new(key, struct.pack(">Q", step), algo).digest()
     offset = digest[-1] & 0x0F
@@ -35,12 +37,13 @@ def current_step(now: float | None = None) -> int:
 
 
 def verify(secret: str, code: str, last_used_step: int = 0, now: float | None = None) -> int | None:
-    """Return the matching step (store it as `last_used_step`) or None."""
+    """Restituisce il passo che corrisponde (da salvare come `last_used_step`) oppure None."""
     code = code.strip().replace(" ", "")
     if len(code) != DIGITS or not code.isdigit():
         return None
     step_now = current_step(now)
     for step in range(step_now - WINDOW, step_now + WINDOW + 1):
+        # `step > last_used_step` è la difesa dal replay; compare_digest evita attacchi sui tempi.
         if step > last_used_step and hmac.compare_digest(code_at(secret, step), code):
             return step
     return None

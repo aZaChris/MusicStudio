@@ -1,3 +1,5 @@
+"""Route di accesso, sessione, registrazione, reset password e MFA (sotto /api/v1/accounts/)."""
+
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 

@@ -1,3 +1,5 @@
+"""Chiude tutte le sessioni di un account (azione dell'operatore, ADR-018)."""
+
 from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser

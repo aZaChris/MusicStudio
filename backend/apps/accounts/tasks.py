@@ -1,3 +1,5 @@
+"""Task Celery dell'account: email e pulizia dei token scaduti (ADR-016)."""
+
 from typing import Any
 
 from celery import shared_task
@@ -6,21 +8,24 @@ from django.conf import settings
 from . import emails, services, tokens
 from .models import User
 
-# Transient SMTP errors are retried; a lost email is recoverable by the user (resend, new
-# reset), so three tries are enough.
+# Gli errori SMTP temporanei si ritentano; una email persa l'utente la può recuperare (nuovo
+# invio, nuovo reset), quindi tre tentativi bastano.
 _RETRY = {"autoretry_for": (OSError,), "retry_backoff": True, "max_retries": 3}
 
 
 @shared_task
 def purge_expired_tokens() -> int:
-    """Daily: keep the revocation tables bounded by the refresh-token lifetime."""
+    """Ogni giorno: tiene le tabelle di revoca limitate alla durata dei refresh token."""
     return services.purge_expired_tokens()
 
 
 @shared_task(**_RETRY)
 def send_account_email(kind: str, user_id: int) -> None:
-    """Email `kind` to a user. Links are made here, off the request path, so the HTTP
-    response time does not reveal whether an account exists (research R3)."""
+    """Invia la email `kind` a un utente.
+
+    I link si creano qui, fuori dal percorso della richiesta, così il tempo di risposta HTTP non
+    rivela se un account esiste (research R3).
+    """
     user = User.objects.filter(pk=user_id).first()
     if user is None:
         return
@@ -43,7 +48,7 @@ def send_account_email(kind: str, user_id: int) -> None:
 
 @shared_task(**_RETRY)
 def send_invitation_email(invitation_id: int, token: str) -> None:
-    """The plain token exists only here and in the email: the database keeps its hash."""
+    """Il token in chiaro esiste solo qui e nella email: il database tiene solo il suo hash."""
     from .models import Invitation
 
     invitation = (

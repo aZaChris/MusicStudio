@@ -1,4 +1,8 @@
-"""HTTP layer for invitations (contract: specs/007-security-privacy-accounts/contracts/api.md)."""
+"""Livello HTTP degli inviti (contratto: specs/007-security-privacy-accounts/contracts/api.md).
+
+I docstring delle view finiscono in openapi.yaml: dove esistono restano in inglese, il perché
+si scrive in commenti `#`. La logica sta in invitations.py.
+"""
 
 from typing import Any
 
@@ -22,11 +26,14 @@ from .models import Invitation, User
 
 
 class IsTeacherOrOwnerRole(BasePermission):
+    # Solo insegnanti e titolari mandano e vedono inviti; i genitori non passano da qui.
     def has_permission(self, request: Request, view: Any) -> bool:
         return getattr(request.user, "role", None) in (User.Role.TEACHER, User.Role.STUDIO_OWNER)
 
 
 class InvitationSerializer(serializers.ModelSerializer[Invitation]):
+    # `student_ids` è solo in scrittura (a chi si riferisce l'invito); `students` e `status` si
+    # leggono. Lo stato "expired" non è salvato: si calcola da `expires_at`.
     student_ids = serializers.ListField(
         child=serializers.IntegerField(), write_only=True, required=False, default=list
     )
@@ -49,6 +56,8 @@ class InvitationSerializer(serializers.ModelSerializer[Invitation]):
 class InvitationViewSet(
     mixins.ListModelMixin, mixins.CreateModelMixin, viewsets.GenericViewSet[Invitation]
 ):
+    # Solo elenco, creazione e revoca: un invito non si modifica né si cancella. Chi vede cosa lo
+    # decide invitations.invitations_visible_to (titolare: lo studio; insegnante: i propri).
     serializer_class = InvitationSerializer
     permission_classes = [IsTeacherOrOwnerRole]
 
@@ -74,6 +83,7 @@ class InvitationViewSet(
 
 
 class InvitationLookupSerializer(serializers.Serializer[None]):
+    # Cosa mostrare nella pagina di accettazione prima di chiedere la password.
     role = serializers.CharField()
     studio_name = serializers.CharField()
     email = serializers.EmailField()
@@ -82,6 +92,8 @@ class InvitationLookupSerializer(serializers.Serializer[None]):
 
 
 class AcceptInvitationSerializer(serializers.Serializer[None]):
+    # Password e nome servono solo a chi non ha ancora un account: per un genitore già registrato
+    # restano vuoti (invitations.accept_invitation).
     token = serializers.CharField(max_length=128)
     password = serializers.CharField(
         write_only=True,
@@ -110,6 +122,9 @@ class TokenPairSerializer(serializers.Serializer[None]):
 class InvitationLookupView(APIView):
     """What the invitation is for, so the page can show it before asking for a password."""
 
+    # Anonima e con limite di frequenza: il token indovinato dà solo ciò che serve a mostrare
+    # la pagina, e un token errato dà 404 senza dire il perché.
+
     permission_classes = [AllowAny]
     authentication_classes: list[type] = []
     throttle_classes = [ScopedRateThrottle]
@@ -136,6 +151,8 @@ class InvitationLookupView(APIView):
 
 class AcceptInvitationView(APIView):
     """Accept: a new account (with password) or, for a parent, the signed-in account."""
+
+    # Restituisce subito la coppia di JWT: chi accetta entra senza un secondo accesso.
 
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]

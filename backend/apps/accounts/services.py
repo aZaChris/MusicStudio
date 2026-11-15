@@ -1,11 +1,13 @@
-"""Account lifecycle: sign-up, confirmation, sessions (ADR-018, ADR-028).
+"""Ciclo di vita dell'account: registrazione, conferma, sessioni (ADR-018, ADR-028).
 
-Only refresh tokens are revocable. Access tokens stay valid until they expire (15 minutes
-by default): checking them against the blacklist would cost a query on every request.
+Solo i refresh token sono revocabili. I token di accesso restano validi fino alla scadenza (15
+minuti di default): controllarli contro la lista nera costerebbe una query a ogni richiesta.
+Spiegazione: docs/learning/concetti/revoca-token-jwt.md.
 
-Anonymous entry points (register, resend confirmation, password reset) must behave the
-same whether or not an address is registered: same response, same work on the request
-path (a password hash is computed in both branches), emails sent later by a task.
+I punti di ingresso anonimi (registrazione, nuovo invio della conferma, reset password) devono
+comportarsi allo stesso modo che l'indirizzo sia registrato o no: stessa risposta, stesso lavoro
+sul percorso della richiesta (l'hash di una password si calcola in entrambi i rami), email
+inviate dopo da un task. Spiegazione: docs/learning/concetti/account-e-token-monouso.md.
 """
 
 from datetime import datetime, timedelta
@@ -36,14 +38,14 @@ def normalize_email(email: str) -> str:
 
 
 def _send_later(kind: str, user_id: int) -> None:
-    """Queue an account email once the transaction commits (the row must exist)."""
+    """Mette in coda una email dell'account a transazione conclusa (la riga deve esistere)."""
     from .tasks import send_account_email
 
     transaction.on_commit(lambda: send_account_email.delay(kind, user_id))
 
 
 def check_new_password(password: str, **user_fields: str) -> None:
-    """Django's validators, with the user's own attributes (similarity check)."""
+    """I validatori di Django, con gli attributi dell'utente (controllo di somiglianza)."""
     try:
         validate_password(password, user=User(**user_fields))
     except ValidationError as error:
@@ -60,17 +62,17 @@ def register_owner(
     studio_name: str,
     language: str = User.Language.IT,
 ) -> None:
-    """Create an unconfirmed studio owner and their studio, or tell the existing owner.
+    """Crea un titolare non confermato e il suo studio, oppure avvisa il titolare già esistente.
 
-    Returns nothing on purpose: the caller must answer the same in both cases.
+    Non restituisce nulla di proposito: chi chiama deve rispondere allo stesso modo nei due casi.
     """
     email = normalize_email(email)
-    # Validate before looking the address up: a "weak password" error must not depend on
-    # whether the account exists.
+    # Si valida prima di cercare l'indirizzo: un errore "password debole" non deve dipendere
+    # dall'esistenza dell'account.
     check_new_password(password, email=email, first_name=first_name, last_name=last_name)
     existing = User.objects.filter(email__iexact=email).first()
     if existing is not None:
-        make_password(password)  # same hashing cost as the other branch
+        make_password(password)  # stesso costo di hashing dell'altro ramo
         _send_later("duplicate_signup", existing.pk)
         return
     user = User(
@@ -107,7 +109,7 @@ def resend_confirmation(email: str) -> None:
 
 
 def request_password_reset(email: str) -> None:
-    """Uniform: the caller answers the same whatever happens here (research R3)."""
+    """Uniforme: chi chiama risponde allo stesso modo qualunque cosa succeda qui (research R3)."""
     user = User.objects.filter(email__iexact=normalize_email(email), is_active=True).first()
     if user is not None and user.has_usable_password():
         _send_later("password_reset", user.pk)
@@ -119,7 +121,7 @@ def _set_new_password(user: User, password: str, action: str) -> None:
         password, email=user.email, first_name=user.first_name, last_name=user.last_name
     )
     user.set_password(password)
-    # A new password also clears a lock: the owner of the mailbox proved who they are.
+    # Una nuova password toglie anche il blocco: chi controlla la casella email ha provato chi è.
     user.failed_logins = 0
     user.lock_level = 0
     user.locked_until = None
@@ -137,21 +139,21 @@ def reset_password(uid: str, token: str, new_password: str) -> None:
 
 
 def change_password(user: User, current_password: str, new_password: str) -> None:
-    """Signed-in change. Every session ends, including this one: the client signs in again."""
+    """Cambio da utente connesso. Tutte le sessioni finiscono, anche questa: si rifà l'accesso."""
     if not user.check_password(current_password):
         raise ValidationError({"current_password": "Wrong password."})
     _set_new_password(user, new_password, audit.Action.PASSWORD_CHANGE)
 
 
 def purge_unconfirmed(cutoff: datetime) -> int:
-    """Retention: self-registered accounts never confirmed since `cutoff`, with their studio."""
+    """Conservazione: account auto-registrati mai confermati da `cutoff`, con il loro studio."""
     from apps.studios.models import Studio
 
     stale = User.objects.filter(email_verified=False, date_joined__lt=cutoff)
     with transaction.atomic():
         studio_ids = list(Studio.objects.filter(owner__user__in=stale).values_list("pk", flat=True))
-        _, per_model = stale.delete()  # cascades to the Teacher row; studio.owner -> NULL
-        # A studio PROTECTs its students; an unconfirmed owner cannot have added any.
+        _, per_model = stale.delete()  # a cascata sulla riga Teacher; studio.owner -> NULL
+        # Uno studio PROTEGGE i suoi studenti; un titolare non confermato non può averne aggiunti.
         Studio.objects.filter(pk__in=studio_ids, students__isnull=True).delete()
     return per_model.get("accounts.User", 0)
 
@@ -163,16 +165,17 @@ def _studio_id(user: User) -> int | None:
 
 
 def logout(user: User, raw_refresh: str) -> None:
-    """Blacklist one refresh token of `user`. Idempotent: a second logout is a no-op.
+    """Mette in lista nera un refresh token di `user`. Idempotente: un secondo logout non fa nulla.
 
-    A token of another user is refused with the same message as a malformed one, so the
-    endpoint cannot be used to learn whether someone else's token is valid.
+    Il token di un altro utente si rifiuta con lo stesso messaggio di uno malformato, così
+    l'endpoint non si può usare per scoprire se il token di qualcun altro è valido.
     """
     try:
-        token_backend.decode(raw_refresh, verify=True)  # type: ignore[arg-type]  # signature, expiry
-        # verify=False here only skips the blacklist check, so a repeated logout is a no-op.
+        token_backend.decode(raw_refresh, verify=True)  # type: ignore[arg-type]  # firma, scadenza
+        # verify=False qui salta solo il controllo della lista nera, così un logout ripetuto non fa
+        # nulla.
         token = RefreshToken(raw_refresh, verify=False)  # type: ignore[arg-type]
-        Token.verify(token)  # token type and expiry, without the blacklist check
+        Token.verify(token)  # tipo del token e scadenza, senza il controllo della lista nera
     except (TokenBackendError, TokenError) as exc:
         raise ValidationError({"refresh": INVALID}) from exc
     if str(token.payload.get(api_settings.USER_ID_CLAIM)) != str(user.pk):
@@ -182,7 +185,7 @@ def logout(user: User, raw_refresh: str) -> None:
 
 @transaction.atomic
 def revoke_all_sessions(user: User) -> int:
-    """Blacklist every unexpired refresh token of `user`; returns how many were revoked."""
+    """Mette in lista nera ogni refresh token non scaduto di `user`; restituisce quanti."""
     live = OutstandingToken.objects.filter(
         user=user, expires_at__gt=timezone.now(), blacklistedtoken__isnull=True
     )
@@ -192,12 +195,12 @@ def revoke_all_sessions(user: User) -> int:
 
 
 def purge_expired_tokens() -> int:
-    """Delete expired outstanding tokens (their blacklist rows cascade)."""
+    """Cancella i token emessi scaduti (le righe della lista nera seguono a cascata)."""
     deleted, _ = OutstandingToken.objects.filter(expires_at__lte=timezone.now()).delete()
     return deleted
 
 
-# --- Per-account lockout (research R4, ADR-028) -------------------------------------------
+# --- Blocco per singolo account (research R4, ADR-028) ------------------------------------
 LOCK_AFTER_FAILURES = 5
 BASE_LOCK = timedelta(minutes=15)
 MAX_LOCK = timedelta(hours=24)
@@ -208,8 +211,11 @@ def is_locked(user: User) -> bool:
 
 
 def register_login_failure(user: User) -> None:
-    """Count a wrong password. The F() update takes the row lock, so parallel attempts
-    are counted one by one; the fifth failure locks for 15 min x 2^level (cap 24 h)."""
+    """Conta una password sbagliata.
+
+    L'update con F() prende il lock sulla riga, quindi i tentativi in parallelo si contano uno per
+    volta; il quinto errore blocca per 15 min x 2^livello (massimo 24 ore).
+    """
     with transaction.atomic():
         User.objects.filter(pk=user.pk).update(failed_logins=F("failed_logins") + 1)
         fresh = User.objects.select_for_update().get(pk=user.pk)

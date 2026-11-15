@@ -1,3 +1,5 @@
+"""Route degli inviti, montate sotto /api/v1/accounts/ da config/urls.py."""
+
 from django.urls import path
 from rest_framework.routers import SimpleRouter
 

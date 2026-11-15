@@ -1,4 +1,4 @@
-"""Clear the sign-in lock of one account (operator action, audited)."""
+"""Toglie il blocco di accesso a un account (azione dell'operatore, registrata nel registro)."""
 
 from typing import Any
 

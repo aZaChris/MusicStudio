@@ -1,3 +1,11 @@
+"""Endpoint di accesso, sessione, registrazione, reset password e MFA.
+
+I docstring delle view finiscono in openapi.yaml (contratto in inglese): dove esistono restano
+in inglese, il perché si scrive in commenti `#`. Le view sono sottili: la logica sta in
+services.py e mfa.py. Spiegazione: docs/learning/concetti/account-e-token-monouso.md,
+revoca-token-jwt.md e mfa-totp.md.
+"""
+
 from typing import Any
 
 from drf_spectacular.utils import OpenApiResponse, extend_schema
@@ -33,11 +41,14 @@ from .serializers import (
     UidTokenSerializer,
 )
 
+# Risposta unica degli endpoint anonimi: uguale per account esistente e inesistente.
 CHECK_EMAIL = {"detail": "check_email"}
 
 
 class ThrottledTokenObtainPairView(TokenObtainPairView):
     """Login with a tight per-client rate (THROTTLE_LOGIN) against password guessing."""
+
+    # Il limite per client si somma al blocco per singolo account (services.register_login_failure).
 
     serializer_class = LoginSerializer
     throttle_classes = [ScopedRateThrottle]
@@ -51,12 +62,16 @@ class ThrottledTokenObtainPairView(TokenObtainPairView):
 class AnonymousAccountView(APIView):
     """Base for anonymous account endpoints: no JWT parsing, a per-client rate."""
 
+    # `authentication_classes = []`: un token scaduto in un'intestazione non deve far fallire con
+    # 401 una richiesta che non ne ha bisogno.
+
     authentication_classes: list[type] = []
     permission_classes = [AllowAny]
     throttle_classes = [ScopedRateThrottle]
 
 
 class RegisterView(AnonymousAccountView):
+    # Risponde sempre 202: non dice se l'email era già registrata (services.register_owner).
     throttle_scope = "register"
 
     @extend_schema(request=RegisterSerializer, responses={202: AcceptedResponseSerializer})
@@ -76,6 +91,7 @@ class RegisterView(AnonymousAccountView):
 
 
 class ConfirmEmailView(AnonymousAccountView):
+    # Conferma l'indirizzo con il link ricevuto (uid e token firmato, nessuna tabella di token).
     throttle_scope = "register"
 
     @extend_schema(request=UidTokenSerializer, responses={200: AcceptedResponseSerializer})
@@ -87,6 +103,7 @@ class ConfirmEmailView(AnonymousAccountView):
 
 
 class ResendConfirmationView(AnonymousAccountView):
+    # Rinvia il link di conferma; risposta uniforme anche per email sconosciute.
     throttle_scope = "register"
 
     @extend_schema(request=EmailOnlySerializer, responses={202: AcceptedResponseSerializer})
@@ -98,6 +115,7 @@ class ResendConfirmationView(AnonymousAccountView):
 
 
 class MeView(RetrieveAPIView[Any]):
+    # Profilo di chi chiama: l'oggetto è sempre request.user, quindi non esiste un id da forzare.
     serializer_class = MeSerializer
     permission_classes = [IsAuthenticated]
 
@@ -122,6 +140,7 @@ class LogoutView(APIView):
 
 
 class PasswordResetRequestView(AnonymousAccountView):
+    # Chiede il link di reset; risposta uniforme (research R3).
     throttle_scope = "password_reset"
 
     @extend_schema(request=EmailOnlySerializer, responses={202: AcceptedResponseSerializer})
@@ -133,6 +152,7 @@ class PasswordResetRequestView(AnonymousAccountView):
 
 
 class PasswordResetConfirmView(AnonymousAccountView):
+    # Imposta la nuova password con il link; chiude tutte le sessioni dell'account.
     throttle_scope = "password_reset"
 
     @extend_schema(
@@ -167,6 +187,8 @@ class PasswordChangeView(APIView):
 class MfaVerifyView(AnonymousAccountView):
     """Second step of sign-in. Every failure answers the same 401."""
 
+    # Anonima perché a questo punto il client ha solo l'mfa_token firmato, non ancora i JWT.
+
     throttle_scope = "mfa"
 
     @extend_schema(request=MfaVerifySerializer, responses={200: LoginResponseSerializer})
@@ -183,7 +205,7 @@ class MfaVerifyView(AnonymousAccountView):
 
 
 class CanUseMfa(BasePermission):
-    """Owners and teachers; parents and students sign in with the password alone."""
+    """Titolari e insegnanti; genitori e studenti accedono con la sola password."""
 
     def has_permission(self, request: Request, view: Any) -> bool:
         user = request.user
@@ -191,6 +213,7 @@ class CanUseMfa(BasePermission):
 
 
 class MfaStatusView(APIView):
+    # Se la MFA è attiva e quanti codici di recupero restano.
     permission_classes = [CanUseMfa]
 
     @extend_schema(responses={200: MfaStatusSerializer})
@@ -199,6 +222,7 @@ class MfaStatusView(APIView):
 
 
 class MfaSetupView(APIView):
+    # Inizia l'attivazione: restituisce il segreto e l'URI per il QR. Si attiva solo alla conferma.
     permission_classes = [CanUseMfa]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "mfa"
@@ -210,6 +234,7 @@ class MfaSetupView(APIView):
 
 
 class MfaConfirmView(APIView):
+    # Conferma con un primo codice; restituisce i codici di recupero (si vedono una volta sola).
     permission_classes = [CanUseMfa]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "mfa"
@@ -223,6 +248,7 @@ class MfaConfirmView(APIView):
 
 
 class MfaDisableView(APIView):
+    # Disattiva la MFA: richiede password e un codice valido.
     permission_classes = [CanUseMfa]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "mfa"
@@ -239,6 +265,7 @@ class MfaDisableView(APIView):
 
 
 class MfaRecoveryCodesView(APIView):
+    # Rigenera i codici di recupero (i vecchi smettono di valere): password e codice richiesti.
     permission_classes = [CanUseMfa]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "mfa"

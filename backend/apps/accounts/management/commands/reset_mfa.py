@@ -1,7 +1,8 @@
-"""Remove the second factor of one account (operator action, audited).
+"""Toglie il secondo fattore a un account (azione dell'operatore, registrata nel registro).
 
-For a person who lost both the phone and the recovery codes. Check who they are first:
-this lets whoever knows the password sign in without a code.
+Per chi ha perso sia il telefono sia i codici di recupero. Prima si verifica chi è la persona:
+questo comando permette a chiunque conosca la password di entrare senza codice.
+Spiegazione: docs/learning/concetti/mfa-totp.md.
 """
 
 from typing import Any

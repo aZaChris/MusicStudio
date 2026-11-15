@@ -1,3 +1,5 @@
+"""Configurazione dell'app Django `accounts` (utenti, sessioni, inviti, MFA)."""
+
 from django.apps import AppConfig
 
 

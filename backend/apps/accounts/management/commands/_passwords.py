@@ -1,5 +1,5 @@
-"""Where a new account's password comes from. Never from the command line: that lands in
-the shell history and in the process list."""
+"""Da dove viene la password di un account nuovo. Mai dalla riga di comando: finirebbe nella
+cronologia della shell e nell'elenco dei processi."""
 
 import os
 from getpass import getpass
@@ -12,7 +12,7 @@ ENV_VAR = "ACCOUNT_PASSWORD"
 
 
 def read_password(email: str) -> str:
-    """`ACCOUNT_PASSWORD` if set (scripts, a Coolify terminal), else asked twice on the terminal."""
+    """`ACCOUNT_PASSWORD` se impostata (script, terminale Coolify), altrimenti chiesta due volte."""
     password = os.environ.get(ENV_VAR)
     if password is None:
         password = getpass(f"Password for {email}: ")

@@ -1,8 +1,9 @@
-"""Second factor for owners and teachers (ADR-029, research R5).
+"""Secondo fattore per titolari e insegnanti (ADR-029, research R5).
 
-Sign-in with MFA on is two steps: the password gives a signed `mfa_token` (5 minutes),
-then the token plus a TOTP or recovery code gives the JWT pair. A wrong code counts
-against the account lockout like a wrong password.
+L'accesso con MFA attiva è in due passi: la password dà un `mfa_token` firmato (5 minuti), poi
+il token più un codice TOTP o di recupero dà la coppia di JWT. Un codice sbagliato conta
+per il blocco dell'account come una password sbagliata.
+Spiegazione: docs/learning/concetti/mfa-totp.md.
 """
 
 import hashlib
@@ -40,7 +41,7 @@ def status(user: User) -> dict[str, int | bool]:
 
 
 def begin_setup(user: User) -> tuple[str, str]:
-    """Create (or replace an unconfirmed) device; returns the secret and the otpauth URI."""
+    """Crea un dispositivo (o sostituisce uno non confermato); restituisce segreto e URI otpauth."""
     if is_enabled(user):
         raise ValidationError({"detail": "mfa_already_enabled"})
     secret = totp.new_secret()
@@ -49,6 +50,7 @@ def begin_setup(user: User) -> tuple[str, str]:
 
 
 def _new_recovery_codes(device: MfaDevice) -> list[str]:
+    # I codici in chiaro si restituiscono una volta sola, qui; nel database resta solo l'hash.
     device.recovery_codes.all().delete()
     codes = [f"{secrets.token_hex(3)}-{secrets.token_hex(2)}" for _ in range(RECOVERY_CODES)]
     RecoveryCode.objects.bulk_create(
@@ -62,6 +64,7 @@ def _hash(code: str) -> str:
 
 
 def _clean_recovery(code: str) -> str:
+    # Spazi e maiuscole non contano: chi scrive il codice a mano non deve sbagliare per questo.
     return code.strip().lower().replace(" ", "")
 
 
@@ -82,7 +85,8 @@ def confirm_setup(user: User, code: str) -> list[str]:
 
 @transaction.atomic
 def check_second_factor(user: User, code: str) -> bool:
-    """True if `code` is a fresh TOTP code or an unused recovery code (which it consumes)."""
+    """True se `code` è un codice TOTP nuovo o un codice di recupero non usato (che consuma)."""
+    # Lock sulla riga del dispositivo: due richieste con lo stesso codice non passano entrambe.
     device = (
         MfaDevice.objects.select_for_update().filter(user=user, confirmed_at__isnull=False).first()
     )
@@ -136,7 +140,7 @@ def user_from_login_token(token: str) -> User | None:
 
 
 def complete_login(token: str, code: str) -> User | None:
-    """Second step of sign-in: the user if token and code are good, else None."""
+    """Secondo passo dell'accesso: l'utente se token e codice sono buoni, altrimenti None."""
     user = user_from_login_token(token)
     if user is None or services.is_locked(user):
         return None
