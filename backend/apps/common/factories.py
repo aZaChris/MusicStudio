@@ -3,9 +3,11 @@
 import datetime
 
 import factory
+from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.lessons.models import Lesson
+from apps.lessons.selectors import week_bounds
 from apps.packages.models import Package
 from apps.students.models import ParentAccount, ParentStudentLink, Student
 from apps.studios.models import Studio, Teacher
@@ -67,6 +69,20 @@ class PackageFactory(factory.django.DjangoModelFactory[Package]):
     price = "120.00"
 
 
+def _factory_start(n: int) -> datetime.datetime:
+    """Start time of the n-th factory lesson: 31 minutes apart, cycling within ~20h.
+
+    The spacing keeps lessons of the same teacher or student from tripping the overlap
+    constraints. The lesson list shows the current week by default, so a start that would
+    fall past the end of the week (Sunday evening, Europe/Rome) moves back one week:
+    otherwise the list would be empty and the tests would fail only on Sunday nights.
+    """
+    now = datetime.datetime.now(datetime.UTC)
+    start = now + datetime.timedelta(hours=1, minutes=31 * (n % 40))
+    _, week_end = week_bounds(timezone.localdate())
+    return start - datetime.timedelta(days=7) if start >= week_end else start
+
+
 class LessonFactory(factory.django.DjangoModelFactory[Lesson]):
     class Meta:
         model = Lesson
@@ -74,13 +90,7 @@ class LessonFactory(factory.django.DjangoModelFactory[Lesson]):
     student = factory.SubFactory(StudentFactory)
     teacher = factory.LazyAttribute(lambda o: o.student.teacher)
     package = None
-    # 31 minutes apart (cycling within ~20h) so factory lessons of the same teacher or
-    # student never trip the overlap constraints, yet stay in the near future.
-    start_time = factory.Sequence(
-        lambda n: (
-            datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1, minutes=31 * (n % 40))
-        )
-    )
+    start_time = factory.Sequence(_factory_start)
     end_time = factory.LazyAttribute(lambda o: o.start_time + datetime.timedelta(minutes=30))
 
 
