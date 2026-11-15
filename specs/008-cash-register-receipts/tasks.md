@@ -8,10 +8,10 @@ use `rtk proxy uv run pytest`.
 
 ## Phase 1: Setup
 
-- [ ] T001 Add the PDF library with `uv add reportlab` in `backend/pyproject.toml` and `backend/uv.lock`; write a throwaway script (not committed) that renders one line with `à è ì ò ù €` in Helvetica to a PDF and open it to check the accents and the euro sign; confirm the `backend-image` CI job still builds (research R10; fall back to `fpdf2` only if this fails)
-- [ ] T002 [P] Audit actions `payment.reverse`, `payment.delete`, `register.export`, `instructions.change`, `receipt.issue` in `backend/apps/audit/models.py` + the `choices` migration in `backend/apps/audit/migrations/`; extend the action-coverage test list in `backend/apps/audit/tests/test_coverage.py` so it expects each one (it fails until the story that records it is done; mark those entries with the story they belong to)
-- [ ] T003 [P] Throttle scope `register_export` (env `THROTTLE_REGISTER_EXPORT`, default `20/hour`) in `backend/config/settings/base.py` and `.env.example`
-- [ ] T004 [P] Move `IsTeacherOrOwnerRole` from `backend/apps/accounts/invitation_views.py` to `backend/apps/common/permissions.py` (same code, new home), import it from there in `invitation_views.py`, and add a small test in `backend/apps/common/tests/test_permissions.py` (teacher and owner pass; parent, adult student and anonymous do not, also on safe methods)
+- [X] T001 Add the PDF library with `uv add reportlab` in `backend/pyproject.toml` and `backend/uv.lock`; write a throwaway script (not committed) that renders one line with `à è ì ò ù €` in Helvetica to a PDF and open it to check the accents and the euro sign; confirm the `backend-image` CI job still builds (research R10; fall back to `fpdf2` only if this fails)
+- [X] T002 [P] Audit actions `payment.reverse`, `payment.delete`, `register.export`, `instructions.change`, `receipt.issue` in `backend/apps/audit/models.py` + the `choices` migration in `backend/apps/audit/migrations/`; extend the action-coverage test list in `backend/apps/audit/tests/test_coverage.py` so it expects each one (it fails until the story that records it is done; mark those entries with the story they belong to)
+- [X] T003 [P] Throttle scope `register_export` (env `THROTTLE_REGISTER_EXPORT`, default `20/hour`) in `backend/config/settings/base.py` and `.env.example`
+- [X] T004 [P] Move `IsTeacherOrOwnerRole` from `backend/apps/accounts/invitation_views.py` to `backend/apps/common/permissions.py` (same code, new home), import it from there in `invitation_views.py`, and add a small test in `backend/apps/common/tests/test_permissions.py` (teacher and owner pass; parent, adult student and anonymous do not, also on safe methods)
 
 ## Phase 2: Foundational (blocks all stories)
 

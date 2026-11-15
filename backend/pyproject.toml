@@ -19,6 +19,7 @@ dependencies = [
     "packaging>=24",
     "psycopg[binary]>=3",
     "redis>=5",
+    "reportlab>=5.1.0",
     "sentry-sdk[celery,django]>=2",
     "stripe>=12",
     # Time zone data for zoneinfo (Europe/Rome): declared, not inherited from kombu or the OS.

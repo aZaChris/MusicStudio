@@ -174,6 +174,8 @@ REST_FRAMEWORK = {
         # Export, erasure and consent withdrawal: password checks and heavy reads.
         "privacy": env("THROTTLE_PRIVACY", default="10/hour"),
         "invitation_accept": env("THROTTLE_INVITATION_ACCEPT", default="10/hour"),
+        # Esportazioni del registro di cassa e PDF delle ricevute: letture pesanti (fase 8).
+        "register_export": env("THROTTLE_REGISTER_EXPORT", default="20/hour"),
     },
 }
 
