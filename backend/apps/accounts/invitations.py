@@ -1,6 +1,7 @@
-"""Invitations: owners invite teachers; owners and teachers invite parents and adult
-students (US3, research R2). Accepting creates the account with a password the invited
-person chooses, and for parents records consent for their children.
+"""Inviti: i titolari invitano gli insegnanti; titolari e insegnanti invitano genitori e studenti
+adulti (US3, research R2). Accettare crea l'account con una password scelta dall'invitato e,
+per i genitori, registra il consenso per i loro figli.
+Spiegazione: docs/learning/concetti/account-e-token-monouso.md.
 """
 
 import hashlib
@@ -30,7 +31,7 @@ def _hash(token: str) -> str:
 
 
 def invitations_visible_to(ctx: TenantContext) -> QuerySet[Invitation]:
-    """Owners see their studio's invitations; teachers see the ones they sent."""
+    """I titolari vedono gli inviti del loro studio; gli insegnanti quelli che hanno mandato."""
     qs = Invitation.objects.prefetch_related("students")
     if ctx.is_owner and ctx.studio_id is not None:
         return qs.filter(studio_id=ctx.studio_id)
@@ -54,7 +55,7 @@ def _check_students(ctx: TenantContext, role: str, student_ids: list[int]) -> li
         return []
     visible = list(students_visible_to(ctx).filter(pk__in=student_ids, is_active=True))
     if not student_ids or len(visible) != len(set(student_ids)):
-        # Same message for "not yours" and "does not exist" (constitution I).
+        # Stesso messaggio per "non è tuo" e "non esiste" (constitution I).
         raise ValidationError({"student_ids": "One or more students do not exist."})
     if role == Role.STUDENT:
         if len(visible) != 1:
@@ -74,13 +75,15 @@ def create_invitation(
         raise PermissionDenied("You cannot send this kind of invitation.")
     students = _check_students(ctx, role, student_ids)
     studio_id = ctx.studio_id
-    if studio_id is None:  # owners and teachers always belong to a studio
+    if studio_id is None:  # titolari e insegnanti appartengono sempre a uno studio
         raise PermissionDenied("You cannot send this kind of invitation.")
     email = normalize_email(email)
-    # A new invitation replaces a pending one for the same person and role.
+    # Un invito nuovo sostituisce uno ancora pendente per la stessa persona e ruolo.
     Invitation.objects.filter(
         studio_id=studio_id, email=email, role=role, status=Invitation.Status.PENDING
     ).update(status=Invitation.Status.REVOKED)
+    # Il token in chiaro esiste solo qui e nella email (task a fine transazione); in tabella c'è
+    # solo il suo hash.
     token = secrets.token_urlsafe(32)
     invitation = Invitation.objects.create(
         studio_id=studio_id,
@@ -118,7 +121,7 @@ def revoke_invitation(inviter: User, invitation: Invitation) -> None:
 
 
 def _inviter_still_allowed(invitation: Invitation) -> bool:
-    """The inviter may have left or lost the students since sending (FR-007)."""
+    """Chi ha invitato può essere andato via o aver perso gli studenti dopo l'invio (FR-007)."""
     inviter = invitation.invited_by
     if inviter is None or not inviter.is_active:
         return False
@@ -131,7 +134,7 @@ def _inviter_still_allowed(invitation: Invitation) -> bool:
 
 
 def lookup(token: str) -> Invitation | None:
-    """The live invitation for this token, or None (unknown, used, revoked, expired)."""
+    """L'invito valido per questo token, o None (sconosciuto, usato, revocato, scaduto)."""
     invitation = (
         Invitation.objects.select_related("studio", "invited_by")
         .prefetch_related("students")
@@ -158,6 +161,7 @@ def accept_invitation(
     invitation = lookup(token)
     if invitation is None:
         raise ValidationError({"token": "invalid_or_expired"})
+    # Blocco della riga: due accettazioni insieme dello stesso link non possono riuscire entrambe.
     invitation = Invitation.objects.select_for_update().get(pk=invitation.pk)
     if invitation.status != Invitation.Status.PENDING:
         raise ValidationError({"token": "invalid_or_expired"})
@@ -167,7 +171,7 @@ def accept_invitation(
 
     user = User.objects.filter(email__iexact=invitation.email).first()
     if user is not None:
-        # Only a parent can join with an existing account, and only when signed in as it.
+        # Solo un genitore può unirsi con un account esistente, e solo se è connesso con quello.
         if invitation.role != Role.PARENT or user.role != User.Role.PARENT or signed_in != user:
             raise ValidationError(
                 {"token": "This address already has an account: sign in as it first."}
@@ -183,7 +187,7 @@ def accept_invitation(
             last_name=last_name,
             role=invitation.role,
             preferred_language=getattr(invitation.invited_by, "preferred_language", "it"),
-            email_verified=True,  # the link reached this mailbox
+            email_verified=True,  # il link è arrivato in questa casella
             terms_accepted_at=timezone.now(),
         )
         user.set_password(password)

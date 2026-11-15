@@ -1,3 +1,5 @@
+"""Crea un account insegnante vero, con uno studio proprio (operatore, da terminale)."""
+
 from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser
@@ -24,7 +26,7 @@ class Command(BaseCommand):
     def handle(self, *args: Any, **options: Any) -> None:
         email = options["email"].strip().lower()
         if User.objects.filter(email__iexact=email).exists():
-            # Never touch the password of an account that exists.
+            # Non si tocca mai la password di un account che esiste già.
             raise CommandError(f"{email} already exists.")
         studio_name = options["studio_name"]
         role = User.Role.STUDIO_OWNER if studio_name else User.Role.TEACHER

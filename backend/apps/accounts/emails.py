@@ -1,7 +1,7 @@
-"""Account emails (confirmation, reset, notices, invitations) in the recipient's language.
+"""Email dell'account (conferma, reset, avvisi, inviti) nella lingua del destinatario.
 
-Bodies are plain-text templates in `accounts/templates/accounts/emails/<kind>_<lang>.txt`.
-Logs name the kind and the user id only, never the address or the link (constitution X).
+I corpi sono template di testo semplice in `accounts/templates/accounts/emails/<kind>_<lang>.txt`.
+I log riportano solo il tipo e l'id utente, mai l'indirizzo o il link (constitution X).
 """
 
 import logging
@@ -13,6 +13,7 @@ from django.template.loader import render_to_string
 
 logger = logging.getLogger(__name__)
 
+# Gli oggetti sono dati utente, quindi restano nelle due lingue dell'app (en, it).
 SUBJECTS: dict[str, dict[str, str]] = {
     "confirm_email": {
         "en": "Confirm your email — MusicStudio",
@@ -42,7 +43,7 @@ SUBJECTS: dict[str, dict[str, str]] = {
 
 
 def link(path: str, **params: str) -> str:
-    """Absolute portal URL for `path` with query parameters."""
+    """URL assoluto del portale per `path`, con i parametri nella query string."""
     from urllib.parse import urlencode
 
     query = f"?{urlencode(params)}" if params else ""
@@ -50,6 +51,7 @@ def link(path: str, **params: str) -> str:
 
 
 def send(kind: str, *, to: str, language: str, context: dict[str, Any], log_id: Any) -> None:
+    # Una lingua sconosciuta ricade sull'inglese.
     lang = language if language in ("en", "it") else "en"
     body = render_to_string(f"accounts/emails/{kind}_{lang}.txt", context)
     send_mail(subject=SUBJECTS[kind][lang], message=body, from_email=None, recipient_list=[to])

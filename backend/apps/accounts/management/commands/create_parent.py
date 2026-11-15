@@ -1,3 +1,5 @@
+"""Crea un account genitore e lo collega a uno o più studenti (operatore, da terminale)."""
+
 from typing import Any
 
 from django.core.management.base import BaseCommand, CommandError, CommandParser
@@ -22,6 +24,8 @@ class Command(BaseCommand):
             "--student-id", type=int, action="append", required=True, dest="student_ids"
         )
 
+    # Atomico: o si crea tutto (utente, genitore, collegamenti) o niente. Se l'utente esiste già
+    # come genitore si aggiungono solo i collegamenti; la sua password non si tocca.
     @transaction.atomic
     def handle(self, *args: Any, **options: Any) -> None:
         email = options["email"].strip().lower()
