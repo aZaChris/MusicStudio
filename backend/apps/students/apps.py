@@ -1,3 +1,5 @@
+"""Configurazione dell'app Django `students` (studenti e genitori)."""
+
 from django.apps import AppConfig
 
 
