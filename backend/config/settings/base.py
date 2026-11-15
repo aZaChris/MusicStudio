@@ -195,6 +195,10 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "REST API for the MusicStudio teacher/parent platform.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Fase 8: lo stato del pagamento (con "reversal") e altri `status` avevano un nome ambiguo.
+    "ENUM_NAME_OVERRIDES": {
+        "PaymentStatusEnum": "apps.payments.models.Payment.Status",
+    },
     # Separate request/response components: read-only fields are not required in requests.
     "COMPONENT_SPLIT_REQUEST": True,
     "TAGS": [

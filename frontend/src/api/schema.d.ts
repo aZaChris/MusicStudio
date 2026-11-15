@@ -538,6 +538,22 @@ export interface paths {
         patch: operations["v1_payments_partial_update"];
         trace?: never;
     };
+    "/api/v1/payments/{id}/reverse/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_payments_reverse_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/privacy/consents/": {
         parameters: {
             query?: never;
@@ -761,9 +777,14 @@ export interface components {
          *     * `privacy.export` - Privacy Export
          *     * `privacy.erase` - Privacy Erase
          *     * `payment.record` - Payment Record
+         *     * `payment.reverse` - Payment Reverse
+         *     * `payment.delete` - Payment Delete
+         *     * `register.export` - Register Export
+         *     * `instructions.change` - Instructions Change
+         *     * `receipt.issue` - Receipt Issue
          * @enum {string}
          */
-        ActionEnum: "registration" | "email.confirm" | "login.success" | "login.failure" | "login.locked" | "password.reset" | "password.change" | "mfa.enable" | "mfa.disable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "account.unlock_by_operator" | "invitation.send" | "invitation.accept" | "invitation.revoke" | "role.change" | "consent.give" | "consent.withdraw" | "privacy.export" | "privacy.erase" | "payment.record";
+        ActionEnum: "registration" | "email.confirm" | "login.success" | "login.failure" | "login.locked" | "password.reset" | "password.change" | "mfa.enable" | "mfa.disable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "account.unlock_by_operator" | "invitation.send" | "invitation.accept" | "invitation.revoke" | "role.change" | "consent.give" | "consent.withdraw" | "privacy.export" | "privacy.erase" | "payment.record" | "payment.reverse" | "payment.delete" | "register.export" | "instructions.change" | "receipt.issue";
         AuditEntry: {
             readonly id: number;
             /** Format: date-time */
@@ -1229,6 +1250,11 @@ export interface components {
             status?: components["schemas"]["PaymentStatusEnum"];
             /** Format: uuid */
             readonly checkout: string | null;
+            readonly reversal_of: number | null;
+            readonly reversed: boolean;
+            readonly reversal_id: number | null;
+            readonly recorded_by: number | null;
+            readonly reason: string;
         };
         /**
          * @description Restrict writable related fields to objects the requesting user may see.
@@ -1253,9 +1279,10 @@ export interface components {
          * @description * `paid` - Paid
          *     * `pending` - Pending
          *     * `overdue` - Overdue
+         *     * `reversal` - Reversal
          * @enum {string}
          */
-        PaymentStatusEnum: "paid" | "pending" | "overdue";
+        PaymentStatusEnum: "paid" | "pending" | "overdue" | "reversal";
         /**
          * @description * `en` - English
          *     * `it` - Italiano
@@ -1276,6 +1303,38 @@ export interface components {
             accept_terms: boolean;
             /** @default it */
             preferred_language: components["schemas"]["PreferredLanguageEnum"];
+        };
+        /**
+         * @description Restrict writable related fields to objects the requesting user may see.
+         *
+         *     DRF validates a primary key against the field's queryset. With the default
+         *     `Model.objects.all()` any id in the database is accepted — that was the
+         *     cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+         *     turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+         *     object exists.
+         */
+        Reversal: {
+            readonly id: number;
+            student: number;
+            readonly student_name: string;
+            package?: number | null;
+            /** Format: decimal */
+            amount: string;
+            /** Format: date */
+            date: string;
+            method: components["schemas"]["MethodEnum"];
+            status?: components["schemas"]["PaymentStatusEnum"];
+            /** Format: uuid */
+            readonly checkout: string | null;
+            readonly reversal_of: number | null;
+            readonly reversed: boolean;
+            readonly reversal_id: number | null;
+            readonly recorded_by: number | null;
+            readonly reason: string;
+            readonly refund: boolean;
+        };
+        ReverseRequestRequest: {
+            reason: string;
         };
         Student: {
             readonly id: number;
@@ -1350,7 +1409,7 @@ export interface operations {
     v1_audit_list: {
         parameters: {
             query?: {
-                action?: "account.unlock_by_operator" | "consent.give" | "consent.withdraw" | "email.confirm" | "invitation.accept" | "invitation.revoke" | "invitation.send" | "login.failure" | "login.locked" | "login.success" | "mfa.disable" | "mfa.enable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "password.change" | "password.reset" | "payment.record" | "privacy.erase" | "privacy.export" | "registration" | "role.change";
+                action?: "account.unlock_by_operator" | "consent.give" | "consent.withdraw" | "email.confirm" | "instructions.change" | "invitation.accept" | "invitation.revoke" | "invitation.send" | "login.failure" | "login.locked" | "login.success" | "mfa.disable" | "mfa.enable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "password.change" | "password.reset" | "payment.delete" | "payment.record" | "payment.reverse" | "privacy.erase" | "privacy.export" | "receipt.issue" | "register.export" | "registration" | "role.change";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description ISO 8601 date-time */
@@ -3576,14 +3635,24 @@ export interface operations {
     v1_payments_list: {
         parameters: {
             query?: {
+                date_from?: string;
+                date_to?: string;
+                /**
+                 * @description * `cash` - Cash
+                 *     * `bank_transfer` - Bank transfer
+                 *     * `manual_entry` - Manual entry
+                 *     * `card` - Online (Stripe)
+                 */
+                method?: "bank_transfer" | "card" | "cash" | "manual_entry";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /**
                  * @description * `paid` - Paid
                  *     * `pending` - Pending
                  *     * `overdue` - Overdue
+                 *     * `reversal` - Reversal
                  */
-                status?: "overdue" | "paid" | "pending";
+                status?: "overdue" | "paid" | "pending" | "reversal";
                 student?: number;
             };
             header?: never;
@@ -3902,6 +3971,79 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Payment"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found or outside your studio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payments_reverse_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this payment. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReverseRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReverseRequestRequest"];
+                "multipart/form-data": components["schemas"]["ReverseRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reversal"];
                 };
             };
             /** @description Invalid input. */

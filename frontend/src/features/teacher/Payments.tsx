@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 
-import type { PaymentMethod } from '../../api/types'
+import type { Payment, PaymentMethod } from '../../api/types'
 import { AppShell } from '../../components/AppShell'
 import { ErrorText, QueryState } from '../../components/QueryState'
 import { Icon, StatusChip } from '../../components/ui'
@@ -9,12 +9,18 @@ import { paymentTone } from '../../components/tones'
 import { formatDay, localDateISO } from '../../lib/dates'
 import { useRegisterPayment, usePayments } from './api/payments'
 import { useStudents } from './api/students'
+import { ReversePaymentDialog } from './ReversePaymentDialog'
 
 // Online card payments come from Stripe webhooks, never from this form.
 const MANUAL_METHODS: PaymentMethod[] = ['cash', 'bank_transfer', 'manual_entry']
 
 type Filter = 'all' | 'pending' | 'paid'
 const FILTERS: Filter[] = ['all', 'pending', 'paid']
+
+// Money still to collect: only pending and overdue entries. A reversal row is history.
+const isToCollect = (p: Payment) => p.status === 'pending' || p.status === 'overdue'
+// A paid entry that was reversed reads "reversed"; the server keeps its stored status as paid.
+const displayStatus = (p: Payment) => (p.reversed ? 'reversed' : p.status)
 
 export function Payments() {
   const { t, i18n } = useTranslation()
@@ -28,6 +34,7 @@ export function Payments() {
   const [date, setDate] = useState(() => localDateISO())
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [filter, setFilter] = useState<Filter>('all')
+  const [toReverse, setToReverse] = useState<Payment | null>(null)
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
@@ -39,9 +46,9 @@ export function Payments() {
   }
 
   const all = payments.data ?? []
-  const toCollect = all.filter((p) => p.status !== 'paid').length
+  const toCollect = all.filter(isToCollect).length
   const shown = all.filter(
-    (p) => filter === 'all' || (filter === 'paid' ? p.status === 'paid' : p.status !== 'paid'),
+    (p) => filter === 'all' || (filter === 'paid' ? p.status === 'paid' : isToCollect(p)),
   )
   const money = new Intl.NumberFormat(i18n.language.startsWith('it') ? 'it-IT' : 'en-GB', {
     style: 'currency',
@@ -84,22 +91,43 @@ export function Payments() {
                     <th scope="col" style={{ textAlign: 'right' }}>
                       {t('payments.status')}
                     </th>
+                    <th scope="col" aria-label={t('payments.reverse.action')} />
                   </tr>
                 </thead>
                 <tbody>
                   {shown.map((payment) => (
                     <tr key={payment.id}>
-                      <td>{payment.student_name}</td>
+                      <td>
+                        {payment.student_name}
+                        {payment.status === 'reversal' && (
+                          <small style={{ display: 'block' }}>
+                            {t('payments.reverse.of', { id: payment.reversal_of })}
+                            {payment.reason &&
+                              ` — ${t('payments.reverse.reasonLabel', { reason: payment.reason })}`}
+                          </small>
+                        )}
+                      </td>
                       <td>{formatDay(payment.date, i18n.language)}</td>
                       <td>{payment.method ? t(`payments.methodName.${payment.method}`) : '—'}</td>
                       <td className="num">{money.format(Number(payment.amount))}</td>
                       <td style={{ textAlign: 'right' }}>
                         {payment.status ? (
-                          <StatusChip tone={paymentTone(payment.status)} small>
-                            {t(`payments.statusName.${payment.status}`)}
+                          <StatusChip tone={paymentTone(displayStatus(payment))} small>
+                            {t(`payments.statusName.${displayStatus(payment)}`)}
                           </StatusChip>
                         ) : (
                           '—'
+                        )}
+                      </td>
+                      <td>
+                        {payment.status === 'paid' && !payment.reversed && (
+                          <button
+                            type="button"
+                            className="ms-btn ms-btn--secondary ms-btn--s"
+                            onClick={() => setToReverse(payment)}
+                          >
+                            {t('payments.reverse.action')}
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -192,6 +220,9 @@ export function Payments() {
           )}
         </form>
       </div>
+      {toReverse && (
+        <ReversePaymentDialog payment={toReverse} money={money} onClose={() => setToReverse(null)} />
+      )}
     </AppShell>
   )
 }

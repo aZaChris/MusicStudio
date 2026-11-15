@@ -82,7 +82,9 @@
     "statusName": {
       "paid": "Paid",
       "pending": "Pending",
-      "overdue": "Overdue"
+      "overdue": "Overdue",
+      "reversed": "Reversed",
+      "reversal": "Reversal"
     },
     "toCollect_one": "{{count}} to collect",
     "toCollect_other": "{{count}} to collect",
@@ -90,6 +92,18 @@
       "all": "All",
       "pending": "To collect",
       "paid": "Paid"
+    },
+    "reverse": {
+      "action": "Reverse",
+      "title": "Reverse this payment",
+      "subtitle": "{{student}} · {{amount}} · {{date}}",
+      "reason": "Reason (shown in the register)",
+      "hint": "The original entry stays in the register, marked as reversed. Then record the payment again if needed.",
+      "cardNotice": "This was an online card payment. No money is returned: the register is corrected, nothing is refunded.",
+      "confirm": "Reverse payment",
+      "done": "Payment reversed.",
+      "of": "Reversal of payment #{{id}}",
+      "reasonLabel": "Reason: {{reason}}"
     }
   },
   "parent": {
@@ -155,7 +169,14 @@
     "server": "The server had a problem. Try again later.",
     "rejected": "The server rejected the request.",
     "rejectedWithReason": "The server rejected the request: {{reason}}",
-    "unexpected": "Something went wrong."
+    "unexpected": "Something went wrong.",
+    "codes": {
+      "payment_final": "This entry is final. Reverse it instead of changing it.",
+      "not_paid": "Only a paid entry can be reversed.",
+      "already_reversed": "This entry was already reversed.",
+      "is_reversal": "A reversal cannot be reversed.",
+      "period_too_long": "The period is too long: choose at most one year."
+    }
   },
   "student": {
     "lessons": "Lessons",

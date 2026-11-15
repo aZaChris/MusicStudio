@@ -82,7 +82,9 @@
     "statusName": {
       "paid": "Pagato",
       "pending": "In sospeso",
-      "overdue": "Scaduto"
+      "overdue": "Scaduto",
+      "reversed": "Stornato",
+      "reversal": "Storno"
     },
     "toCollect_one": "{{count}} da incassare",
     "toCollect_other": "{{count}} da incassare",
@@ -90,6 +92,18 @@
       "all": "Tutti",
       "pending": "Da incassare",
       "paid": "Pagati"
+    },
+    "reverse": {
+      "action": "Storna",
+      "title": "Storna questo pagamento",
+      "subtitle": "{{student}} · {{amount}} · {{date}}",
+      "reason": "Motivo (visibile nel registro)",
+      "hint": "La registrazione originale resta nel registro, segnata come stornata. Poi registra di nuovo il pagamento, se serve.",
+      "cardNotice": "Era un pagamento online con carta. Nessun denaro viene restituito: il registro viene corretto, non c'è nessun rimborso.",
+      "confirm": "Storna il pagamento",
+      "done": "Pagamento stornato.",
+      "of": "Storno del pagamento n. {{id}}",
+      "reasonLabel": "Motivo: {{reason}}"
     }
   },
   "parent": {
@@ -155,7 +169,14 @@
     "server": "Il server ha avuto un problema. Riprova più tardi.",
     "rejected": "Il server ha rifiutato la richiesta.",
     "rejectedWithReason": "Il server ha rifiutato la richiesta: {{reason}}",
-    "unexpected": "Qualcosa è andato storto."
+    "unexpected": "Qualcosa è andato storto.",
+    "codes": {
+      "payment_final": "Questa registrazione è definitiva. Stornala invece di modificarla.",
+      "not_paid": "Si può stornare solo un pagamento già incassato.",
+      "already_reversed": "Questo pagamento è già stato stornato.",
+      "is_reversal": "Uno storno non si può stornare.",
+      "period_too_long": "Il periodo è troppo lungo: scegline uno di al massimo un anno."
+    }
   },
   "student": {
     "lessons": "Lezioni",

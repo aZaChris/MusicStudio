@@ -85,6 +85,11 @@ export const payment = (id: number, over: Partial<Payment> = {}): Payment => ({
   method: 'bank_transfer',
   status: 'paid',
   checkout: null,
+  reversal_of: null,
+  reversed: false,
+  reversal_id: null,
+  recorded_by: 3,
+  reason: '',
   ...over,
 })
 

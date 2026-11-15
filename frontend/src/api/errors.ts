@@ -18,6 +18,9 @@ export function errorMessage(error: unknown, t: TFunction): string {
       return t('error.rateLimited')
   }
   if (error.status >= 500) return t('error.server')
+  // A known domain code has its own translated sentence (payment_final, already_reversed...).
+  const known = error.code ? t(`error.codes.${error.code}`, { defaultValue: '' }) : ''
+  if (known) return known
   // 400 / 409: the server says why. DRF field errors are shown as "field: message".
   const [field, messages] = Object.entries(error.fieldErrors)[0] ?? []
   const reason =

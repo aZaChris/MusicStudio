@@ -23,8 +23,12 @@ class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Pa
     reversed = serializers.SerializerMethodField()
     reversal_id = serializers.SerializerMethodField()
     # Chi ha creato la riga e perché è stata stornata: li vede solo il personale dello studio.
-    recorded_by = serializers.IntegerField(source="recorded_by_id", read_only=True, allow_null=True)
-    reason = serializers.CharField(read_only=True)
+    # required=False: per genitori e studenti adulti i due campi mancano del tutto (vedi
+    # to_representation), quindi nel contratto sono opzionali.
+    recorded_by = serializers.IntegerField(
+        source="recorded_by_id", read_only=True, allow_null=True, required=False
+    )
+    reason = serializers.CharField(read_only=True, required=False)
 
     class Meta:
         model = Payment

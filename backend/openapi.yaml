@@ -18,6 +18,7 @@ paths:
           - consent.give
           - consent.withdraw
           - email.confirm
+          - instructions.change
           - invitation.accept
           - invitation.revoke
           - invitation.send
@@ -30,9 +31,13 @@ paths:
           - mfa.reset_by_operator
           - password.change
           - password.reset
+          - payment.delete
           - payment.record
+          - payment.reverse
           - privacy.erase
           - privacy.export
+          - receipt.issue
+          - register.export
           - registration
           - role.change
       - name: page
@@ -1889,6 +1894,30 @@ paths:
     get:
       operationId: v1_payments_list
       parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: method
+        schema:
+          type: string
+          enum:
+          - bank_transfer
+          - card
+          - cash
+          - manual_entry
+        description: |-
+          * `cash` - Cash
+          * `bank_transfer` - Bank transfer
+          * `manual_entry` - Manual entry
+          * `card` - Online (Stripe)
       - name: page
         required: false
         in: query
@@ -1903,10 +1932,12 @@ paths:
           - overdue
           - paid
           - pending
+          - reversal
         description: |-
           * `paid` - Paid
           * `pending` - Pending
           * `overdue` - Overdue
+          * `reversal` - Reversal
       - in: query
         name: student
         schema:
@@ -2173,6 +2204,69 @@ paths:
       responses:
         '204':
           description: No response body
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/payments/{id}/reverse/:
+    post:
+      operationId: v1_payments_reverse_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment.
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReverseRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ReverseRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ReverseRequestRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reversal'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
         '401':
           description: Missing or invalid token.
           content:
@@ -2943,6 +3037,11 @@ components:
       - privacy.export
       - privacy.erase
       - payment.record
+      - payment.reverse
+      - payment.delete
+      - register.export
+      - instructions.change
+      - receipt.issue
       type: string
       description: |-
         * `registration` - Registration
@@ -2966,6 +3065,11 @@ components:
         * `privacy.export` - Privacy Export
         * `privacy.erase` - Privacy Erase
         * `payment.record` - Payment Record
+        * `payment.reverse` - Payment Reverse
+        * `payment.delete` - Payment Delete
+        * `register.export` - Register Export
+        * `instructions.change` - Instructions Change
+        * `receipt.issue` - Receipt Issue
     AuditEntry:
       type: object
       properties:
@@ -3900,12 +4004,35 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        reversal_of:
+          type: integer
+          readOnly: true
+          nullable: true
+        reversed:
+          type: boolean
+          readOnly: true
+        reversal_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        recorded_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reason:
+          type: string
+          readOnly: true
       required:
       - amount
       - checkout
       - date
       - id
       - method
+      - reason
+      - recorded_by
+      - reversal_id
+      - reversal_of
+      - reversed
       - student
       - student_name
     PaymentRequest:
@@ -3945,11 +4072,13 @@ components:
       - paid
       - pending
       - overdue
+      - reversal
       type: string
       description: |-
         * `paid` - Paid
         * `pending` - Pending
         * `overdue` - Overdue
+        * `reversal` - Reversal
     PreferredLanguageEnum:
       enum:
       - en
@@ -4003,6 +4132,88 @@ components:
       - last_name
       - password
       - studio_name
+    Reversal:
+      type: object
+      description: |-
+        Restrict writable related fields to objects the requesting user may see.
+
+        DRF validates a primary key against the field's queryset. With the default
+        `Model.objects.all()` any id in the database is accepted — that was the
+        cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+        turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+        object exists.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        student:
+          type: integer
+        student_name:
+          type: string
+          readOnly: true
+        package:
+          type: integer
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+        date:
+          type: string
+          format: date
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        status:
+          $ref: '#/components/schemas/PaymentStatusEnum'
+        checkout:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        reversal_of:
+          type: integer
+          readOnly: true
+          nullable: true
+        reversed:
+          type: boolean
+          readOnly: true
+        reversal_id:
+          type: integer
+          nullable: true
+          readOnly: true
+        recorded_by:
+          type: integer
+          readOnly: true
+          nullable: true
+        reason:
+          type: string
+          readOnly: true
+        refund:
+          type: boolean
+          readOnly: true
+      required:
+      - amount
+      - checkout
+      - date
+      - id
+      - method
+      - reason
+      - recorded_by
+      - refund
+      - reversal_id
+      - reversal_of
+      - reversed
+      - student
+      - student_name
+    ReverseRequestRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - reason
     Student:
       type: object
       properties:
