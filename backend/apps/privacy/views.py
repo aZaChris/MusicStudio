@@ -1,3 +1,9 @@
+"""Endpoint della privacy: esportazione, cancellazione dell'account e consensi.
+
+Le view sono sottili. I docstring finiscono in openapi.yaml (contratto in inglese): qui si
+usano commenti `#`. Spiegazione: docs/learning/concetti/gdpr-per-sviluppatori.md.
+"""
+
 import json
 from typing import Any
 
@@ -20,6 +26,7 @@ from .serializers import AcceptedSerializer, ConsentSerializer, PasswordSerializ
 
 
 class _Role(BasePermission):
+    # Permesso base: l'utente è autenticato e ha uno dei ruoli elencati in `roles`.
     roles: tuple[str, ...] = ()
 
     def has_permission(self, request: Request, view: Any) -> bool:
@@ -28,16 +35,19 @@ class _Role(BasePermission):
 
 
 class IsFamily(_Role):
-    """Parents and adult students: the people whose own data the export is about."""
+    """Genitori e studenti adulti: le persone di cui l'esportazione riguarda i dati."""
 
     roles = (User.Role.PARENT, User.Role.STUDENT)
 
 
 class CanErase(_Role):
+    # Anche il titolare può chiudere l'account, ma solo se lo studio non ha più studenti
+    # (privacy.services.StudioNotEmpty).
     roles = (User.Role.PARENT, User.Role.STUDENT, User.Role.STUDIO_OWNER)
 
 
 class ExportView(APIView):
+    # GET: scarica un JSON con tutti i dati dell'account. Limitata da throttle (scope `privacy`).
     permission_classes = [IsAuthenticated, IsFamily]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "privacy"
@@ -46,6 +56,7 @@ class ExportView(APIView):
     def get(self, request: Request) -> HttpResponse:
         user: User = request.user  # type: ignore[assignment]
         payload = json.dumps(selectors.build_export(user), cls=DjangoJSONEncoder, indent=2)
+        # Anche l'esportazione finisce nel registro delle azioni (ADR-031).
         audit.record(audit.Action.PRIVACY_EXPORT, actor=user, target=user)
         response = HttpResponse(payload, content_type="application/json")
         response["Content-Disposition"] = 'attachment; filename="musicstudio-export.json"'
@@ -53,6 +64,7 @@ class ExportView(APIView):
 
 
 class EraseView(APIView):
+    # POST: cancella (anonimizza) l'account, previa conferma con la password. Risponde 202.
     permission_classes = [IsAuthenticated, CanErase]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "privacy"
@@ -66,6 +78,7 @@ class EraseView(APIView):
 
 
 class ConsentListView(APIView):
+    # GET: i consensi dati dal genitore che chiama.
     permission_classes = [IsAuthenticated, IsFamily]
 
     @extend_schema(responses={200: ConsentSerializer(many=True)})
@@ -77,6 +90,7 @@ class ConsentListView(APIView):
 
 
 class ConsentWithdrawView(APIView):
+    # POST: ritira un consenso (con la password). Il genitore viene scollegato dai figli.
     permission_classes = [IsAuthenticated, IsFamily]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "privacy"

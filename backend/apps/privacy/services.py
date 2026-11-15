@@ -1,7 +1,8 @@
-"""Consent, export and erasure (constitution X, ADR-032).
+"""Consenso, esportazione e cancellazione (constitution X, ADR-032).
 
-Erasure is anonymisation in place: what the studio must keep (payment and lesson amounts and
-dates) stays, with the names and free text removed, so the studio's books still add up.
+La cancellazione è un'anonimizzazione sul posto: ciò che lo studio deve conservare (importi e
+date di pagamenti e lezioni) resta, senza nomi e testi liberi, così i conti dello studio
+tornano ancora. Spiegazione: docs/learning/concetti/gdpr-per-sviluppatori.md.
 """
 
 import uuid
@@ -29,6 +30,8 @@ from .models import ConsentRecord
 
 
 def give_consent(parent: ParentAccount, students: Iterable[Student]) -> ConsentRecord:
+    # Registra il consenso con la versione corrente dell'informativa e lo scrive nel registro
+    # delle azioni, una voce per ogni studio coinvolto (i figli possono stare in studi diversi).
     students = list(students)
     record = ConsentRecord.objects.create(
         parent=parent, notice_version=settings.PRIVACY_NOTICE_VERSION
@@ -46,15 +49,22 @@ def give_consent(parent: ParentAccount, students: Iterable[Student]) -> ConsentR
 
 
 class CheckoutOpen(DomainConflict):
+    # Non si cancella con un pagamento online ancora aperto: va prima concluso.
     code = "checkout_open"
 
 
 class StudioNotEmpty(DomainConflict):
+    # Il titolare non può chiudere l'account finché lo studio ha studenti.
     code = "studio_not_empty"
 
 
 def anonymise_student(student: Student) -> None:
-    """Replace a child's personal data; lessons, packages and payments keep their amounts."""
+    """Sostituisce i dati personali di un allievo.
+
+    Lezioni, pacchetti e pagamenti tengono gli importi. La riga dello studente resta, così le
+    chiavi esterne non si rompono. Le note delle lezioni (testo libero, possono contenere dati
+    personali) vengono svuotate.
+    """
     student.first_name = "Allievo"
     student.last_name = f"cancellato #{student.pk}"
     student.instrument = ""
@@ -66,13 +76,16 @@ def anonymise_student(student: Student) -> None:
 
 
 def _check_password(user: User, password: str) -> None:
+    # Operazione distruttiva: si riconferma la password anche con la sessione aperta.
     if not user.check_password(password):
         raise ValidationError({"password": "Wrong password."})
 
 
 def _release_children(user: User, children: list[Student]) -> list[Student]:
-    """Unlink `user` from `children`; anonymise those no other parent is linked to.
-    Returns the children that stay because another parent remains."""
+    """Scollega `user` da `children`; anonimizza i figli a cui non resta nessun altro genitore.
+
+    Restituisce i figli che restano perché c'è ancora un altro genitore.
+    """
     parent = ParentAccount.objects.filter(user=user).first()
     kept: list[Student] = []
     for child in children:
@@ -89,6 +102,8 @@ def _release_children(user: User, children: list[Student]) -> list[Student]:
 
 
 def _notify_teachers(kept: list[Student]) -> None:
+    # `on_commit`: l'avviso parte solo se la transazione va a buon fine, mai per una
+    # cancellazione poi annullata. Import locale per evitare un import circolare.
     from .tasks import notify_parent_left
 
     for child in kept:
@@ -97,8 +112,13 @@ def _notify_teachers(kept: list[Student]) -> None:
 
 @transaction.atomic
 def erase_account(user: User, password: str) -> None:
-    """Close the account and erase or anonymise what hangs off it (parent, adult student)."""
+    """Chiude l'account e cancella o anonimizza ciò che ne dipende (genitore, studente adulto).
+
+    Tutto in una transazione: o si fa tutto o niente. L'utente non viene eliminato ma svuotato
+    (email e username fittizi, password inutilizzabile): resta una riga anonima (ADR-032).
+    """
     _check_password(user, password)
+    # Un titolare con studenti non può sparire lasciando lo studio senza responsabile.
     if user.role == User.Role.STUDIO_OWNER:
         from apps.studios.models import Teacher
 
@@ -112,17 +132,19 @@ def erase_account(user: User, password: str) -> None:
         package__student__in=children, status=CheckoutSession.Status.OPEN
     ).exists():
         raise CheckoutOpen("An online payment is still pending.")
+    # Gli studi si salvano prima di scollegare i figli: servono per il registro delle azioni.
     studio_ids = {c.studio_id for c in children}
     old_email = user.email
     kept = _release_children(user, children)
     if user.role == User.Role.STUDENT:
-        # The adult student's own record goes with their account.
+        # Il record dello studente adulto se ne va con il suo account.
         for child in children:
             anonymise_student(child)
     ConsentRecord.objects.filter(parent__user=user).delete()
     Invitation.objects.filter(email__iexact=old_email).delete()
     Invitation.objects.filter(accepted_by=user).delete()
     MfaDevice.objects.filter(user=user).delete()
+    # Sessioni chiuse subito: i token già emessi non devono restare validi (ADR-018).
     account_services.revoke_all_sessions(user)
     OutstandingToken.objects.filter(user=user).delete()
     ParentAccount.objects.filter(user=user).delete()
@@ -142,8 +164,8 @@ def erase_account(user: User, password: str) -> None:
 
 @transaction.atomic
 def withdraw_consent(user: User, consent_id: int, password: str) -> None:
-    """Withdrawing consent erases the affected children from the parent's side: the parent
-    is unlinked, and a child with no other parent is anonymised."""
+    """Ritirare il consenso toglie i figli interessati dal lato del genitore: il genitore viene
+    scollegato, e un figlio senza altri genitori viene anonimizzato."""
     _check_password(user, password)
     consent = ConsentRecord.objects.filter(
         pk=consent_id, parent__user=user, withdrawn_at__isnull=True
@@ -168,17 +190,22 @@ def withdraw_consent(user: User, consent_id: int, password: str) -> None:
     _notify_teachers(kept)
 
 
-# --- Retention (ADR-032) ------------------------------------------------------------------
-ARCHIVED_STUDENT = timedelta(days=730)  # 24 months after the last activity
-PAYMENTS = timedelta(days=3650)  # 10 years, the accounting retention to be confirmed
+# --- Conservazione (ADR-032) --------------------------------------------------------------
+# FUTURO (conservazione contabile): i 10 anni dei pagamenti sono da confermare con un
+# commercialista prima di considerarli definitivi.
+ARCHIVED_STUDENT = timedelta(days=730)  # 24 mesi dopo l'ultima attività
+PAYMENTS = timedelta(days=3650)  # 10 anni, conservazione contabile da confermare
 AUDIT = timedelta(days=365)
 UNCONFIRMED_SIGNUP = timedelta(days=7)
 
 
 def run_retention(now: datetime | None = None) -> dict[str, int]:
-    """Daily clean-up of data past its retention period; returns how many rows each rule hit.
-    Safe to run twice: every rule only touches rows that are still past the limit."""
+    """Pulizia giornaliera dei dati oltre il periodo di conservazione; restituisce le righe toccate.
+
+    Si può lanciare due volte senza danni: ogni regola tocca solo righe ancora oltre il limite.
+    """
     now = now or timezone.now()
+    # Studenti archiviati, non ancora anonimi, senza attività né lezioni recenti.
     cutoff = now - ARCHIVED_STUDENT
     stale = Student.objects.filter(
         is_active=False, anonymised_at__isnull=True, updated_at__lt=cutoff

@@ -1,3 +1,5 @@
+"""Route dell'app privacy, montate sotto /api/v1/privacy/ da config/urls.py."""
+
 from django.urls import path
 
 from .views import ConsentListView, ConsentWithdrawView, EraseView, ExportView
