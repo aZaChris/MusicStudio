@@ -104,6 +104,50 @@ class ReversalSerializer(PaymentSerializer):
         return False
 
 
+class PeriodQuerySerializer(serializers.Serializer[None]):
+    # Parametri ?date_from=&date_to= del registro: date locali inclusive (YYYY-MM-DD).
+    date_from = serializers.DateField(required=False)
+    date_to = serializers.DateField(required=False)
+
+
+class ExportQuerySerializer(serializers.Serializer[None]):
+    # Per le esportazioni il periodo è obbligatorio (e al massimo di un anno, controllato dal
+    # service/selector): non si esporta "tutto" per sbaglio.
+    date_from = serializers.DateField()
+    date_to = serializers.DateField()
+
+
+class RegisterPeriodSerializer(serializers.Serializer[None]):
+    to = serializers.DateField()
+    # `from` è una parola riservata di Python: il campo si dichiara nel namespace della classe.
+    locals()["from"] = serializers.DateField()
+
+
+class RegisterTotalsSerializer(serializers.Serializer[None]):
+    received = serializers.DecimalField(max_digits=12, decimal_places=2)
+    reversed = serializers.DecimalField(max_digits=12, decimal_places=2)
+    net = serializers.DecimalField(max_digits=12, decimal_places=2)
+
+
+class RegisterMethodSerializer(RegisterTotalsSerializer):
+    method = serializers.ChoiceField(choices=Payment.Method.choices)
+
+
+class RegisterCountsSerializer(serializers.Serializer[None]):
+    paid = serializers.IntegerField()
+    pending = serializers.IntegerField()
+    overdue = serializers.IntegerField()
+    reversal = serializers.IntegerField()
+
+
+class RegisterSummarySerializer(serializers.Serializer[dict[str, Any]]):
+    # Risposta di GET /payments/register/summary/: totali del periodo, per metodo e conteggi.
+    period = RegisterPeriodSerializer()
+    totals = RegisterTotalsSerializer()
+    by_method = RegisterMethodSerializer(many=True)
+    counts = RegisterCountsSerializer()
+
+
 class CheckoutSerializer(serializers.Serializer[CheckoutSession]):
     """Response of POST /packages/{id}/checkout/: where to send the payer."""
 

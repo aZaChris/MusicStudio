@@ -39,6 +39,7 @@ COVERED_ELSEWHERE = {
     "privacy.erase",  # apps/privacy/tests
     "payment.reverse",  # apps/payments/tests/test_register_integrity.py
     "payment.delete",  # apps/payments/tests/test_register_integrity.py
+    "register.export",  # apps/payments/tests/test_register_export.py
 }
 
 
@@ -46,7 +47,6 @@ COVERED_ELSEWHERE = {
 # fase toglie i propri nomi da qui quando aggiunge il test che le verifica (tasks.md, T016, T026,
 # T038, T049).
 PHASE_8_PENDING = {
-    "register.export",
     "instructions.change",
     "receipt.issue",
 }

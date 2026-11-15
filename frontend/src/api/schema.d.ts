@@ -554,6 +554,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payments/register/export/csv/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payments_register_export_csv_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/register/export/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payments_register_export_pdf_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/register/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payments_register_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/privacy/consents/": {
         parameters: {
             query?: never;
@@ -1293,6 +1341,27 @@ export interface components {
         ReassignStudentRequest: {
             teacher: number;
         };
+        RegisterCounts: {
+            paid: number;
+            pending: number;
+            overdue: number;
+            reversal: number;
+        };
+        RegisterMethod: {
+            /** Format: decimal */
+            received: string;
+            /** Format: decimal */
+            reversed: string;
+            /** Format: decimal */
+            net: string;
+            method: components["schemas"]["MethodEnum"];
+        };
+        RegisterPeriod: {
+            /** Format: date */
+            to: string;
+            /** Format: date */
+            from: string;
+        };
         RegisterRequest: {
             first_name: string;
             last_name: string;
@@ -1303,6 +1372,20 @@ export interface components {
             accept_terms: boolean;
             /** @default it */
             preferred_language: components["schemas"]["PreferredLanguageEnum"];
+        };
+        RegisterSummary: {
+            period: components["schemas"]["RegisterPeriod"];
+            totals: components["schemas"]["RegisterTotals"];
+            by_method: components["schemas"]["RegisterMethod"][];
+            counts: components["schemas"]["RegisterCounts"];
+        };
+        RegisterTotals: {
+            /** Format: decimal */
+            received: string;
+            /** Format: decimal */
+            reversed: string;
+            /** Format: decimal */
+            net: string;
         };
         /**
          * @description Restrict writable related fields to objects the requesting user may see.
@@ -4075,6 +4158,157 @@ export interface operations {
             };
             /** @description Not found or outside your studio. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payments_register_export_csv_retrieve: {
+        parameters: {
+            query?: {
+                /** @description First day, YYYY-MM-DD, inclusive. */
+                date_from?: string;
+                /** @description Last day, YYYY-MM-DD, inclusive. */
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV attachment, one row per entry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payments_register_export_pdf_retrieve: {
+        parameters: {
+            query?: {
+                /** @description First day, YYYY-MM-DD, inclusive. */
+                date_from?: string;
+                /** @description Last day, YYYY-MM-DD, inclusive. */
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF attachment with the period totals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payments_register_summary_retrieve: {
+        parameters: {
+            query?: {
+                /** @description First day, YYYY-MM-DD, inclusive. */
+                date_from?: string;
+                /** @description Last day, YYYY-MM-DD, inclusive. */
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterSummary"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

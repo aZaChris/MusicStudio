@@ -113,3 +113,28 @@ def test_payments_list_budget_holds_with_reversed_entries():
     with_many = _count(teacher.user, "/api/v1/payments/")
 
     assert with_one == with_many == 3  # same as without reversals
+
+
+def test_register_endpoints_hold_a_constant_query_count():
+    # Phase 8: the summary is one aggregate and the CSV rows come from one query, however many
+    # entries the period holds (SC-003, no N+1 on the student or the reversal).
+    from apps.common.factories import PaymentFactory, make_reversal
+
+    teacher = TeacherFactory()
+    period = "?date_from=2020-01-01&date_to=2020-12-31"
+
+    def seed() -> None:
+        student = StudentFactory(teacher=teacher)
+        make_reversal(PaymentFactory(student=student, date="2020-05-05"), date="2020-06-06")
+
+    seed()
+    summary_one = _count(teacher.user, "/api/v1/payments/register/summary/" + period)
+    csv_one = _count(teacher.user, "/api/v1/payments/register/export/csv/" + period)
+    list_one = _count(teacher.user, "/api/v1/payments/" + period)
+    for _ in range(19):
+        seed()
+
+    assert summary_one == _count(teacher.user, "/api/v1/payments/register/summary/" + period) == 2
+    # teacher, rows, and the audit entry written by the export
+    assert csv_one == _count(teacher.user, "/api/v1/payments/register/export/csv/" + period) == 3
+    assert list_one == _count(teacher.user, "/api/v1/payments/" + period) == 3

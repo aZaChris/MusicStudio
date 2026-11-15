@@ -112,6 +112,11 @@ ROUTES = {
     # Phase 8: reverse is in WRITES above; the paid-entry variants are in
     # apps/payments/tests/test_register_cross_tenant.py.
     "payments/<pk>/reverse/",
+    # Register endpoints take no id: the studio comes from the caller's own tenant context.
+    # Role and scope cases: apps/payments/tests/test_register_scope.py.
+    "payments/register/summary/",
+    "payments/register/export/csv/",
+    "payments/register/export/pdf/",
     "dashboard/",
     "studio/",
     "studio/teachers/",
