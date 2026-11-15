@@ -1,4 +1,4 @@
-"""Write use-cases for studios and their teachers."""
+"""Scritture di studi e insegnanti (services, ADR-002), con il limite di insegnanti per studio."""
 
 from typing import TYPE_CHECKING
 
@@ -13,7 +13,11 @@ if TYPE_CHECKING:
 
 
 def ensure_studio_has_room(studio_id: int, *, joining_teacher_id: int | None = None) -> None:
-    """A studio has at most STUDIO_MAX_TEACHERS teachers (product rule, 1-10 teachers)."""
+    """Uno studio ha al massimo STUDIO_MAX_TEACHERS insegnanti (regola di prodotto, da 1 a 10).
+
+    `joining_teacher_id` esclude dal conteggio chi si sta già spostando, così salvare un
+    insegnante già presente non lo conta due volte.
+    """
     others = Teacher.objects.filter(studio_id=studio_id)
     if joining_teacher_id is not None:
         others = others.exclude(pk=joining_teacher_id)
@@ -25,10 +29,13 @@ def ensure_studio_has_room(studio_id: int, *, joining_teacher_id: int | None = N
 
 @transaction.atomic
 def add_teacher_to_studio(teacher: Teacher, studio: Studio) -> Teacher:
-    """Move `teacher` into `studio`, respecting the teacher cap.
+    """Sposta `teacher` in `studio`, rispettando il limite di insegnanti.
 
-    The studio row is locked first: two concurrent joins are serialised, so the count
-    cannot be read twice before either insert (which would allow an 11th teacher).
+    Prima si blocca la riga dello studio (select_for_update): due ingressi concorrenti si
+    mettono in coda, quindi il conteggio non può essere letto due volte prima di un inserimento
+    (cosa che permetterebbe un undicesimo insegnante). Il problema della concorrenza è lo stesso
+    delle lezioni sovrapposte, qui risolto con un lock di riga invece che con un vincolo
+    (docs/learning/concetti/exclusion-constraint.md).
     """
     Studio.objects.select_for_update().get(pk=studio.pk)
     ensure_studio_has_room(studio.pk, joining_teacher_id=teacher.pk)
@@ -43,7 +50,11 @@ def add_teacher_to_studio(teacher: Teacher, studio: Studio) -> Teacher:
 
 @transaction.atomic
 def create_solo_teacher(user: "User", *, studio_name: str | None = None) -> Teacher:
-    """A teacher who works alone: a personal studio of one, owned by the teacher."""
+    """Un insegnante che lavora da solo: uno studio personale di una persona, di cui è titolare.
+
+    Studio e insegnante si puntano a vicenda, quindi si crea prima lo studio, poi l'insegnante,
+    poi si salva il titolare sullo studio. Tutto in una transazione: o c'è tutto o niente.
+    """
     studio = Studio.objects.create(name=studio_name or user.email)
     teacher = Teacher.objects.create(user=user, studio=studio, is_owner=True)
     studio.owner = teacher

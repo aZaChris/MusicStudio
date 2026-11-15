@@ -1,3 +1,5 @@
+"""Route dell'app studios, montate sotto /api/v1/ da config/urls.py."""
+
 from django.urls import path
 
 from .views import MyStudioView, StudioTeachersView
