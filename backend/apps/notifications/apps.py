@@ -1,3 +1,5 @@
+"""Configurazione dell'app Django `notifications` (promemoria delle lezioni)."""
+
 from django.apps import AppConfig
 
 
