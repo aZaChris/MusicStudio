@@ -1,3 +1,5 @@
+"""Configurazione dell'app Django `audit` (registro delle azioni sensibili)."""
+
 from django.apps import AppConfig
 
 

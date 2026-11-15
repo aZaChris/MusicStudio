@@ -1,4 +1,4 @@
-"""Read queries for the audit log (studio owner only)."""
+"""Letture del registro delle azioni, riservate al titolare dello studio (ADR-031)."""
 
 from datetime import datetime
 
@@ -16,17 +16,19 @@ def entries_for_owner(
     since: datetime | None = None,
     until: datetime | None = None,
 ) -> QuerySet[AuditEntry]:
-    """Entries of the owner's studio, newest first.
+    """Voci dello studio del titolare, dalla più recente.
 
-    Entries recorded with a studio are shown by that studio. Sign-in events carry no studio
-    (the person may belong to several), so those are shown for the studio's own teachers only:
-    an owner sees who in their team signs in, not what parents do elsewhere.
+    Le voci registrate con uno studio le mostra quello studio. Gli accessi non hanno uno studio
+    (la persona può appartenerne a più d'uno), quindi si mostrano solo per gli insegnanti dello
+    studio: il titolare vede chi del suo team accede, non cosa fanno i genitori altrove.
     """
+    # Solo il titolare legge il registro: per gli altri ruoli il risultato è vuoto, non un errore.
     if not ctx.is_owner:
         return AuditEntry.objects.none()
     qs = AuditEntry.objects.select_related("actor").filter(
         Q(studio_id=ctx.studio_id) | Q(studio__isnull=True, actor__teacher__studio_id=ctx.studio_id)
     )
+    # Filtri opzionali, già validati dal serializer della view.
     if action:
         qs = qs.filter(action=action)
     if since:

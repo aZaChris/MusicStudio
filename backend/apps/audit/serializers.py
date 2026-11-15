@@ -1,9 +1,12 @@
+"""Serializer del registro. I docstring finiscono in openapi.yaml: qui si usano commenti `#`."""
+
 from rest_framework import serializers
 
 from .models import AuditEntry
 
 
 class AuditEntrySerializer(serializers.ModelSerializer[AuditEntry]):
+    # Dell'autore si mostra solo l'email, non l'id utente: basta al titolare per capire chi è.
     actor_email = serializers.SerializerMethodField()
 
     class Meta:
@@ -24,6 +27,7 @@ class AuditEntrySerializer(serializers.ModelSerializer[AuditEntry]):
 
 
 class AuditFilterSerializer(serializers.Serializer[None]):
+    # Valida i parametri della query string (?action=&since=&until=): un valore sbagliato dà 400.
     action = serializers.ChoiceField(choices=AuditEntry.Action.choices, required=False)
     since = serializers.DateTimeField(required=False)
     until = serializers.DateTimeField(required=False)

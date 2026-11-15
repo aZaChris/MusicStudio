@@ -1,7 +1,8 @@
-"""Append-only record of sensitive actions (constitution X, ADR-031).
+"""Registro append-only delle azioni sensibili (constitution X, ADR-031).
 
-Entries hold identifiers, never names, emails, passwords, codes, tokens or card data, so
-the log itself does not become a second copy of personal data.
+Le voci contengono identificativi, mai nomi, email, password, codici, token o dati di carta:
+il registro non deve diventare una seconda copia dei dati personali.
+Spiegazione: docs/learning/concetti/audit-log.md.
 """
 
 from typing import Any
@@ -11,7 +12,11 @@ from django.db import models
 
 
 class AuditEntry(models.Model):
+    # Una riga = un'azione sensibile: chi (actor), che cosa (action), com'è andata (outcome),
+    # su quale oggetto (target) e in quale studio. Si scrive solo da audit.services.record.
     class Action(models.TextChoices):
+        # Elenco chiuso delle azioni registrate. Una nuova azione richiede una migrazione dei
+        # `choices` e va aggiunta anche ai filtri dell'API (si leggono da qui).
         REGISTRATION = "registration"
         EMAIL_CONFIRM = "email.confirm"
         LOGIN_SUCCESS = "login.success"
@@ -35,11 +40,14 @@ class AuditEntry(models.Model):
         PAYMENT_RECORD = "payment.record"
 
     class Outcome(models.TextChoices):
+        # success = riuscita; failure = tentata e fallita; denied = negata dai permessi.
         SUCCESS = "success"
         FAILURE = "failure"
         DENIED = "denied"
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    # SET_NULL su actor e studio: se l'utente o lo studio vengono cancellati la voce resta,
+    # ma senza più il collegamento.
     actor = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
@@ -50,20 +58,25 @@ class AuditEntry(models.Model):
     )
     target_type = models.CharField(max_length=40, blank=True)
     target_id = models.BigIntegerField(null=True, blank=True)
+    # Lo stesso id che compare nei log JSON: da una voce si risale alla richiesta (ADR-019).
     request_id = models.CharField(max_length=64, blank=True)
+    # Solo fatti brevi e non personali; il filtro è in audit.services.record.
     metadata = models.JSONField(default=dict, blank=True)
 
     class Meta:
         ordering = ["-created_at", "-id"]
+        # La lettura tipica è "le voci recenti di uno studio": l'indice la serve senza ordinare.
         indexes = [models.Index(fields=["studio", "-created_at"], name="audit_studio_recent")]
 
     def __str__(self) -> str:
         return f"{self.created_at:%Y-%m-%d %H:%M} {self.action} {self.outcome}"
 
     def save(self, *args: Any, **kwargs: Any) -> None:
+        # Append-only: si può solo inserire. Una voce già salvata non si riscrive.
         if self.pk is not None:
             raise PermissionError("Audit entries are append-only.")
         super().save(*args, **kwargs)
 
     def delete(self, *args: Any, **kwargs: Any) -> Any:
+        # Si cancella solo in blocco, dal job di conservazione (audit.services.purge_older_than).
         raise PermissionError("Audit entries are deleted only by the retention job.")
