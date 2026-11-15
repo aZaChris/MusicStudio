@@ -53,7 +53,13 @@ Open items carried over are listed at the end of `docs/learning/00-indice.md`.
   scope since constitution 3.0.0: types generated from `backend/openapi.yaml`, Vitest tests.
   The archive tags are never moved. Stripe: **test mode only**, all calls in
   `apps/payments/gateway.py`.
-- **Code, comments, identifiers, commits: English. Study docs: Italian.**
+- **Code identifiers and commits: English. Comments, docstrings and study docs: Italian** (owner's
+  decision, 2026-11-14). Comments explain the *why*, point to the study doc or ADR that explains
+  the idea (`docs/learning/concetti/<x>.md`, `ADR-NNN`) and record future work as `FUTURO (...)`
+  so it can be found with `grep -rn FUTURO backend/`. The Italian pass goes one Django app at a
+  time, one PR per app; it must not change code (check: same `ast.dump` once docstrings are
+  stripped). **Exception:** docstrings of views and serializers feed `openapi.yaml` (the contract,
+  in English, read by the mobile app): there use `#` comments, never Italian docstrings.
 
 ## Local setup and quality gate
 
@@ -129,5 +135,7 @@ whenever serializers/views change.
 - On a machine where PostgreSQL has a role named after the Linux user (peer auth), use
   `DATABASE_URL=postgres://$USER@/musicstudio` (empty host = Unix socket). `localhost` goes
   over TCP and asks for a password; a URL-encoded socket path is read as a hostname.
+- drf-spectacular copies the docstrings of views and serializers into `openapi.yaml`: an Italian
+  docstring there changes the contract and breaks `contract:check` on the mobile branch.
 - Never print or read credential files (`.env*` except `.env.example`, `.pgpass`); they are
   git-ignored.

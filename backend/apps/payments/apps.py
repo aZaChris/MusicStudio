@@ -1,3 +1,5 @@
+"""Configurazione dell'app Django `payments`."""
+
 from django.apps import AppConfig
 
 
