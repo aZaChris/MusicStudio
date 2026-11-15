@@ -1,0 +1,154 @@
+# Tasks: Studio Cash Register, Payment Instructions and Receipts (Phase 008)
+
+**Input**: `specs/008-cash-register-receipts/` (spec, plan, research, data-model, contracts, quickstart) ·
+**Tests**: REQUIRED (constitution III) · **Docs/ADR**: REQUIRED (VIII) · 👤 = needs the owner.
+Backend paths are under `backend/`, portal paths under `frontend/`. One commit per task (or per
+tightly coupled pair). Never run `pytest` through the rtk filter when the exact result matters:
+use `rtk proxy uv run pytest`.
+
+## Phase 1: Setup
+
+- [ ] T001 Add the PDF library with `uv add reportlab` in `backend/pyproject.toml` and `backend/uv.lock`; write a throwaway script (not committed) that renders one line with `à è ì ò ù €` in Helvetica to a PDF and open it to check the accents and the euro sign; confirm the `backend-image` CI job still builds (research R10; fall back to `fpdf2` only if this fails)
+- [ ] T002 [P] Audit actions `payment.reverse`, `payment.delete`, `register.export`, `instructions.change`, `receipt.issue` in `backend/apps/audit/models.py` + the `choices` migration in `backend/apps/audit/migrations/`; extend the action-coverage test list in `backend/apps/audit/tests/test_coverage.py` so it expects each one (it fails until the story that records it is done; mark those entries with the story they belong to)
+- [ ] T003 [P] Throttle scope `register_export` (env `THROTTLE_REGISTER_EXPORT`, default `20/hour`) in `backend/config/settings/base.py` and `.env.example`
+- [ ] T004 [P] Move `IsTeacherOrOwnerRole` from `backend/apps/accounts/invitation_views.py` to `backend/apps/common/permissions.py` (same code, new home), import it from there in `invitation_views.py`, and add a small test in `backend/apps/common/tests/test_permissions.py` (teacher and owner pass; parent, adult student and anonymous do not, also on safe methods)
+
+## Phase 2: Foundational (blocks all stories)
+
+- [ ] T005 `Payment` model changes in `backend/apps/payments/models.py`: `Status.REVERSAL`, `reversal_of` (OneToOne to self, null, `PROTECT`, `related_name="reversal"`), `reason` (`EncryptedTextField`, blank), `recorded_by` (FK to user, null, `SET_NULL`), constraints `payment_reversal_link_matches_status` and `payment_reversal_amount_positive`, index on `date`; schema migration in `backend/apps/payments/migrations/` (no data migration, existing rows stay valid, FR-034). Test in `backend/apps/payments/tests/test_model_constraints.py`: a reversal without link and a link on a non-reversal are rejected by the database, a second row linking the same original is rejected, old-style rows still save
+- [ ] T006 Error classes `PaymentFinal` (409 `payment_final`), `NotPaid` (409 `not_paid`), `AlreadyReversed` (409 `already_reversed`), `IsReversal` (409 `is_reversal`) as `DomainConflict` subclasses in `backend/apps/payments/services.py`, and `PeriodTooLong` (400 `period_too_long`) as a `DomainError` in `backend/apps/common/exceptions.py`
+- [ ] T007 The "open or paid" rule written once (research R5) in `backend/apps/payments/selectors.py`: `effective_paid(qs)` (status paid and no reversal) and `open_packages(ctx)`; make `package_is_paid` in `backend/apps/payments/services.py` use it; make `latest_payment_status_subquery` in `backend/apps/students/selectors.py` and the fallback in `StudentSerializer.get_payment_status` skip reversal rows and reversed originals. Tests in `backend/apps/payments/tests/test_effective_paid.py`: a reversed entry does not make a package paid, checkout is allowed again after a reversal, the roster status falls back to the earlier entry or none
+- [ ] T008 `PaymentSerializer` in `backend/apps/payments/serializers.py`: new read-only fields `reversed`, `reversal_of`, `reversal_id`, `recorded_by`, `reason`, `receipt_number`; `reason` and `recorded_by` hidden from parents and adult students (check the role through `get_tenant`); `status` and the new fields are never writable; `select_related("student", "reversal")` in `payments_for` so the field `reversed` costs no extra query. Test in `backend/apps/payments/tests/test_serializer_fields.py`: staff see the fields, a parent does not see `reason` or `recorded_by`, a client cannot set `reversal_of` or `status=reversal` on create or update
+
+**Checkpoint**: the table and the shared rules exist; user stories can start.
+
+## Phase 3: US1 — Correct a mistake without erasing history (P1) 🎯 MVP
+
+**Goal**: a paid entry is final and a mistake is corrected by a linked reversal.
+**Independent test**: record a payment, mark it paid, reverse it with a reason; the original is
+listed and reads reversed, the reversal shows actor, time and reason, the net is zero, the package
+is payable again, and edit or delete of the paid entry is refused.
+
+- [ ] T009 [US1] `update_payment` refuses a `paid` or `reversal` row with `PaymentFinal` (also for a no-op change); `delete_payment(payment, actor)` allows only `pending` and `overdue`, writes the audit entry `payment.delete` before deleting; in `backend/apps/payments/services.py`
+- [ ] T010 [US1] `reverse_payment(payment, reason, actor)` in `backend/apps/payments/services.py` as in data-model.md: `select_for_update` on the original, refuse unless `paid` (`NotPaid`), refuse a reversal (`IsReversal`) or an already reversed one (`AlreadyReversed`), create the reversal row dated `timezone.localdate()` with `recorded_by`, catch the unique violation on `reversal_of` and turn it into `AlreadyReversed`, audit `payment.reverse` with method and amount; also set `recorded_by` in `create_payment`
+- [ ] T011 [US1] `PaymentViewSet` in `backend/apps/payments/views.py`: `perform_update` and the new `perform_destroy` go through the services; new action `POST payments/{id}/reverse/` (body `{reason}` 1–200 characters, `IsTeacherOrOwnerRole` + `CanWriteTenantObject`, 201 with the reversal entry, `refund: false` for a `card` original); filters `date_from`, `date_to`, `method` on the list; `@extend_schema` for the new action; comments in Italian as per CLAUDE.md
+- [ ] T012 [P] [US1] Tests of the rules in `backend/apps/payments/tests/test_register_integrity.py`: PATCH and PUT of each field of a paid entry give 409 `payment_final` and change nothing; DELETE of a paid entry gives 409; pending and overdue edit and delete work and delete writes `payment.delete`; reversing a pending or overdue entry gives `not_paid`; a second reversal and a reversal of a reversal are refused; a card entry reversal returns `refund: false`; the reversal is dated today; the original row is byte-identical afterwards (compare `updated_at` and every field)
+- [ ] T013 [P] [US1] Concurrency test in `backend/apps/payments/tests/test_reversal_concurrency.py` (`pytest.mark.django_db(transaction=True)`, two threads reversing the same entry): exactly one 201 and one 409, exactly one reversal row exists
+- [ ] T014 [P] [US1] Cross-studio tests in `backend/apps/payments/tests/test_register_cross_tenant.py`: another studio's teacher and owner get 404 on `reverse`, on update and on delete of an entry; a teacher cannot reverse a colleague's student's entry (404); a parent and an adult student get 403 on `reverse`; add `payments/{id}/reverse/` to the table in `backend/apps/common/tests/test_idor.py` so `test_idor_coverage.py` stays green
+- [ ] T015 [P] [US1] Package and status effects in `backend/apps/payments/tests/test_reversal_effects.py`: reversing the only paid entry makes the package open and `POST packages/{id}/checkout/` works again; with two paid entries covering a package, reversing one leaves it paid; lessons already completed are untouched; the student's `payment_status` in the roster updates
+- [ ] T016 [US1] Query budget for `GET payments/` with reversed rows and the new fields in `backend/apps/common/tests/test_num_queries.py` (constant when the number of entries grows); update the audit coverage test entries for `payment.reverse` and `payment.delete` in `backend/apps/audit/tests/test_coverage.py`
+- [ ] T017 [US1] Portal: in `frontend/src/features/teacher/Payments.tsx` show the status badge `reversed` and `reversal`, a "Reverse" action on paid entries with a dialog (reason required, 200 characters), the statement for card entries that no money is returned, and the 409 messages translated; API hooks in `frontend/src/features/teacher/api/payments.ts`; i18n EN/IT in `frontend/src/i18n/`; regenerate `backend/openapi.yaml` and `frontend/src/api/schema.d.ts` (`npm run api:generate`)
+- [ ] T018 [P] [US1] Portal tests in `frontend/src/features/teacher/payments.test.tsx` (network mocked at `fetch`): reverse dialog sends the reason, the list shows the original marked reversed and the reversal row, a 409 shows the translated message, the card statement appears
+
+**Checkpoint**: US1 is complete and shippable alone.
+
+## Phase 4: US2 — Totals and export for the accountant (P1)
+
+**Goal**: the register for a period with totals, and CSV and PDF exports.
+**Independent test**: entries on several days and methods; open a month and check totals per method
+against a hand calculation; export both files and open the CSV in a spreadsheet.
+
+- [ ] T019 [US2] `register_summary(ctx, date_from, date_to)` in `backend/apps/payments/selectors.py`: one aggregate query over `payments_for(ctx)` filtered by the date range, conditional sums (`paid`, `reversal`), grouped by method, plus counts per status; returns received, reversed, net overall and per method; empty period gives zeros. Helper `parse_period(date_from, date_to, max_days=None)` raising `PeriodTooLong` and a 400 on bad dates or `from > to`
+- [ ] T020 [P] [US2] `backend/apps/payments/exports.py`: `write_register_csv(rows)` with `csv` module, `;`, UTF-8 BOM, `\r\n`, columns as in contracts/api.md, `neutralise(text)` prefixing `'` to values starting with `=`, `+`, `-`, `@`, tab or CR (text cells only, amounts from `Decimal`); test in `backend/apps/payments/tests/test_exports_csv.py` (accents, commas, quotes and 500-character names round-trip through `csv.reader`; `=SUM(A1)`, `+1`, `-1`, `@x` neutralised; a negative amount column is not neutralised)
+- [ ] T021 [P] [US2] `backend/apps/payments/pdf.py`: `register_pdf(studio_name, period, summary, produced_on)` with reportlab (title, studio, period, totals table per method, production date, the line that it is not a tax document); test in `backend/apps/payments/tests/test_pdf_register.py` that the bytes start with `%PDF` and the text extracted by a simple check of the stream contains the studio name (use `reportlab`'s own canvas output compared to a known marker, no new test dependency)
+- [ ] T022 [US2] Views in `backend/apps/payments/register_views.py` and routes in `backend/apps/payments/urls.py`: `GET payments/register/summary/` (default: current month), `GET payments/register/export/csv/` and `.../pdf/` (`date_from` and `date_to` required, period at most 366 days, `Content-Disposition` attachment, throttle scope `register_export`, audit `register.export` with the two dates and the row count, never the content); permission `IsTeacherOrOwnerRole`; schema annotations for the file responses; Italian comments
+- [ ] T023 [P] [US2] Totals tests in `backend/apps/payments/tests/test_register_summary.py`: a table of entries by method, status and day with a hand-calculated expected result (SC-002); a November payment reversed on 3 December adds to November received and December reversed; pending and overdue are listed in counts but not summed; empty period gives zeros; a payment at 23:30 local time falls on its local day (use `freezegun`-free approach: create with explicit `date`, and test the reversal date with `timezone.localdate` patched)
+- [ ] T024 [P] [US2] Scope and access tests in `backend/apps/payments/tests/test_register_scope.py`: a teacher sees only their students' entries and totals, the owner sees the whole studio, another studio sees nothing (404-style empty or 403 by role), parents and adult students get 403 on summary and both exports, anonymous gets 401; add the three new routes to `backend/apps/common/tests/test_idor.py`
+- [ ] T025 [P] [US2] Export behaviour tests in `backend/apps/payments/tests/test_register_export.py`: a period over 366 days gives 400 `period_too_long`; the export audit entry holds only the period and the count; the CSV row count equals the entries in the period; a student named `=cmd|' /C calc'!A0` is neutralised in the response body; the throttle returns 429 after the configured number
+- [ ] T026 [US2] Query budgets for `register/summary/` and for the filtered list in `backend/apps/common/tests/test_num_queries.py`; update the audit coverage test for `register.export`
+- [ ] T027 [US2] Volume check in `backend/apps/payments/tests/test_register_volume.py` (marked `slow`, excluded from the default run if it exceeds 5 s locally): seed 2,000 entries in one month, assert the summary and the list answer in the query budget; the timing goals SC-003 and SC-004 are measured once with `seed_loadtest` and written in the knowledge base note of T052, not asserted in CI
+- [ ] T028 [US2] Portal: turn `frontend/src/features/teacher/Payments.tsx` into the register: period picker (day, month, custom range with the one-year limit explained), totals block (received, reversed, net, per method), the list with status badges, buttons "Export CSV" and "Export PDF" that fetch through the authenticated client and download a `Blob` (research R13); hooks in `frontend/src/features/teacher/api/payments.ts`; EN/IT strings; the empty period shows zeros
+- [ ] T029 [P] [US2] Portal tests in `frontend/src/features/teacher/register.test.tsx`: totals render from the summary response, changing the period refetches, export triggers a download with the right query, a 400 `period_too_long` shows its message, parents never see the page (route guard)
+
+**Checkpoint**: US1 and US2 together are the cash register.
+
+## Phase 5: US3 — Tell parents how to pay (P2)
+
+**Goal**: studio payment instructions, shown to parents beside their open packages.
+**Independent test**: the owner saves an IBAN and a link; a linked parent sees them beside an open
+package; a parent of another studio sees nothing; a teacher can read but not change.
+
+- [ ] T030 [P] [US3] `backend/apps/payments/iban.py`: `normalise(value)` and `is_valid(value)` (format regex and mod-97, research R2); test in `backend/apps/payments/tests/test_iban.py` with known valid IBANs (IT, DE, FR, GB), wrong checksum, wrong length, lowercase and spaces, empty string
+- [ ] T031 [US3] `PaymentInstructions` model (fields in data-model.md; `account_holder` and `iban` as `EncryptedTextField`) and its migration in `backend/apps/payments/models.py` and `backend/apps/payments/migrations/`; test in `backend/apps/payments/tests/test_instructions_model.py` that the stored column is not the plain IBAN and that one studio cannot have two rows
+- [ ] T032 [US3] `save_instructions(studio, actor, data)` and `clear_instructions(studio, actor)` in `backend/apps/payments/services.py`: normalise the IBAN, require the holder when an IBAN is present, reject more than five links, links not `https`, labels outside 1–40 characters; audit `instructions.change` with the names of the changed fields only. `instructions_for_studio(ctx)` and `instructions_for_open_packages(ctx)` (one query for the open packages' studios, one for their instructions) in `backend/apps/payments/selectors.py`
+- [ ] T033 [US3] Serializers and views in `backend/apps/payments/serializers.py` and `backend/apps/payments/instruction_views.py`, routes in `backend/apps/payments/urls.py`: `GET` and `PUT payment-instructions/` (owner writes, teacher reads, parent 403) and `GET payment-instructions/open/` (parent and adult student, with the fixed `notice`); the studio always comes from the tenant context, never from the request; Italian comments; `@extend_schema`
+- [ ] T034 [US3] Keep bank details out of error reports: add `/payment-instructions/` to `_SENSITIVE_PATHS` in `backend/apps/common/sentry.py`; test in `backend/apps/common/tests/test_sentry.py` that an event for a failed `PUT` has no request body
+- [ ] T035 [US3] Owner data export and erasure in `backend/apps/privacy/`: allow the studio owner on `ExportView` with the account block and a `studio` block (name and decrypted instructions) in `backend/apps/privacy/selectors.py` and `views.py`; `erase_account` deletes the owner's studio instructions before emptying the account in `backend/apps/privacy/services.py`; tests in `backend/apps/privacy/tests/test_owner_export_erase.py` (research R15)
+- [ ] T036 [P] [US3] Tests of the feature in `backend/apps/payments/tests/test_instructions.py`: invalid IBAN refused with an `iban` error; `http` link and a sixth link refused; teacher reads but gets 403 on `PUT`; a parent linked to a student with an open package sees the instructions; no open package, a paid package, or no saved instructions gives an empty list; a parent linked to students of two studios gets each studio's instructions; removing the instructions empties the parent's list at once; the audit entry has field names and no values
+- [ ] T037 [P] [US3] Cross-studio and leak tests in `backend/apps/payments/tests/test_instructions_cross_tenant.py`: the owner of studio B never reads or writes studio A's instructions (there is no id to forge: test with the tenant context of each user), a parent of studio B gets nothing of A, anonymous gets 401; an IBAN sent in a failing request never appears in `caplog`, in the audit metadata or in the Sentry event passed to `before_send` (SC-008); add the two new routes to `backend/apps/common/tests/test_idor.py`
+- [ ] T038 [US3] Query budgets for `payment-instructions/` and `payment-instructions/open/` in `backend/apps/common/tests/test_num_queries.py` (constant with 1 or 10 open packages); update the audit coverage test for `instructions.change`
+- [ ] T039 [US3] Portal, owner: `frontend/src/features/team/PaymentInstructions.tsx` (holder, IBAN, bank, note, up to five labelled links, field errors from the API, read-only view for teachers) and the route and sidebar entry in `frontend/src/App.tsx` and `frontend/src/components/Sidebar.tsx`; hooks in `frontend/src/features/team/api/instructions.ts`; EN/IT strings
+- [ ] T040 [US3] Portal, parent: in `frontend/src/features/parent/ParentPortal.tsx` fetch `payment-instructions/open/` once and show the matching studio's instructions beside each open package of that student, with the statement that payment happens outside MusicStudio and is not verified; nothing when there are none; EN/IT strings
+- [ ] T041 [P] [US3] Portal tests in `frontend/src/features/team/instructions.test.tsx` and extend `frontend/src/features/parent/ParentPortal.test.tsx`: form errors, teacher read-only, parent sees instructions beside an open package only, two studios matched to the right student
+
+**Checkpoint**: parents can see how to pay; nothing else depends on it.
+
+## Phase 6: US4 — Give the parent a receipt (P3)
+
+**Goal**: a non-fiscal PDF receipt per paid entry, with a number unique per studio and year.
+**Independent test**: issue a receipt twice and get the same number; issue twenty at once and get
+twenty distinct gapless numbers; a reversed entry's receipt carries the cancelled mark.
+
+- [ ] T042 [US4] `Receipt` model and migration (fields and constraints in data-model.md) in `backend/apps/payments/models.py` and `backend/apps/payments/migrations/`; `RECEIPT_PATHS` in `backend/apps/common/scoping.py` and `receipts_for(ctx)` in `backend/apps/payments/selectors.py` (through `scope()`, `select_related("payment__student")`); test in `backend/apps/payments/tests/test_receipt_model.py` (unique `(studio, year, sequence)`, one receipt per payment)
+- [ ] T043 [US4] `issue_receipt(payment, language, actor)` in `backend/apps/payments/services.py`: only `paid` (`NotPaid`, `IsReversal`), idempotent, lock the studio row, `max(sequence) + 1` for the current local year, audit `receipt.issue`; `receipt_number(receipt)` returns `YYYY-NNNN`
+- [ ] T044 [P] [US4] `receipt_pdf(receipt)` in `backend/apps/payments/pdf.py`: studio name, student name, amount, date, method, number, the sentence "not a tax document" in IT or EN, the "cancelled" mark when the payment has a reversal, and nothing else (FR-029); test in `backend/apps/payments/tests/test_pdf_receipt.py` for both languages, the cancelled mark, and that no IBAN, tax id or payer field exists in the rendered content
+- [ ] T045 [US4] Views and routes in `backend/apps/payments/receipt_views.py` and `backend/apps/payments/urls.py`: `POST payments/{id}/receipt/` (teacher and owner, default language from the user's `preferred_language`, 201 or 200), `GET receipts/` (scoped list with `student` filter, paginated), `GET receipts/{id}/pdf/` (throttle scope `register_export`); `receipt_number` on the payment serializer comes from this relation without an extra query per row; Italian comments; `@extend_schema`
+- [ ] T046 [P] [US4] Behaviour tests in `backend/apps/payments/tests/test_receipts.py`: pending, overdue and reversal entries give 409 (`not_paid`, `is_reversal`); second call returns the same number and PDF bytes for unchanged data; ten receipts in one studio are `0001`…`0010`; numbering restarts in a new year (patch the local date) and is independent per studio; the language chosen at first issue is kept; the receipt of a reversed entry is marked cancelled
+- [ ] T047 [P] [US4] Concurrency test in `backend/apps/payments/tests/test_receipt_concurrency.py` (`transaction=True`, twenty threads in one studio): twenty distinct numbers, none skipped, none repeated (SC-007)
+- [ ] T048 [P] [US4] Scope and privacy tests in `backend/apps/payments/tests/test_receipts_scope.py`: a parent lists and downloads only their own student's receipts and cannot issue one (403); a parent of another student and another studio get 404; after the family's erasure the receipt PDF shows the anonymised label and the amount, date and number are intact (FR-031); add `payments/{id}/receipt/`, `receipts/` and `receipts/{id}/pdf/` to `backend/apps/common/tests/test_idor.py`
+- [ ] T049 [US4] Query budgets for `receipts/` and for `payments/` with receipts in `backend/apps/common/tests/test_num_queries.py`; update the audit coverage test for `receipt.issue`
+- [ ] T050 [US4] Portal: in the register (`frontend/src/features/teacher/Payments.tsx`) a "Receipt" button on paid entries (language follows the portal), download of the PDF; in `frontend/src/features/parent/ParentPortal.tsx` a receipts list per student with downloads; hooks in `frontend/src/features/teacher/api/payments.ts` and `frontend/src/features/parent/api/`; EN/IT strings; regenerate the API types
+- [ ] T051 [P] [US4] Portal tests in `frontend/src/features/teacher/receipt.test.tsx` and extend `frontend/src/features/parent/ParentPortal.test.tsx`: issue then download, 409 message for a pending entry, parent sees only issued receipts
+
+**Checkpoint**: all four stories work.
+
+## Phase 7: Cross-cutting checks
+
+- [ ] T052 Measure the goals once with `seed_loadtest` on a throwaway database (register month with about 2,000 entries, a year export of about 5,000, twenty receipts); write real numbers and the commands in `docs/knowledge-base/` only if something non-trivial turned up, otherwise in the phase summary; never invent figures
+- [ ] T053 Code path guard for "final means final" in `backend/apps/payments/tests/test_final_guard.py`: grep-style test that fails if a module other than the allowed ones (`payments/services.py`, `privacy/services.py` anonymisation and retention, seed command) calls `Payment.objects.…update(`, `.delete(` or sets `status` on a paid row; the allowed list is documented in the test and in ADR-034 (research R6)
+- [ ] T054 No personal data in logs for the new flows: extend `backend/config/tests/test_no_pii_in_logs.py` to run reverse, export, instruction save and receipt issue under `caplog`, asserting no student name, reason, IBAN or holder appears in any record
+- [ ] T055 Mobile follow-up note: add the new `reversal` status, `reversed` field and the 409 on update and delete of paid entries to `specs/007-security-privacy-accounts/mobile-followup.md` (or a new `specs/008-cash-register-receipts/mobile-followup.md`), listing the screens that show a payment status badge
+- [ ] T056 Regenerate and check the contract: `uv run python manage.py spectacular --settings=config.settings.test --fail-on-warn --file openapi.yaml`, then `npm run api:generate` and `npm run api:check` in `frontend/`; commit both
+
+## Phase 8: Study docs
+
+- [ ] T057 [P] ADRs in `docs/learning/adr/` (context, decision, rejected alternatives, consequences; Italian): ADR-034 registro per storno (riga di storno, collegamento uno-a-uno, originale mai riscritto, il job di conservazione unica eccezione), ADR-035 ricevute non fiscali e numerazione senza buchi (lock sulla riga dello studio, PDF generato al volo), ADR-036 istruzioni di pagamento (nessuna verifica bancaria, IBAN cifrato, un solo endpoint per i genitori)
+- [ ] T058 [P] Concept docs (800–1500 words, format in CLAUDE.md, check with `wc -w`) in `docs/learning/concetti/`: `registro-di-cassa.md` (storno, totali, esportazione, formula injection nei CSV) and `ricevute-non-fiscali.md` (numerazione senza buchi con il lock, PDF, cosa non è una ricevuta). Use only real outputs and measurements
+- [ ] T059 OWASP API Top 10 walk updated for this phase in `docs/learning/concetti/sicurezza-api-owasp.md`; glossary, interview Q&A, `docs/learning/01-panoramica-architettura.md` and `docs/learning/00-indice.md` ("Riepilogo della fase 8", reading order); update older docs that describe payments as editable (`docs/learning/concetti/pagamenti-online-stripe.md` if it says so, `docs/learning/concetti/permessi-drf.md` only if it mentions payment edits)
+
+## Phase 9: Polish
+
+- [ ] T060 Full gate green: ruff, ruff format check, mypy, migrations check, `rtk proxy uv run pytest` (coverage ≥ 90%), spectacular, and in `frontend/`: typecheck, lint, format check, `api:check`, tests, build; fix what fails
+- [ ] T061 Walk the quickstart (`specs/008-cash-register-receipts/quickstart.md` section 2) against a dev server on a throwaway database; record in this task what was done and what could not be (no browser: say so; no invented results)
+- [ ] T062 Add phase 8 to `scripts/export-study-docs.sh` (folder `Fase 8 - Cassa e ricevute`, its two concept files, ADR-034..036) and run it; append the decisions to the Obsidian vault note if `~/.config/git/obsidian_sync.py` exists on the machine; mark phase 8 done in `CLAUDE.md` and write the summary commit "Complete phase 8: ..."
+- [ ] T063 👤 Owner: have the wording of the receipt (the "not a tax document" sentence) and the terms-of-use statement (the platform holds no money and issues no tax documents) checked by a professional before real studios rely on them (spec assumption; outside this feature's code)
+- [ ] T064 👤 Owner: open the pull request when ready; wait for green CI; production deploy follows the runbook in `docs/operations/runbook.md` (the migration is additive and safe on a live database)
+
+## Dependencies
+
+- T001–T004 (Setup) → T005–T008 (Foundational) → all stories.
+- **US1** needs only Foundational. **US2** needs T005, T007 and T008 and benefits from US1's reversal rows in its totals tests, so run it after US1. **US3** needs only Foundational and the audit action (T002) and can run in parallel with US1 and US2 in a different set of files, apart from `urls.py`, `services.py` and `selectors.py` which several stories touch (do those edits one story at a time). **US4** needs US1 (the "cancelled" mark) and T008.
+- Within a story: model and migration → service → view and serializer → tests that need them → portal.
+- Cross-cutting T052–T056 after the four stories; docs T057–T059 can start once the design is stable (after US1) and be finished at the end; T060–T062 last.
+- Migrations: T005 (Payment columns), T031 (PaymentInstructions), T042 (Receipt) and T002 (audit choices) each create their own migration; if two stories run in parallel on different branches, renumber on merge.
+
+## Parallel examples
+
+- After T008: T012, T013, T014 and T015 (US1 tests) are different files; T030 (IBAN module) and T020/T021 (CSV and PDF writers) are pure modules with no overlap.
+- During US2: T020 (CSV), T021 (PDF) and the test tasks T023–T025 are independent files.
+- Docs T057 and T058 can be written while portal tasks T040 and T050 run.
+
+## Implementation strategy
+
+**MVP = Setup + Foundational + US1**: the register can no longer be silently rewritten, and a
+mistake has a proper correction. Ship it first (it already satisfies the "traceable" half of the
+roadmap point 1). Then US2 (totals and export, the other half of "a register"), then US3 and US4,
+which can be reordered or dropped from a release without touching the first two. Commit after each
+task; push and open the pull request at the end of each story only when the full gate is green and
+the owner asks. If time runs short, US4 (receipts) moves to a follow-up; US1 never does.
+
+Rules that apply to every task: code, identifiers and commits in English, comments and docstrings
+in Italian (views and serializers use `#` comments, never Italian docstrings, because they feed
+`openapi.yaml`); writes in `services.py`, reads in `selectors.py`; tenant scoping only through
+`apps/common/scoping.py`; Stripe code is not touched; bank details and reasons never reach logs,
+audit metadata or error reports.
