@@ -25,7 +25,7 @@ or delete on payments. Reads keep working; new fields are additive.
 | Method | Path | Notes |
 |---|---|---|
 | GET | `payments/` | gains filters `date_from`, `date_to` (inclusive) and `method`; existing `status`, `student` stay. New read-only fields on each item: `reversed` (bool), `reversal_of` (id or null), `reversal_id` (id or null), `recorded_by` and `reason` (staff only, hidden from parents and adult students), `receipt_number` (string or null). Paginated, 25 per page. |
-| POST | `payments/{id}/reverse/` | teacher/owner in scope. Body `{"reason": "…"}` (1–200 characters). 201 with the reversal entry. 409 `payment_final`-style codes: `not_paid` (the entry is not paid), `already_reversed`, `is_reversal`. 404 out of scope. For a `card` entry the response also carries `"refund": false` so the client can state that no money is returned (FR-007). |
+| POST | `payments/{id}/reverse/` | teacher/owner in scope. Body `{"reason": "…"}` (1–200 characters). 201 with the reversal entry. 409 `payment_final`-style codes: `not_paid` (the entry is not paid), `already_reversed`, `is_reversal`. 404 out of scope. The response always carries `"refund": false` (the register is corrected, nothing is refunded); the client states this for `card` entries, using the original's method (FR-007). |
 
 `POST payments/` and the card webhook are unchanged. Every created entry now records `recorded_by`
 when a user made it.

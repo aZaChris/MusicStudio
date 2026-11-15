@@ -17,7 +17,7 @@ from typing import Any
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from apps.audit import services as audit
@@ -37,6 +37,11 @@ def ensure_package_matches_student(student: Student, package: Package | None) ->
         )
 
 
+def _author(actor: Any) -> Any:
+    # Chi ha creato la riga: l'utente se c'è davvero, altrimenti nessuno (webhook, sistema).
+    return actor if getattr(actor, "pk", None) else None
+
+
 def _record_audit(payment: Payment, actor: Any) -> None:
     # Ogni pagamento registrato lascia una traccia nel registro attività (ADR-031).
     # Nei metadati metodo e importo; mai dati personali (docs/learning/concetti/audit-log.md).
@@ -54,7 +59,9 @@ def create_payment(
 ) -> Payment:
     """Registra un pagamento a mano. `actor` è l'utente collegato (None se è il sistema)."""
     ensure_package_matches_student(student, package)
-    payment = Payment.objects.create(student=student, package=package, **fields)
+    payment = Payment.objects.create(
+        student=student, package=package, recorded_by=_author(actor), **fields
+    )
     _record_audit(payment, actor)
     return payment
 
@@ -76,8 +83,19 @@ def ensure_transition_allowed(current: str, target: str) -> None:
         raise ValidationError({"status": f"Cannot change status from {current} to {target}."})
 
 
+def ensure_not_final(payment: Payment) -> None:
+    """Un pagamento pagato o uno storno è definitivo (fase 8, FR-001): niente modifica, niente
+    cancellazione. Si corregge con `reverse_payment`. Pending e overdue restano modificabili."""
+    if payment.status in (Payment.Status.PAID, Payment.Status.REVERSAL):
+        raise PaymentFinal("This entry is final: reverse it instead of changing it.")
+
+
 def update_payment(payment: Payment, **changes: Any) -> Payment:
-    """Modifica un pagamento controllando transizione di stato e coerenza del pacchetto."""
+    """Modifica un pagamento controllando transizione di stato e coerenza del pacchetto.
+
+    Solo pending e overdue: un pagamento pagato non si tocca più (`ensure_not_final`).
+    """
+    ensure_not_final(payment)
     if "status" in changes:
         ensure_transition_allowed(payment.status, changes["status"])
     for field, value in changes.items():
@@ -85,6 +103,73 @@ def update_payment(payment: Payment, **changes: Any) -> Payment:
     ensure_package_matches_student(payment.student, payment.package)
     payment.save()
     return payment
+
+
+def delete_payment(payment: Payment, *, actor: Any) -> None:
+    """Cancella un pagamento in attesa o scaduto (non ancora incassato). Lascia una traccia.
+
+    La voce di audit si scrive prima della cancellazione, con importo e metodo: dopo non ci
+    sarebbe più nulla da descrivere. Un pagamento pagato non si cancella mai.
+    """
+    ensure_not_final(payment)
+    audit.record(
+        audit.Action.PAYMENT_DELETE,
+        actor=actor,
+        target=payment,
+        studio_id=payment.student.studio_id,
+        metadata={
+            "method": payment.method,
+            "amount": str(payment.amount),
+            "status": payment.status,
+        },
+    )
+    payment.delete()
+
+
+def reverse_payment(payment: Payment, *, reason: str, actor: Any) -> Payment:
+    """Storna un pagamento pagato: crea una riga di storno collegata, l'originale non si tocca.
+
+    L'originale resta "paid" e visibile; lo storno porta chi, quando e perché ed è datato a
+    oggi (mai a ritroso), così un mese già consegnato al commercialista non cambia. Una sola
+    volta per pagamento: lo garantisce il vincolo di unicità sul collegamento, e il lock sulla
+    riga dell'originale fa perdere con un 409 pulito chi arriva secondo. Non restituisce denaro:
+    corregge il registro (FR-007). Spiegazione: docs/learning/concetti/registro-di-cassa.md.
+    """
+    reason = reason.strip()
+    if not reason or len(reason) > 200:
+        raise ValidationError({"reason": "A reason of 1 to 200 characters is required."})
+    with transaction.atomic():
+        original = Payment.objects.select_for_update().select_related("student").get(pk=payment.pk)
+        if original.status == Payment.Status.REVERSAL:
+            raise IsReversal("A reversal cannot be reversed.")
+        if original.status != Payment.Status.PAID:
+            raise NotPaid("Only a paid entry can be reversed.")
+        if Payment.objects.filter(reversal_of=original).exists():
+            raise AlreadyReversed("This entry was already reversed.")
+        try:
+            with transaction.atomic():
+                reversal = Payment.objects.create(
+                    student=original.student,
+                    package=original.package,
+                    amount=original.amount,
+                    date=timezone.localdate(),
+                    method=original.method,
+                    status=Payment.Status.REVERSAL,
+                    reversal_of=original,
+                    reason=reason,
+                    recorded_by=_author(actor),
+                )
+        except IntegrityError as exc:
+            # Un'altra richiesta ha stornato lo stesso pagamento tra il controllo e l'insert.
+            raise AlreadyReversed("This entry was already reversed.") from exc
+        audit.record(
+            audit.Action.PAYMENT_REVERSE,
+            actor=actor,
+            target=reversal,
+            studio_id=original.student.studio_id,
+            metadata={"method": original.method, "amount": str(original.amount)},
+        )
+    return reversal
 
 
 # --- Pagamenti online (fase 3, ADR-013/014) ----------------------------------------------

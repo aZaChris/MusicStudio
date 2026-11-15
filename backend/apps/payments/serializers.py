@@ -82,6 +82,24 @@ class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Pa
         return data
 
 
+class ReverseRequestSerializer(serializers.Serializer[None]):
+    # Corpo di POST /payments/{id}/reverse/: il motivo è obbligatorio e breve. È testo libero,
+    # quindi nel database finisce cifrato (constitution X).
+    reason = serializers.CharField(min_length=1, max_length=200, trim_whitespace=True)
+
+
+class ReversalSerializer(PaymentSerializer):
+    # Risposta di reverse: la riga di storno più `refund`, sempre false. Lo storno corregge il
+    # registro, non restituisce denaro: il prodotto non muove soldi (FR-007).
+    refund = serializers.SerializerMethodField()
+
+    class Meta(PaymentSerializer.Meta):
+        fields = [*PaymentSerializer.Meta.fields, "refund"]
+
+    def get_refund(self, obj: Payment) -> bool:
+        return False
+
+
 class CheckoutSerializer(serializers.Serializer[CheckoutSession]):
     """Response of POST /packages/{id}/checkout/: where to send the payer."""
 

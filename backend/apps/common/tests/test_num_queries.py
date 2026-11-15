@@ -92,3 +92,24 @@ def test_num_queries_constant_for_parent_roster():
         add_child()
 
     assert with_one == _count(parent.user, "/api/v1/students/") == 4
+
+
+def test_payments_list_budget_holds_with_reversed_entries():
+    # Phase 8: `reversed`, `reversal_id` and `reversal_of` come from the same query
+    # (select_related("reversal")), so reversals must not add queries per row.
+    from apps.common.factories import PaymentFactory, make_reversal
+
+    teacher = TeacherFactory()
+
+    def seed_with_reversal() -> None:
+        student = StudentFactory(teacher=teacher)
+        make_reversal(PaymentFactory(student=student), recorded_by=teacher.user)
+        PaymentFactory(student=student)
+
+    seed_with_reversal()
+    with_one = _count(teacher.user, "/api/v1/payments/")
+    for _ in range(14):
+        seed_with_reversal()
+    with_many = _count(teacher.user, "/api/v1/payments/")
+
+    assert with_one == with_many == 3  # same as without reversals

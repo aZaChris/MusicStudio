@@ -83,7 +83,9 @@ def test_a_client_cannot_forge_a_reversal_on_create_or_update():
     )
     assert forged_link.status_code == 201
     row = Payment.objects.get(pk=forged_link.data["id"])
-    assert row.reversal_of_id is None and row.reason == "" and row.recorded_by_id in (None, teacher.pk)
+    assert (
+        row.reversal_of_id is None and row.reason == "" and row.recorded_by_id in (None, teacher.pk)
+    )
 
     pending = PaymentFactory(student=student, status=Payment.Status.PENDING)
     patched = client.patch(f"/api/v1/payments/{pending.pk}/", {"status": "reversal"}, format="json")

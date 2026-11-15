@@ -83,6 +83,7 @@ WRITES = [
         {"student": "{student}", "amount": "0.01", "date": "2030-01-01", "method": "cash"},
     ),
     ("delete", "/api/v1/payments/{payment}/", "payment", None),
+    ("post", "/api/v1/payments/{payment}/reverse/", "payment", {"reason": "pwned"}),
 ]
 LISTS = [
     "/api/v1/students/",
@@ -108,6 +109,9 @@ ROUTES = {
     "packages/<pk>/checkout/",
     "payments/",
     "payments/<pk>/",
+    # Phase 8: reverse is in WRITES above; the paid-entry variants are in
+    # apps/payments/tests/test_register_cross_tenant.py.
+    "payments/<pk>/reverse/",
     "dashboard/",
     "studio/",
     "studio/teachers/",
