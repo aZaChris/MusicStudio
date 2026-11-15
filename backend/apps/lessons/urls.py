@@ -1,3 +1,5 @@
+"""Route dell'app lessons, montate sotto /api/v1/ da config/urls.py."""
+
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
