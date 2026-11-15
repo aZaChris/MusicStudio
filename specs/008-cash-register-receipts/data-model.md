@@ -8,7 +8,7 @@ every new column on `Payment` is nullable or has a default, and no data migratio
 | Field | Type | Notes |
 |---|---|---|
 | `status` | choices | adds `reversal` to `paid`, `pending`, `overdue` |
-| `reversal_of` | OneToOne to `self`, null, `PROTECT`, `related_name="reversal"` | set only on a reversal row; the link points to the original |
+| `reversal_of` | OneToOne to `self`, null, `CASCADE`, `related_name="reversal"` | set only on a reversal row; the link points to the original. `CASCADE` and not `PROTECT`: the 10-year retention job deletes old payments in bulk, and a recent reversal of a very old payment must not block it |
 | `reason` | `EncryptedTextField`, blank | why a reversal was made; free text, encrypted (Principle X); at most 200 characters, enforced in the serializer |
 | `recorded_by` | FK to user, null, `SET_NULL` | who created the row; null for old rows and for the card webhook |
 

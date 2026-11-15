@@ -9,6 +9,7 @@ from apps.accounts.models import User
 from apps.lessons.models import Lesson
 from apps.lessons.selectors import week_bounds
 from apps.packages.models import Package
+from apps.payments.models import Payment
 from apps.students.models import ParentAccount, ParentStudentLink, Student
 from apps.studios.models import Studio, Teacher
 
@@ -69,6 +70,18 @@ class PackageFactory(factory.django.DjangoModelFactory[Package]):
     price = "120.00"
 
 
+class PaymentFactory(factory.django.DjangoModelFactory[Payment]):
+    # Pagamento già pagato in contanti, di oggi: il caso più comune nei test del registro.
+    class Meta:
+        model = Payment
+
+    student = factory.SubFactory(StudentFactory)
+    amount = "40.00"
+    date = factory.LazyFunction(datetime.date.today)
+    method = Payment.Method.CASH
+    status = Payment.Status.PAID
+
+
 def _factory_start(n: int) -> datetime.datetime:
     """Inizio dell'n-esima lezione della factory: a 31 minuti l'una dall'altra, ciclo di ~20 ore.
 
@@ -112,3 +125,18 @@ def make_student_account(student: Student) -> User:
     student.user = user
     student.save(update_fields=["is_adult", "user"])
     return user
+
+
+def make_reversal(payment: Payment, **overrides: object) -> Payment:
+    # Crea direttamente la riga di storno di un pagamento, senza passare dal service: serve ai
+    # test che partono da un registro già corretto.
+    fields: dict[str, object] = {
+        "student": payment.student,
+        "package": payment.package,
+        "amount": payment.amount,
+        "date": datetime.date.today(),
+        "method": payment.method,
+        "status": Payment.Status.REVERSAL,
+        "reversal_of": payment,
+    }
+    return Payment.objects.create(**{**fields, **overrides})

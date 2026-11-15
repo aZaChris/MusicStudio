@@ -25,7 +25,7 @@ from apps.common.exceptions import DomainConflict
 from apps.packages.models import Package
 from apps.students.models import Student
 
-from . import gateway
+from . import gateway, selectors
 from .models import CheckoutSession, Payment, WebhookEvent
 
 
@@ -65,6 +65,8 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     Payment.Status.PENDING: frozenset({Payment.Status.PAID, Payment.Status.OVERDUE}),
     Payment.Status.OVERDUE: frozenset({Payment.Status.PAID}),
     Payment.Status.PAID: frozenset(),
+    # Lo storno non cambia mai stato (e update_payment lo rifiuta prima di arrivare qui).
+    Payment.Status.REVERSAL: frozenset(),
 }
 
 
@@ -90,6 +92,30 @@ def update_payment(payment: Payment, **changes: Any) -> Payment:
 logger = logging.getLogger(__name__)
 
 
+class PaymentFinal(DomainConflict):
+    """Un pagamento pagato (o uno storno) è definitivo: si corregge con uno storno."""
+
+    code = "payment_final"
+
+
+class NotPaid(DomainConflict):
+    """Lo storno e la ricevuta esistono solo per un pagamento pagato."""
+
+    code = "not_paid"
+
+
+class AlreadyReversed(DomainConflict):
+    """Un pagamento si storna al massimo una volta (anche con due richieste insieme)."""
+
+    code = "already_reversed"
+
+
+class IsReversal(DomainConflict):
+    """Una riga di storno non si storna né riceve una ricevuta."""
+
+    code = "is_reversal"
+
+
 class PackageAlreadyPaid(DomainConflict):
     """Il pacchetto è già pagato: l'API risponde 409."""
 
@@ -97,8 +123,8 @@ class PackageAlreadyPaid(DomainConflict):
 
 
 def package_is_paid(package: Package) -> bool:
-    """Vero se esiste almeno un pagamento "paid" per il pacchetto."""
-    return Payment.objects.filter(package=package, status=Payment.Status.PAID).exists()
+    """Vero se il pacchetto ha almeno un pagamento "paid" che non sia stato stornato."""
+    return selectors.effective_paid(Payment.objects.filter(package=package)).exists()
 
 
 def _cents(amount: Decimal) -> int:

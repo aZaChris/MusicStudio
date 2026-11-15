@@ -15,6 +15,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+from apps.common.fields import EncryptedTextField
 from apps.packages.models import Package
 from apps.students.models import Student
 
@@ -43,6 +44,9 @@ class Payment(models.Model):
         PAID = "paid", "Paid"
         PENDING = "pending", "Pending"
         OVERDUE = "overdue", "Overdue"
+        # Riga di storno (fase 8): annulla un pagamento pagato senza riscriverlo. Vedi
+        # `reversal_of` e specs/008-cash-register-receipts/data-model.md.
+        REVERSAL = "reversal", "Reversal"
 
     # Lo studente cancellato porta con sé i suoi pagamenti (CASCADE). La cancellazione GDPR
     # però è un'anonimizzazione, non un delete: vedi ADR-032 e apps/privacy.
@@ -65,6 +69,20 @@ class Payment(models.Model):
         blank=True,
         related_name="payment",
     )
+    # Solo sulla riga di storno: punta al pagamento originale. OneToOne = al massimo uno storno
+    # per pagamento, garantito dal database anche con due richieste insieme (FR-004, FR-009).
+    # CASCADE e non PROTECT: il job di conservazione cancella i pagamenti vecchi in blocco, e uno
+    # storno recente di un pagamento molto vecchio non deve bloccarlo.
+    reversal_of = models.OneToOneField(
+        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="reversal"
+    )
+    # Perché si è stornato: testo libero, quindi cifrato (constitution X). Al massimo 200 caratteri,
+    # controllati dal serializer.
+    reason = EncryptedTextField(blank=True)
+    # Chi ha creato la riga. Null per le righe vecchie e per il pagamento online (webhook).
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -76,6 +94,23 @@ class Payment(models.Model):
             models.Index(fields=["student", "-date"], name="payment_student_date_idx"),
             # Conteggio dei pagamenti in sospeso nella dashboard e filtro ?status=.
             models.Index(fields=["status"], name="payment_status_idx"),
+            # Filtri per periodo del registro di cassa.
+            models.Index(fields=["date"], name="payment_date_idx"),
+        ]
+        constraints = [
+            # Uno storno ha sempre il collegamento, e solo lo storno lo ha.
+            models.CheckConstraint(
+                condition=(
+                    models.Q(status="reversal", reversal_of__isnull=False)
+                    | (~models.Q(status="reversal") & models.Q(reversal_of__isnull=True))
+                ),
+                name="payment_reversal_link_matches_status",
+            ),
+            # Lo storno ripete l'importo dell'originale: il segno lo dà lo stato.
+            models.CheckConstraint(
+                condition=~models.Q(status="reversal") | models.Q(amount__gt=0),
+                name="payment_reversal_amount_positive",
+            ),
         ]
 
     def __str__(self) -> str:

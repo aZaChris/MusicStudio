@@ -58,7 +58,13 @@ class StudentSerializer(serializers.ModelSerializer[Student]):
         if hasattr(obj, "latest_payment_status"):
             status: str | None = obj.latest_payment_status
             return status
-        latest = obj.payments.order_by("-date", "-id").first()
+        # Come nel selector: gli storni e i pagamenti stornati non contano per lo stato.
+        latest = (
+            obj.payments.filter(reversal__isnull=True)
+            .exclude(status="reversal")
+            .order_by("-date", "-id")
+            .first()
+        )
         return latest.status if latest else None
 
 
