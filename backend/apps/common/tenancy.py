@@ -1,11 +1,11 @@
-"""Tenant context: who is asking, within which studio (ADR-010).
+"""Contesto del tenant: chi chiede, e in quale studio (ADR-010).
 
-The studio is the tenant. Each request resolves the user's context once — role, studio,
-teacher profile or parent profile — with a single query, and caches it on the underlying
-Django request so every serializer, selector and permission check in the same request
-reuses it.
+Lo studio è il tenant. A ogni richiesta il contesto dell'utente (ruolo, studio, profilo
+insegnante o genitore) si risolve una volta sola, con una query, e si tiene nella richiesta
+Django sottostante: ogni serializer, selector e controllo di permesso della stessa richiesta lo
+riusa. Spiegazione: docs/learning/concetti/multi-tenancy.md.
 
-A middleware cannot do this: JWT authentication runs inside DRF, after middleware.
+Un middleware non può farlo: l'autenticazione JWT gira dentro DRF, dopo i middleware.
 """
 
 from dataclasses import dataclass
@@ -18,6 +18,9 @@ from apps.accounts.models import User
 
 @dataclass(frozen=True)
 class TenantContext:
+    # Immutabile (frozen): una volta risolto non si cambia per sbaglio a metà richiesta.
+    # I quattro `is_*` richiedono anche l'id corrispondente: un utente con ruolo ma senza profilo
+    # (dati incoerenti) non ottiene nessun accesso.
     user_id: int | None
     role: str | None
     studio_id: int | None = None
@@ -42,16 +45,18 @@ class TenantContext:
         return self.role == User.Role.STUDENT and self.student_id is not None
 
 
+# Contesto di chi non è autenticato: nessun ruolo, quindi `scope` restituisce sempre vuoto.
 ANONYMOUS = TenantContext(user_id=None, role=None)
 
 _CACHE_ATTR = "_tenant_context"
 
 
 def resolve_tenant(user: Any) -> TenantContext:
-    """Build the context for `user` with at most one query."""
+    """Costruisce il contesto di `user` con al massimo una query."""
     if user is None or not getattr(user, "is_authenticated", False):
         return ANONYMOUS
 
+    # Import locali: evitano il giro circolare tra `common` e le app di dominio.
     from apps.students.models import ParentAccount, Student
     from apps.studios.models import Teacher
 
@@ -76,17 +81,19 @@ def resolve_tenant(user: Any) -> TenantContext:
 
 
 def get_tenant(request: Any) -> TenantContext:
-    """Context for this request, resolved on first use and then cached."""
+    """Contesto di questa richiesta, risolto al primo uso e poi in cache."""
     if request is None:
         return ANONYMOUS
     django_request = getattr(request, "_request", request)  # DRF Request wraps HttpRequest
     user = getattr(request, "user", None)
+    # La cache vale solo se l'utente è lo stesso: se è cambiato, il contesto si ricalcola.
     cached: TenantContext | None = getattr(django_request, _CACHE_ATTR, None)
     if cached is not None and cached.user_id == getattr(user, "pk", None):
         return cached
     context = resolve_tenant(user)
     setattr(django_request, _CACHE_ATTR, context)
-    # Error reports say which tenant and user hit the bug; no-op when Sentry is off.
+    # I report degli errori dicono quale tenant e utente hanno incontrato il bug; non fa nulla
+    # se Sentry è spento.
     sentry_sdk.set_tag("studio_id", context.studio_id)
     sentry_sdk.set_tag("user_id", context.user_id)
     return context

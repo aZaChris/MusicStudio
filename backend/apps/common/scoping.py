@@ -1,16 +1,18 @@
-"""Tenant scoping — the single choke point for Constitution Principle I.
+"""Ambito del tenant: l'unico punto di passaggio obbligato per il Principio I della constitution.
 
-The studio is the tenant (ADR-010). Every queryset that returns or accepts tenant data is
-filtered here from the request's `TenantContext`, for reads (view querysets) and for writes
-(related-field querysets, see `apps/common/serializers.py`):
+Lo studio è il tenant (ADR-010). Ogni queryset che restituisce o accetta dati di un tenant si
+filtra qui a partire dal `TenantContext` della richiesta, sia per le letture (queryset delle
+view) sia per le scritture (queryset dei campi relazionali, vedi `apps/common/serializers.py`):
 
-- studio owner: everything whose studio is the owner's studio;
-- teacher: everything attached to the teacher (a teacher belongs to exactly one studio);
-- parent: everything about their linked children (children may be in different studios);
-- student (adult, read-only): their own record and what hangs off it;
-- anyone else: nothing.
+- titolare: tutto ciò il cui studio è lo studio del titolare;
+- insegnante: tutto ciò che è collegato all'insegnante (appartiene a un solo studio);
+- genitore: tutto ciò che riguarda i figli collegati (possono essere in studi diversi);
+- studente (adulto, sola lettura): il proprio record e ciò che ne dipende;
+- chiunque altro: niente.
 
-Each model declares, once, how to reach studio / teacher / parent from it (`TenantPaths`).
+Ogni modello dichiara una volta sola come arrivare a studio / insegnante / genitore
+(`TenantPaths`). Spiegazione: docs/learning/concetti/multi-tenancy.md e
+docs/learning/concetti/isolamento-tenant-e-bola.md.
 """
 
 from dataclasses import dataclass
@@ -27,7 +29,7 @@ if TYPE_CHECKING:
 
 @dataclass(frozen=True)
 class TenantPaths:
-    """ORM lookup paths from a model to its studio, teacher, parent account and student."""
+    """Percorsi ORM da un modello al suo studio, insegnante, account genitore e studente."""
 
     studio: str
     teacher: str
@@ -38,14 +40,14 @@ class TenantPaths:
 STUDENT_PATHS = TenantPaths(
     studio="studio", teacher="teacher", parent="parent_accounts", student="id"
 )
-# A lesson belongs to the teacher who gives it (kept when the student is reassigned).
+# Una lezione appartiene all'insegnante che la tiene (resta tale se lo studente viene riassegnato).
 LESSON_PATHS = TenantPaths(
     studio="student__studio",
     teacher="teacher",
     parent="student__parent_accounts",
     student="student",
 )
-# Packages and payments follow the student's current teacher.
+# Pacchetti e pagamenti seguono l'insegnante attuale dello studente.
 STUDENT_CHILD_PATHS = TenantPaths(
     studio="student__studio",
     teacher="student__teacher",
@@ -55,12 +57,14 @@ STUDENT_CHILD_PATHS = TenantPaths(
 
 
 def scope[M: Model](qs: QuerySet[M], ctx: TenantContext, paths: TenantPaths) -> QuerySet[M]:
+    # Il ruolo decide il filtro. L'ordine non è casuale: un ruolo sconosciuto cade nell'ultimo
+    # ramo e non vede nulla (qs.none()), non tutto.
     if ctx.is_owner:
         return qs.filter(**{paths.studio: ctx.studio_id})
     if ctx.is_teacher:
         return qs.filter(**{paths.teacher: ctx.teacher_id})
     if ctx.is_parent:
-        # Only this path crosses a many-to-many, which can duplicate rows.
+        # Solo questo percorso attraversa un many-to-many, che può duplicare le righe.
         return qs.filter(**{paths.parent: ctx.parent_id}).distinct()
     if ctx.is_student:
         return qs.filter(**{paths.student: ctx.student_id})

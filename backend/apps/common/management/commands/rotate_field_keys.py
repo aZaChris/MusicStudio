@@ -1,8 +1,9 @@
-"""Re-encrypt every encrypted field with the first key of FIELD_ENCRYPTION_KEYS (ADR-030).
+"""Ricifra ogni campo cifrato con la prima chiave di FIELD_ENCRYPTION_KEYS (ADR-030).
 
-Rotation: put the new key first (keep the old one after it), deploy, run this command,
-then remove the old key and deploy again. Raw SQL in batches: no model save, so no
-`updated_at` bump and no signals. Safe to run twice.
+Rotazione: mettere la chiave nuova per prima (la vecchia dopo), fare il deploy, lanciare questo
+comando, poi togliere la chiave vecchia e rifare il deploy. SQL diretto a blocchi: nessun
+save() del modello, quindi niente aggiornamento di `updated_at` e niente segnali. Si può
+lanciare due volte. Spiegazione: docs/learning/concetti/cifratura-dei-campi.md.
 """
 
 from typing import Any

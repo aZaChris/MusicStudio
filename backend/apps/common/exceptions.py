@@ -1,9 +1,10 @@
-"""Domain exceptions and the DRF exception handler.
+"""Eccezioni di dominio e gestore delle eccezioni di DRF.
 
-Services raise `django.core.exceptions.ValidationError` so they stay independent of the
-HTTP layer (they are also called from Celery tasks, the admin and management commands).
-This handler turns those errors into the same 400 response DRF uses for serializer errors,
-and `DomainConflict` (a state conflict, e.g. an occupied time slot) into a 409.
+I service sollevano `django.core.exceptions.ValidationError`, così restano indipendenti dal
+livello HTTP (li chiamano anche i task Celery, l'admin e i comandi di gestione). Questo gestore
+trasforma quegli errori nella stessa risposta 400 che DRF usa per gli errori dei serializer, e
+`DomainConflict` (un conflitto di stato, ad esempio un orario occupato) in un 409.
+Spiegazione: docs/learning/concetti/service-layer-e-modular-monolith.md.
 """
 
 from typing import Any
@@ -16,7 +17,7 @@ from rest_framework.views import exception_handler as drf_exception_handler
 
 
 class DomainError(Exception):
-    """A domain-level refusal with an HTTP status and a machine-readable code."""
+    """Un rifiuto di dominio, con uno stato HTTP e un codice leggibile da una macchina."""
 
     status_code: int = status.HTTP_400_BAD_REQUEST
     code = "error"
@@ -27,22 +28,24 @@ class DomainError(Exception):
 
 
 class DomainConflict(DomainError):
-    """The request is valid but conflicts with the current state of the data (HTTP 409)."""
+    """La richiesta è valida ma in conflitto con lo stato attuale dei dati (HTTP 409)."""
 
     status_code = status.HTTP_409_CONFLICT
     code = "conflict"
 
 
 class ServiceUnavailable(DomainError):
-    """A dependency (e.g. the payment provider) is not configured or not reachable (503)."""
+    """Una dipendenza (es. il gateway di pagamento) non è configurata o non risponde (503)."""
 
     status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     code = "unavailable"
 
 
 def exception_handler(exc: Exception, context: dict[str, Any]) -> Response | None:
+    # Impostato in REST_FRAMEWORK['EXCEPTION_HANDLER']: tutte le view passano da qui.
     if isinstance(exc, DomainError):
         return Response({"detail": exc.detail, "code": exc.code}, status=exc.status_code)
+    # Un ValidationError di Django dei service diventa il 400 che DRF darebbe per un serializer.
     if isinstance(exc, DjangoValidationError):
         detail = exc.message_dict if hasattr(exc, "error_dict") else exc.messages
         exc = DRFValidationError(detail=detail)

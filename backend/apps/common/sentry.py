@@ -1,7 +1,11 @@
-"""Error tracking with Sentry, scrubbed of credentials and personal data (ADR-019).
+"""Tracciamento errori con Sentry, ripulito da credenziali e dati personali (ADR-019).
 
-Initialised only by `config.settings.prod` and only when SENTRY_DSN is set: without it the
-API works exactly the same and errors still reach the logs.
+Si inizializza solo da `config.settings.prod` e solo se SENTRY_DSN è impostato: senza, l'API
+funziona uguale e gli errori arrivano comunque nei log.
+Spiegazione: docs/learning/concetti/log-strutturati-e-sentry.md.
+
+FUTURO (metriche applicative, ADR-019): oggi Sentry raccoglie solo errori e tracce; contare
+eventi di dominio (lezioni create e completate) è rimandato.
 """
 
 import re
@@ -15,16 +19,18 @@ from .logging import request_id_var
 
 FILTERED = "[Filtered]"
 _SECRET_HEADERS = {"authorization", "cookie", "stripe-signature", "x-csrftoken"}
-# Bodies of these endpoints hold passwords, tokens or payment events: never sent.
+# I corpi di queste rotte contengono password, token o eventi di pagamento: non si inviano mai.
 _SENSITIVE_PATHS = ("/auth/", "/webhooks/")
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
 
 
 def _scrub_text(value: Any) -> Any:
+    # Sostituisce gli indirizzi email nei testi liberi (messaggi di errore, query string).
     return _EMAIL.sub(FILTERED, value) if isinstance(value, str) else value
 
 
 def before_send(event: dict[str, Any], hint: dict[str, Any]) -> dict[str, Any]:
+    # Ultimo filtro prima dell'invio a Sentry: header segreti, cookie, corpi sensibili, email.
     request = event.get("request") or {}
     headers = request.get("headers") or {}
     for name in list(headers):
@@ -40,7 +46,7 @@ def before_send(event: dict[str, Any], hint: dict[str, Any]) -> dict[str, Any]:
         exc["value"] = _scrub_text(exc.get("value"))
     if isinstance(event.get("logentry"), dict):
         event["logentry"]["message"] = _scrub_text(event["logentry"].get("message"))
-    event.pop("user", None)  # keep only the user_id tag set below
+    event.pop("user", None)  # resta solo il tag user_id impostato da get_tenant
 
     event.setdefault("tags", {})["request_id"] = request_id_var.get()
     return event
@@ -52,7 +58,7 @@ def init_sentry(dsn: str, environment: str, traces_sample_rate: float, release: 
         environment=environment,
         release=release,
         integrations=[DjangoIntegration(), CeleryIntegration()],
-        send_default_pii=False,  # no IPs, cookies or user emails
+        send_default_pii=False,  # niente IP, cookie o email degli utenti
         traces_sample_rate=traces_sample_rate,
         before_send=before_send,  # type: ignore[arg-type]
     )

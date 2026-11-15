@@ -1,4 +1,8 @@
-"""Serializer helpers shared by the domain apps."""
+"""Strumenti per i serializer condivisi dalle app di dominio.
+
+I docstring dei serializer finiscono in openapi.yaml (contratto in inglese): dove servono
+si usano commenti `#`.
+"""
 
 from collections.abc import Callable
 from typing import Any, ClassVar
@@ -22,6 +26,14 @@ class ScopedRelatedFieldsMixin(serializers.Serializer[Any]):
     object exists.
     """
 
+    # Il docstring sopra resta in inglese: i serializer che ereditano questo mixin lo copiano
+    # nella descrizione di openapi.yaml (contratto). In breve: DRF valida la chiave primaria
+    # contro il queryset del campo, e con `Model.objects.all()` qualsiasi id sarebbe accettato
+    # (falla di scrittura tra tenant, audit G1). Sostituendo il queryset a ogni richiesta un id
+    # estraneo diventa un normale 400, senza rivelare se esiste.
+    # Spiegazione: docs/learning/concetti/isolamento-tenant-e-bola.md.
+
+    # Nome del campo -> funzione che dà gli oggetti visibili. Per estendere: una voce in più.
     scoped_fields: ClassVar[dict[str, ScopeFn]] = {
         "student": students_visible_to,
         "package": packages_visible_to,
@@ -33,6 +45,7 @@ class ScopedRelatedFieldsMixin(serializers.Serializer[Any]):
         for name, scope in self.scoped_fields.items():
             field = fields.get(name)
             if isinstance(field, serializers.PrimaryKeyRelatedField) and not field.read_only:
-                # The DRF stubs type `queryset` as a manager descriptor; a QuerySet is valid.
+                # Gli stub di DRF tipizzano `queryset` come descrittore di manager: un QuerySet
+                # però è valido.
                 field.queryset = scope(ctx)  # type: ignore[arg-type]
         return fields

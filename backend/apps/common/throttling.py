@@ -1,11 +1,12 @@
-"""Rate limiting that survives a cache outage (ADR-017).
+"""Limiti di frequenza che sopravvivono a un guasto della cache (ADR-017).
 
-DRF throttles keep their counters in the cache (Redis). If Redis is down, the stock
-classes raise and *every* request becomes a 500: a cache problem takes the whole API down.
-These subclasses fail open — the request is allowed and the error is logged.
+I throttle di DRF tengono i contatori nella cache (Redis). Se Redis è giù, le classi standard
+sollevano un'eccezione e *ogni* richiesta diventa un 500: un problema di cache butta giù
+tutta l'API. Queste sottoclassi falliscono aperte: la richiesta passa e l'errore si registra.
 
-Trade-off, stated plainly: during a Redis outage there is no rate limiting, including on
-login. We prefer availability; the outage is visible in logs and in /health/ready/.
+Il compromesso, detto chiaro: durante un guasto di Redis non c'è limite di frequenza, nemmeno
+sul login. Preferiamo la disponibilità; il guasto si vede nei log e in /health/ready/.
+Spiegazione: docs/learning/concetti/caching.md (e CLAUDE.md, "Gotchas").
 """
 
 import logging
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 
 class FailOpenMixin:
+    # Va messo *prima* della classe DRF nell'ordine di ereditarietà, per intercettarne gli errori.
     def allow_request(self, request: Request, view: Any) -> bool:
         try:
             allowed: bool = super().allow_request(request, view)  # type: ignore[misc]

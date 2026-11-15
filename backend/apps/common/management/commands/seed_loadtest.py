@@ -1,11 +1,15 @@
-"""Realistic volume for load tests and restore drills (ADR-022).
+"""Volume realistico per i load test e le prove di ripristino (ADR-022).
 
-Default: 10 studios x 5 teachers x 30 students, one parent per student, one package and
-one payment per student, one weekly lesson per student for 40 weeks back and 12 ahead
-(~78,000 lessons). Bulk inserts, one password hash reused: seconds, not minutes.
+Predefinito: 10 studi x 5 insegnanti x 30 studenti, un genitore per studente, un pacchetto e un
+pagamento per studente, una lezione a settimana per studente per 40 settimane indietro e 12
+avanti (~78.000 lezioni). Inserimenti in blocco, un solo hash di password riusato: secondi,
+non minuti. Spiegazione: docs/learning/concetti/load-testing.md.
 
-Logins (password `loadtest-password`): owners `lt-owner-<s>@example.com`, teachers
-`lt-teacher-<s>-<t>@example.com`, parents `lt-parent-<n>@example.com`.
+Accessi (password `loadtest-password`): titolari `lt-owner-<s>@example.com`, insegnanti
+`lt-teacher-<s>-<t>@example.com`, genitori `lt-parent-<n>@example.com`.
+
+Rifiuta di girare con DEBUG=False senza un flag esplicito: crea migliaia di account con una
+password nota, e in produzione sarebbe una falla.
 """
 
 import datetime
@@ -59,7 +63,7 @@ class Command(BaseCommand):
     def _seed(self, o: dict[str, Any]) -> dict[str, int]:
         hashed = make_password(PASSWORD)
         today = timezone.localdate()
-        # Monday 00:00 of the current week, in the project timezone.
+        # Lunedì 00:00 della settimana corrente, nel fuso del progetto.
         monday = timezone.make_aware(
             datetime.datetime.combine(
                 today - datetime.timedelta(days=today.weekday()), datetime.time()
@@ -151,8 +155,9 @@ class Command(BaseCommand):
             ]
         )
 
-        # One weekly 45-minute slot per student: weekday i % 5, hour 9 + i // 5.
-        # Distinct per teacher, and each student has one teacher: no overlaps (ADR-009).
+        # Una lezione a settimana da 45 minuti per studente: giorno i % 5, ora 9 + i // 5.
+        # Distinta per insegnante, e ogni studente ha un solo insegnante: niente sovrapposizioni
+        # (ADR-009).
         now = timezone.now()
         lessons = []
         for i, (student, package) in enumerate(zip(students, packages, strict=True)):
