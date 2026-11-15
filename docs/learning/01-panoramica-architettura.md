@@ -12,7 +12,7 @@ Gli attori sono tre.
 
 - **L'insegnante** vede la sua settimana, segna le lezioni come fatte, registra i pagamenti.
 - **Il titolare dello studio** fa le stesse cose, ma per tutti gli insegnanti del suo studio.
-- **Il genitore** vede, in sola lettura, le lezioni, i pacchetti e i pagamenti dei suoi figli. Riceve un'email il giorno prima di ogni lezione.
+- **Il genitore** vede, in sola lettura, le lezioni, i pacchetti e i pagamenti dei suoi figli. Riceve un'email il giorno prima di ogni lezione. Dalla fase 8 vede anche come pagare (accanto ai pacchetti ancora da pagare) e scarica le ricevute dei suoi figli.
 
 Un'altra regola è garantita direttamente dal database: un insegnante non può avere due lezioni sovrapposte, e un allievo nemmeno. Lo impediscono due vincoli di esclusione di PostgreSQL, che funzionano anche con richieste simultanee.
 
@@ -43,7 +43,7 @@ Il codice è in `backend/`. La configurazione Django è in `backend/config/`, le
 - `students`: allievi e collegamenti con i genitori.
 - `packages`: i pacchetti di lezioni.
 - `lessons`: le lezioni e la dashboard dell'insegnante.
-- `payments`: i pagamenti, registrati a mano (contanti, bonifico) o online con Stripe Checkout, i webhook e la riconciliazione.
+- `payments`: i pagamenti, registrati a mano (contanti, bonifico) o online con Stripe Checkout, i webhook e la riconciliazione. Dalla fase 8 è anche il registro di cassa: un pagamento incassato è definitivo e si corregge con uno storno, ci sono i totali per periodo con esportazione CSV e PDF, le istruzioni di pagamento dello studio e le ricevute non fiscali numerate.
 - `notifications`: i promemoria via email, con una outbox che li rende affidabili.
 - `common`: codice trasversale. Lo scoping per tenant, i permessi, l'exception handler, le factory dei test.
 
@@ -72,6 +72,8 @@ Una richiesta tipica, per esempio "crea una lezione", passa così: la view ricev
 ## Come è protetto
 
 La regola più importante del progetto è l'isolamento tra tenant: un utente non deve mai leggere o scrivere i dati di un altro studio o di un'altra famiglia. Il tenant è lo **studio**: ogni insegnante e ogni allievo ne ha uno, e un insegnante solista ha uno studio personale. A ogni richiesta un contesto (ruolo, studio, profilo) viene calcolato una volta, e tutti i queryset passano da un unico modulo: `backend/apps/common/scoping.py`. Sopra la visibilità, un permesso per oggetto decide chi può modificare cosa. Ogni endpoint di scrittura ha un test che prova a violarla. Dalla fase 7 ci sono account veri: registrazione con conferma email, reset della password, inviti per insegnanti, genitori e studenti adulti, blocco dopo password sbagliate e verifica in due passaggi per titolari e insegnanti. Le note delle lezioni sono cifrate nel database, ogni azione delicata finisce in un registro che il titolare può leggere, e una famiglia può scaricare i suoi dati o cancellarli. Il resto della sicurezza (rate limiting, configurazione di produzione, OWASP) è in `docs/learning/concetti/sicurezza-api-owasp.md`.
+
+**PDF con reportlab (fase 8).** Le ricevute e il riepilogo del registro sono PDF semplici (un titolo, qualche riga, una tabella). reportlab li scrive in Python con il font Helvetica integrato, che copre le lettere accentate e l'euro, e non richiede librerie di sistema nell'immagine Docker. WeasyPrint avrebbe richiesto Pango e Cairo. Le ricevute si generano ogni volta dai dati attuali: non si salva il file, così una cancellazione dei dati personali non lascia nomi in giro (ADR-035).
 
 ## Come si osserva in produzione
 

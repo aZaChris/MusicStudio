@@ -45,6 +45,8 @@ La chiamano i **service**, nel punto in cui l'azione avviene. Non usiamo i segna
 
 **Una per ogni azione.** In `backend/apps/audit/tests/test_coverage.py` ogni valore dell'elenco `Action` deve avere un controllo, oppure comparire nell'elenco delle azioni controllate altrove. Se qualcuno aggiunge un'azione e dimentica il controllo, il test fallisce. Non può però accorgersi di un service delicato nuovo che non registra nulla: quello resta una responsabilità della revisione.
 
+**Aggiornamento della fase 8.** Le azioni registrate diventano cinque in più: `payment.reverse`, `payment.delete`, `register.export`, `instructions.change` e `receipt.issue`. Due regole di quella fase vengono dal principio "mai i valori": l'esportazione del registro scrive il periodo e il numero di righe, non il contenuto; le istruzioni di pagamento scrivono solo i **nomi** dei campi cambiati, mai l'IBAN. Il test di copertura ha costretto a dichiarare, per ognuna, il test che la verifica.
+
 ## Alternative considerate
 
 - **`django-auditlog` o `simple-history`**: registrano ogni cambio di campo e copiano dati personali altrove. Il contrario della minimizzazione.
