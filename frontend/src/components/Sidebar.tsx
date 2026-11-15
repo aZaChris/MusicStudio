@@ -6,11 +6,19 @@ import { fullName } from '../lib/names'
 import { LanguageToggle, ThemeToggle } from './Preferences'
 import { Avatar, Icon, Logo, type IconName } from './ui'
 
-type NavKey = 'nav.dashboard' | 'nav.students' | 'nav.payments' | 'nav.team' | 'nav.audit' | 'nav.account'
+type NavKey =
+  | 'nav.dashboard'
+  | 'nav.students'
+  | 'nav.payments'
+  | 'nav.instructions'
+  | 'nav.team'
+  | 'nav.audit'
+  | 'nav.account'
 const NAV_ITEMS: { to: string; icon: IconName; key: NavKey; ownerOnly?: boolean }[] = [
   { to: '/', icon: 'home', key: 'nav.dashboard' },
   { to: '/students', icon: 'students', key: 'nav.students' },
   { to: '/payments', icon: 'payments', key: 'nav.payments' },
+  { to: '/payment-instructions', icon: 'payments', key: 'nav.instructions' },
   { to: '/team', icon: 'students', key: 'nav.team', ownerOnly: true },
   { to: '/audit', icon: 'check', key: 'nav.audit', ownerOnly: true },
   { to: '/account', icon: 'check', key: 'nav.account' },

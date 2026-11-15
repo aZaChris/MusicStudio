@@ -38,6 +38,12 @@ class AuditEntry(models.Model):
         PRIVACY_EXPORT = "privacy.export"
         PRIVACY_ERASE = "privacy.erase"
         PAYMENT_RECORD = "payment.record"
+        # Fase 8 (registro di cassa, istruzioni di pagamento, ricevute).
+        PAYMENT_REVERSE = "payment.reverse"
+        PAYMENT_DELETE = "payment.delete"
+        REGISTER_EXPORT = "register.export"
+        INSTRUCTIONS_CHANGE = "instructions.change"
+        RECEIPT_ISSUE = "receipt.issue"
 
     class Outcome(models.TextChoices):
         # success = riuscita; failure = tentata e fallita; denied = negata dai permessi.

@@ -1,4 +1,8 @@
-"""Payment status is a small state machine (FR-012)."""
+"""Payment status is a small state machine (FR-012).
+
+Phase 8: `paid` is final, so every request to change a paid entry is a 409 (payment_final),
+including "changing" it to paid again. Pending and overdue follow the table below.
+"""
 
 import pytest
 
@@ -25,7 +29,10 @@ def test_status_transitions(current, target):
     )
 
     payment.refresh_from_db()
-    if current == target or (current, target) in ALLOWED:
+    if current == "paid":
+        assert res.status_code == 409 and res.data["code"] == "payment_final"
+        assert payment.status == "paid"
+    elif current == target or (current, target) in ALLOWED:
         assert res.status_code == 200
         assert payment.status == target
     else:
@@ -34,7 +41,7 @@ def test_status_transitions(current, target):
         assert payment.status == current
 
 
-def test_paid_payment_other_fields_stay_editable():
+def test_paid_payment_other_fields_are_final_since_phase_8():
     student = StudentFactory()
     payment = Payment.objects.create(
         student=student, amount="10", date="2026-01-01", method="cash", status="paid"
@@ -44,4 +51,6 @@ def test_paid_payment_other_fields_stay_editable():
         f"/api/v1/payments/{payment.id}/", {"method": "bank_transfer"}
     )
 
-    assert res.status_code == 200
+    assert res.status_code == 409 and res.data["code"] == "payment_final"
+    payment.refresh_from_db()
+    assert payment.method == "cash"

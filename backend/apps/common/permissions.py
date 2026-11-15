@@ -33,6 +33,20 @@ class IsTeacherOrStudioOwner(BasePermission):
         return getattr(user, "role", None) in (User.Role.TEACHER, User.Role.STUDIO_OWNER)
 
 
+class IsTeacherOrOwnerRole(BasePermission):
+    # Solo insegnanti e titolari, anche in lettura: genitori e studenti adulti no. A differenza di
+    # IsTeacherOrStudioOwner (che in lettura lascia passare chiunque sia autenticato) serve agli
+    # endpoint che i genitori non devono vedere affatto: inviti, registro di cassa, ricevute.
+    def has_permission(self, request: Request, view: Any) -> bool:
+        return getattr(request.user, "role", None) in (User.Role.TEACHER, User.Role.STUDIO_OWNER)
+
+
+class IsFamilyRole(BasePermission):
+    # Genitori e studenti adulti: le persone a cui si mostra come pagare (fase 8).
+    def has_permission(self, request: Request, view: Any) -> bool:
+        return getattr(request.user, "role", None) in (User.Role.PARENT, User.Role.STUDENT)
+
+
 class IsStudioOwner(BasePermission):
     # Solo il titolare dello studio (gestione dello studio, registro delle azioni).
     def has_permission(self, request: Request, view: Any) -> bool:

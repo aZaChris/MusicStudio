@@ -72,6 +72,26 @@ La fase 7 ha aggiunto account veri (registrazione, reset, inviti), quindi il gir
 
 **Ancora aperto.** Il refresh token del portale in cookie httpOnly. La prova della scansione dei segreti in locale: nel mio ambiente non ho potuto eseguire il binario di gitleaks, quindi la prima esecuzione la farà la CI.
 
+## Aggiornamento della fase 8: registro di cassa, istruzioni di pagamento, ricevute
+
+La fase 8 ha aggiunto una dozzina di endpoint su dati di denaro e un IBAN. Lo stato del giro.
+
+**API1 — BOLA. Coperto, con prove sulle rotte nuove.** Lo storno è nella suite IDOR e ha in più una prova contro bersagli già *pagati*: se un attaccante riuscisse a passare, creerebbe davvero uno storno, quindi il test lo vedrebbe. Le rotte senza id (riepilogo, esportazioni, istruzioni) prendono lo studio dal contesto di chi chiama, non da un parametro: non c'è nulla da forzare, e una prova con due studi lo conferma. Le ricevute hanno un loro percorso di visibilità (`RECEIPT_PATHS` in `scoping.py`): il genitore vede solo quelle del proprio figlio, anche se un fratello è nello stesso studio. La guardia `test_idor_coverage.py` ha costretto a dichiarare ogni rotta nuova.
+
+**API3 — Proprietà degli oggetti. Coperto.** `reversal_of`, `reason`, `recorded_by` e `receipt_number` sono in sola lettura, e un client non può creare uno storno scrivendo `status=reversal`. Genitori e studenti adulti non ricevono `reason` né `recorded_by`.
+
+**API4 — Risorse. Coperto, con un bug trovato.** Le esportazioni coprono al massimo 366 giorni e hanno un limite di frequenza dedicato (`register_export`). Scrivendo il test è emerso un difetto: nei settings di test il tasso non esisteva, e il throttle "fail open" (che per scelta lascia passare se qualcosa non va) lasciava passare le esportazioni senza limite e senza dire nulla. Ora il tasso è nei settings di test e un test controlla che esista anche in quelli di produzione.
+
+**API5 — Funzioni. Coperto.** Il registro, lo storno, le esportazioni e le ricevute sono per insegnanti e titolari: una nuova classe di permesso rifiuta genitori e studenti adulti anche in lettura (quella vecchia lasciava leggere chiunque fosse autenticato). Le istruzioni le modifica solo il titolare.
+
+**Iniezione. Coperto.** I testi scritti da persone nell'esportazione CSV (studente, motivo) che iniziano con `=`, `+`, `-` o `@` ricevono un apostrofo davanti: un foglio di calcolo non li esegue come formule.
+
+**SSRF. Non applicabile, per costruzione.** I link di pagamento si salvano e si mostrano, il server non li apre mai. Sono accettati solo `https`, e nel portale si aprono con `rel="noopener noreferrer"`.
+
+**Dati sensibili. Coperto.** Intestatario e IBAN sono cifrati nel database. Il corpo delle richieste a `/payment-instructions/` è tra i percorsi sensibili di Sentry. Il registro delle azioni riceve solo i nomi dei campi cambiati. Un test manda un IBAN in una richiesta rifiutata e in una che manda in errore il server, ed esegue i flussi nuovi catturando tutti i log: non trova né l'IBAN, né l'intestatario, né i nomi, né il motivo di uno storno.
+
+**Ancora aperto.** La regola "definitivo" sta nei service: un aggiornamento di massa sul database la aggirerebbe. Un test lo sorveglia, ma non è una garanzia del database. La frase "non è un documento fiscale" e i termini d'uso vanno fatti controllare da un professionista. Il titolare, gli insegnanti e i genitori vedono l'IBAN in chiaro, perché è lo scopo. La prova di carico è su un portatile, non su un server.
+
 ## Alternative considerate
 
 **django-axes** per il login: blocca l'account dopo N errori. Ma chiunque conosca un'email potrebbe bloccare quell'account. Il limite per client non ha questo effetto.

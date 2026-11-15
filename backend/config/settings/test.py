@@ -33,6 +33,7 @@ REST_FRAMEWORK = {
         "mfa": "5/min",
         "privacy": "50/min",
         "invitation_accept": "5/min",
+        "register_export": "5/min",
     },
 }
 

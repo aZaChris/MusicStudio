@@ -278,6 +278,26 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Punto debole.** Il rischio opposto: dimenticare di aprirlo in produzione e restare invisibili. L'ho accettato di proposito, e la guida di deploy lo elenca. Inoltre aprire l'indicizzazione non basta a farsi trovare: un nome generico e un sito nuovo su un sottodominio non compaiono in cima a una ricerca.
 
+## Registro di cassa e ricevute
+
+### 44. Come fai a correggere un pagamento sbagliato senza falsare la contabilità?
+
+**Risposta modello.** Un pagamento incassato non si modifica e non si cancella. Si crea uno storno: una riga nuova, collegata all'originale da una relazione uno-a-uno, con la data di oggi, chi l'ha fatto e perché. L'originale non viene mai riscritto, quindi i totali di un mese chiuso non cambiano: l'incassato di novembre conta l'originale, lo stornato di dicembre conta lo storno. L'unicità del collegamento garantisce nel database che lo storno avvenga una volta sola. Con due richieste insieme ne passa una e l'altra riceve un 409. L'ho provato con thread veri.
+
+**Punto debole.** La regola "definitivo" sta nei service: un aggiornamento di massa sul database la aggirerebbe. Ho scelto di non aggiungere un trigger e di mettere un test che fallisce se un posto nuovo scrive in blocco sui pagamenti. Resta una scelta di compromesso, non una garanzia assoluta.
+
+### 45. Come assegni numeri di ricevuta unici e senza buchi?
+
+**Risposta modello.** Blocco la riga dello studio con `select_for_update`, leggo il numero massimo dell'anno locale, aggiungo uno e inserisco. Chi arriva dopo aspetta il lock, quindi i numeri sono distinti, e se la transazione annulla il numero non è consumato. Uso il massimo e non il conteggio, e un vincolo di unicità su studio, anno e sequenza sta dietro al lock. Ho provato venti emissioni contemporanee con venti thread: numeri dall'1 al 20, nessuno saltato né ripetuto. L'anno è quello italiano: alle 23:30 UTC del 31 dicembre è già il nuovo anno.
+
+**Punto debole.** Il lock serializza le emissioni di uno stesso studio. Va bene per qualche migliaio di ricevute l'anno, non per volumi molto più alti. E la frase "non è un documento fiscale" non l'ha ancora validata un professionista.
+
+### 46. Come eviti che un nome in un CSV venga eseguito come formula, e dove salvi l'IBAN?
+
+**Risposta modello.** Nell'esportazione un testo scritto da una persona che inizia con `=`, `+`, `-` o `@` riceve un apostrofo davanti, e il foglio di calcolo lo mostra come testo. Gli importi si scrivono come numeri e non si toccano. L'IBAN e l'intestatario sono in un campo cifrato a livello di applicazione, non compaiono nei log, nei report di errore di Sentry né nel registro delle azioni, che riceve solo i nomi dei campi cambiati. Un test manda un IBAN in una richiesta rifiutata e in una che manda in errore il server, e non lo trova da nessuna parte.
+
+**Punto debole.** Chi ha accesso al database e alla chiave di cifratura può leggere l'IBAN: è dato che il titolare, gli insegnanti e i genitori devono poter vedere. La cifratura protegge da una copia del database, non da un amministratore.
+
 ## Domanda finale tipica
 
 ### 19. Cosa faresti diversamente o cosa miglioreresti per primo?

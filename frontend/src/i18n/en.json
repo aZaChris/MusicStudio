@@ -7,7 +7,8 @@
     "team": "Team",
     "audit": "Activity log",
     "account": "Account",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "instructions": "How to pay"
   },
   "dashboard": {
     "greeting": "Hi, {{name}}",
@@ -82,7 +83,9 @@
     "statusName": {
       "paid": "Paid",
       "pending": "Pending",
-      "overdue": "Overdue"
+      "overdue": "Overdue",
+      "reversed": "Reversed",
+      "reversal": "Reversal"
     },
     "toCollect_one": "{{count}} to collect",
     "toCollect_other": "{{count}} to collect",
@@ -90,6 +93,22 @@
       "all": "All",
       "pending": "To collect",
       "paid": "Paid"
+    },
+    "reverse": {
+      "action": "Reverse",
+      "title": "Reverse this payment",
+      "subtitle": "{{student}} · {{amount}} · {{date}}",
+      "reason": "Reason (shown in the register)",
+      "hint": "The original entry stays in the register, marked as reversed. Then record the payment again if needed.",
+      "cardNotice": "This was an online card payment. No money is returned: the register is corrected, nothing is refunded.",
+      "confirm": "Reverse payment",
+      "done": "Payment reversed.",
+      "of": "Reversal of payment #{{id}}",
+      "reasonLabel": "Reason: {{reason}}"
+    },
+    "receipt": {
+      "action": "Receipt",
+      "download": "Receipt {{number}}"
     }
   },
   "parent": {
@@ -106,7 +125,15 @@
     "noNextLesson": "No lesson scheduled",
     "remaining_one": "{{count}} lesson left in the package",
     "remaining_other": "{{count}} lessons left in the package",
-    "paymentsHint": "To pay or correct an amount, write to the studio."
+    "paymentsHint": "To pay or correct an amount, write to the studio.",
+    "howToPay": "How to pay",
+    "payOutside": "You pay outside MusicStudio. The teacher marks the payment as received; MusicStudio does not check any bank.",
+    "payIban": "IBAN",
+    "payHolder": "Account holder",
+    "payBank": "Bank",
+    "receipts": "Receipts",
+    "receiptDownload": "Download",
+    "receiptCancelled": "cancelled"
   },
   "auth": {
     "login": "Log in",
@@ -155,7 +182,14 @@
     "server": "The server had a problem. Try again later.",
     "rejected": "The server rejected the request.",
     "rejectedWithReason": "The server rejected the request: {{reason}}",
-    "unexpected": "Something went wrong."
+    "unexpected": "Something went wrong.",
+    "codes": {
+      "payment_final": "This entry is final. Reverse it instead of changing it.",
+      "not_paid": "Only a paid entry can be reversed or have a receipt.",
+      "already_reversed": "This entry was already reversed.",
+      "is_reversal": "A reversal cannot be reversed.",
+      "period_too_long": "The period is too long: choose at most one year."
+    }
   },
   "student": {
     "lessons": "Lessons",
@@ -184,7 +218,7 @@
     "expiresOn": "expires on {{date}}"
   },
   "register": {
-    "title": "Create your studio account",
+    "title": "Cash register",
     "hint": "For studio owners. Teachers and parents join by invitation.",
     "firstName": "First name",
     "lastName": "Last name",
@@ -194,7 +228,24 @@
     "submit": "Create account",
     "haveAccount": "I already have an account",
     "checkEmailTitle": "Check your email",
-    "checkEmail": "If the address can be used, we sent a link to confirm it. It is valid for 48 hours."
+    "checkEmail": "If the address can be used, we sent a link to confirm it. It is valid for 48 hours.",
+    "mode": {
+      "day": "Day",
+      "month": "Month",
+      "range": "Custom period"
+    },
+    "from": "From",
+    "to": "To",
+    "received": "Received",
+    "reversed": "Reversed",
+    "net": "Net",
+    "totals": "Totals for the period",
+    "invalidPeriod": "The start of the period is after its end.",
+    "tooLong": "Exports cover at most one year. Choose a shorter period to export.",
+    "export": {
+      "csv": "Export CSV",
+      "pdf": "Export PDF"
+    }
   },
   "confirm": {
     "title": "Confirm your email",
@@ -399,5 +450,22 @@
     "installHint": "Android will ask you to allow installing from this source: that is normal, because the app is not on the Play Store yet.",
     "comingSoon": "The Android version is coming soon.",
     "iphone": "The iPhone version is not available yet."
+  },
+  "instructions": {
+    "title": "How to pay",
+    "intro": "Parents see these details beside their children's open packages. They pay outside MusicStudio and you mark the payment as received: MusicStudio never moves or checks money.",
+    "readOnly": "Only the studio owner can change these details.",
+    "holder": "Account holder",
+    "iban": "IBAN",
+    "bank": "Bank (optional)",
+    "note": "Note for parents (optional)",
+    "noteHint": "For example what to write as the transfer reason.",
+    "links": "Payment links (up to 5, https only)",
+    "linkLabel": "Label",
+    "linkUrl": "Address",
+    "addLink": "Add a link",
+    "removeLink": "Remove",
+    "save": "Save",
+    "saved": "Saved."
   }
 }

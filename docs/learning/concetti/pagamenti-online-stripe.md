@@ -58,6 +58,12 @@ session = _client().v1.checkout.sessions.create(
 
 **Cosa non ho potuto provare.** Durante lo sviluppo non c'era un account Stripe. Le chiamate a Stripe nei test sono sostituite da un finto, mentre le firme dei webhook sono vere. La prova completa con una sandbox (carta `4242 4242 4242 4242`, `stripe listen` per i webhook) è descritta in `specs/004-celery-payments/quickstart.md`. Andrà fatta prima di considerare la funzione pronta.
 
+## Aggiornamento della fase 8: il registro
+
+Dalla fase 8 i pagamenti online seguono le regole del registro di cassa (`registro-di-cassa.md`, ADR-034). Il pagamento con carta creato dal webhook è un pagamento "pagato" come gli altri: è definitivo, non si modifica e non si cancella. Se l'insegnante lo storna, il registro viene corretto ma **non viene restituito nessun denaro**: la risposta dice `refund: false` e la schermata lo spiega. Un rimborso su Stripe resta fuori dal perimetro (rimborsi e contestazioni non sono gestiti).
+
+Cambia anche la definizione di "pacchetto già pagato", usata dal checkout: ora vuol dire che esiste un pagamento pagato **non stornato**. Se il pagamento è stato stornato, il pacchetto si può pagare di nuovo e `start_checkout` non risponde più 409. Un test lo verifica: dopo lo storno la richiesta di checkout torna 200.
+
 ## Alternative considerate
 
 **PaymentIntents con Payment Element.** Permette una pagina di pagamento personalizzata dentro la nostra app. Serve un'interfaccia che i client oggi non hanno.

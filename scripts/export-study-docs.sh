@@ -46,6 +46,7 @@ PHASES=(
   "Fase 4 - Produzione|revoca-token-jwt ip-reale-dietro-proxy log-strutturati-e-sentry backup-off-site-e-restore-drill load-testing|18|22"
   "Web 1 - Portale web|sicurezza-di-una-spa deploy-di-una-spa-con-nginx|23|26"
   "Fase 7 - Sicurezza privacy e account|account-e-token-monouso mfa-totp cifratura-dei-campi gdpr-per-sviluppatori audit-log|27|32"
+  "Fase 8 - Cassa e ricevute|registro-di-cassa ricevute-non-fiscali|34|36"
 )
 
 # Knowledge-base cases (real problems solved): cross-phase, refreshed every run

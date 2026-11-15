@@ -2,7 +2,7 @@
 
 Questa cartella è materiale di studio, in italiano. Ogni file si capisce da solo e si può caricare singolarmente in NotebookLM. Il codice, i commenti e i commit sono in inglese.
 
-Stato: **fine della fase 4** (produzione) e del **Web 1** (portale web), 10 novembre 2026.
+Stato: **fine della fase 8** (registro di cassa, istruzioni di pagamento e ricevute), 15 novembre 2026. Prima: fasi 1–4, Web 1 e fase 7.
 
 ## Ordine di lettura consigliato
 
@@ -35,10 +35,12 @@ Stato: **fine della fase 4** (produzione) e del **Web 1** (portale web), 10 nove
 27. `concetti/deploy-di-una-spa-con-nginx.md` — fallback, cache, intestazioni, niente porte esposte (Web 1).
 28. `verifica-web-end-to-end.md` — il portale contro il backend vero.
 29. `concetti/sicurezza-api-owasp.md` — la checklist OWASP, aggiornata a ogni fase.
-30. Gli ADR, in ordine di numero.
-31. `../operations/runbook.md` — deploy, rollback, segreti, ripristino.
-32. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
-33. `glossario.md` — da consultare quando serve.
+30. `concetti/registro-di-cassa.md` — storno al posto della modifica, totali per periodo, esportazione senza formule (fase 8).
+31. `concetti/ricevute-non-fiscali.md` — numeri senza buchi con un lock, PDF generato al volo (fase 8).
+32. Gli ADR, in ordine di numero.
+33. `../operations/runbook.md` — deploy, rollback, segreti, ripristino.
+34. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
+35. `glossario.md` — da consultare quando serve.
 
 Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA, quello sull'ExclusionConstraint e le domande da colloquio.
 
@@ -84,6 +86,9 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-031-audit-log-dai-service.md` — registro append-only scritto dai service.
 - `adr/ADR-032-cancellazione-come-anonimizzazione.md` — anonimizzare sul posto e tempi di conservazione.
 - `adr/ADR-033-branch-di-produzione-licenza-e-release.md` — `main` protetto con PR e CI obbligatoria, licenza MIT, una release per fase.
+- `adr/ADR-034-registro-per-storno.md` — un pagamento incassato è definitivo e si corregge con uno storno collegato, mai riscrivendo l'originale.
+- `adr/ADR-035-ricevute-non-fiscali-e-numerazione.md` — ricevute numerate senza buchi con un lock sulla riga dello studio, PDF generato al volo.
+- `adr/ADR-036-istruzioni-di-pagamento.md` — come lo studio vuole essere pagato, IBAN cifrato, nessuna verifica bancaria.
 
 ### Concetti (fase 1)
 
@@ -137,6 +142,11 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/gdpr-per-sviluppatori.md` — consenso, esportazione, cancellazione per anonimizzazione, conservazione.
 - `concetti/audit-log.md` — chi ha fatto cosa, voci che non si riscrivono.
 
+### Concetti (fase 8)
+
+- `concetti/registro-di-cassa.md` — storno, totali per periodo in una query, date locali, esportazione CSV senza formule.
+- `concetti/ricevute-non-fiscali.md` — numerazione senza buchi, anno locale, PDF al volo, cosa non è una ricevuta.
+
 ### Bozze legali (da validare)
 
 - `../privacy/registro-trattamenti.md`, `../privacy/informativa-famiglie.md`, `../privacy/informativa-insegnanti.md`.
@@ -151,7 +161,7 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 ### Ripasso
 
 - `glossario.md` — ogni termine tecnico in italiano semplice.
-- `colloquio/domande-e-risposte.md` — 43 domande con risposta modello e punto debole.
+- `colloquio/domande-e-risposte.md` — 46 domande con risposta modello e punto debole.
 
 ## Formato dei documenti di concetto
 
@@ -225,3 +235,15 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **CI:** il passo `check --deploy` mancava delle variabili nuove; corretto. Nuovo job con gitleaks sulla cronologia.
 - **Qualità:** 740 test del backend, copertura circa 96%, ruff, mypy, migrazioni e contratto OpenAPI verdi.
 - **Aperto:** il passo finale della fase (giro del quickstart, script per NotebookLM); la scansione gitleaks mai eseguita in locale; le bozze legali da far validare (T057); la prova delle email con un fornitore SMTP vero (T058, fatta su staging il 13 novembre 2026: conferma, reset e inviti arrivano); l'app mobile (nota in `specs/007-security-privacy-accounts/mobile-followup.md`).
+
+## Riepilogo della fase 8 (registro di cassa, istruzioni di pagamento, ricevute)
+
+- **Registro che non si riscrive:** un pagamento incassato è definitivo (409 `payment_final` su modifica e cancellazione) e si corregge con uno storno, una riga nuova collegata uno-a-uno all'originale, con chi, quando e perché. L'originale non si tocca mai, quindi un mese chiuso non cambia. Il database garantisce "una volta sola": due storni contemporanei, con 2 e con 6 thread veri, ne creano uno.
+- **Totali ed esportazione:** incassato, stornato e netto per periodo, in totale e per metodo, con una sola query. Esportazione in CSV (punto e virgola, UTF-8 con BOM, testi neutralizzati contro le formule) e in PDF, al massimo un anno, con limite di frequenza e voce nel registro delle azioni.
+- **Come pagare:** il titolare salva intestatario, IBAN (cifrato, con controllo del checksum), nota e fino a cinque link `https`. I genitori le vedono accanto al pacchetto del figlio che deve pagare e a nessun fratello che non deve nulla. Nessuna banca viene interrogata.
+- **Ricevute non fiscali:** un PDF per pagamento incassato, con numero `AAAA-NNNN` unico per studio e anno. Venti emissioni contemporanee con venti thread danno venti numeri distinti, dall'1 al 20, senza buchi. Il PDF si genera al volo, quindi una cancellazione GDPR non lascia nomi; se il pagamento è stornato la ricevuta tiene il numero e porta il segno "annullata".
+- **Bug trovati lungo la strada:** (1) il throttle delle esportazioni non aveva un tasso nei settings di test, e il throttle "fail open" lasciava passare tutto senza dire nulla; (2) "da incassare" contato come "non pagato" avrebbe incluso gli storni, nel portale web e nella app mobile; (3) i test della domenica sera fallivano per un orario delle factory, risolto prima di iniziare.
+- **Misure vere** (portatile, PostgreSQL 18, senza rete): riepilogo di un mese con 2.000 voci 22 ms; CSV di un anno con 5.000 righe 629 ms; venti ricevute una dopo l'altra 809 ms. Non dicono nulla su un server sotto carico.
+- **Qualità:** 999 test del backend (da 750), copertura 96,1%; 122 test del portale; ruff, mypy, migrazioni e contratto OpenAPI verdi. Il percorso completo del quickstart è stato eseguito via HTTP su un database usa-e-getta: 35 controlli su 35. Non c'era un browser, quindi l'interfaccia del portale è provata con i test e non a occhio.
+- **Aperto (serve il proprietario):** far controllare da un professionista la frase "non è un documento fiscale" e i termini d'uso; la regola "definitivo" sta nei service e un aggiornamento di massa la aggirerebbe (un test sorveglia); l'app mobile va controllata (conta gli storni come da incassare); il PDF e il CSV non sono stati provati con un Excel italiano vero; prova di carico su un server vero.
+

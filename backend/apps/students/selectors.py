@@ -30,7 +30,10 @@ def latest_payment_status_subquery() -> Subquery:
     # Sottoquery correlata: lo stato dell'ultimo pagamento entra come colonna della stessa query
     # degli studenti, senza una query per riga.
     return Subquery(
-        Payment.objects.filter(student=OuterRef("pk")).order_by("-date", "-id").values("status")[:1]
+        Payment.objects.filter(student=OuterRef("pk"), reversal__isnull=True)
+        .exclude(status=Payment.Status.REVERSAL)
+        .order_by("-date", "-id")
+        .values("status")[:1]
     )
 
 

@@ -174,6 +174,8 @@ REST_FRAMEWORK = {
         # Export, erasure and consent withdrawal: password checks and heavy reads.
         "privacy": env("THROTTLE_PRIVACY", default="10/hour"),
         "invitation_accept": env("THROTTLE_INVITATION_ACCEPT", default="10/hour"),
+        # Esportazioni del registro di cassa e PDF delle ricevute: letture pesanti (fase 8).
+        "register_export": env("THROTTLE_REGISTER_EXPORT", default="20/hour"),
     },
 }
 
@@ -193,6 +195,13 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "REST API for the MusicStudio teacher/parent platform.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    # Fase 8: lo stato del pagamento (con "reversal") e altri `status` avevano un nome ambiguo.
+    "ENUM_NAME_OVERRIDES": {
+        "PaymentStatusEnum": "apps.payments.models.Payment.Status",
+        # Utente e ricevuta hanno la stessa coppia it/en: si tiene il nome che il contratto aveva
+        # già (PreferredLanguageEnum), così i tipi generati dai client non cambiano.
+        "PreferredLanguageEnum": "apps.accounts.models.User.Language",
+    },
     # Separate request/response components: read-only fields are not required in requests.
     "COMPONENT_SPLIT_REQUEST": True,
     "TAGS": [

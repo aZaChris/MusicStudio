@@ -14,19 +14,22 @@ import datetime
 import logging
 from decimal import Decimal
 from typing import Any
+from urllib.parse import urlsplit
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
+from django.db.models import Max
 from django.utils import timezone
 
 from apps.audit import services as audit
 from apps.common.exceptions import DomainConflict
 from apps.packages.models import Package
 from apps.students.models import Student
+from apps.studios.models import Studio
 
-from . import gateway
-from .models import CheckoutSession, Payment, WebhookEvent
+from . import gateway, iban, selectors
+from .models import CheckoutSession, Payment, PaymentInstructions, Receipt, WebhookEvent
 
 
 def ensure_package_matches_student(student: Student, package: Package | None) -> None:
@@ -35,6 +38,11 @@ def ensure_package_matches_student(student: Student, package: Package | None) ->
         raise ValidationError(
             {"package": "Package must belong to the same student as the payment."}
         )
+
+
+def _author(actor: Any) -> Any:
+    # Chi ha creato la riga: l'utente se c'è davvero, altrimenti nessuno (webhook, sistema).
+    return actor if getattr(actor, "pk", None) else None
 
 
 def _record_audit(payment: Payment, actor: Any) -> None:
@@ -54,7 +62,9 @@ def create_payment(
 ) -> Payment:
     """Registra un pagamento a mano. `actor` è l'utente collegato (None se è il sistema)."""
     ensure_package_matches_student(student, package)
-    payment = Payment.objects.create(student=student, package=package, **fields)
+    payment = Payment.objects.create(
+        student=student, package=package, recorded_by=_author(actor), **fields
+    )
     _record_audit(payment, actor)
     return payment
 
@@ -65,6 +75,8 @@ ALLOWED_TRANSITIONS: dict[str, frozenset[str]] = {
     Payment.Status.PENDING: frozenset({Payment.Status.PAID, Payment.Status.OVERDUE}),
     Payment.Status.OVERDUE: frozenset({Payment.Status.PAID}),
     Payment.Status.PAID: frozenset(),
+    # Lo storno non cambia mai stato (e update_payment lo rifiuta prima di arrivare qui).
+    Payment.Status.REVERSAL: frozenset(),
 }
 
 
@@ -74,8 +86,19 @@ def ensure_transition_allowed(current: str, target: str) -> None:
         raise ValidationError({"status": f"Cannot change status from {current} to {target}."})
 
 
+def ensure_not_final(payment: Payment) -> None:
+    """Un pagamento pagato o uno storno è definitivo (fase 8, FR-001): niente modifica, niente
+    cancellazione. Si corregge con `reverse_payment`. Pending e overdue restano modificabili."""
+    if payment.status in (Payment.Status.PAID, Payment.Status.REVERSAL):
+        raise PaymentFinal("This entry is final: reverse it instead of changing it.")
+
+
 def update_payment(payment: Payment, **changes: Any) -> Payment:
-    """Modifica un pagamento controllando transizione di stato e coerenza del pacchetto."""
+    """Modifica un pagamento controllando transizione di stato e coerenza del pacchetto.
+
+    Solo pending e overdue: un pagamento pagato non si tocca più (`ensure_not_final`).
+    """
+    ensure_not_final(payment)
     if "status" in changes:
         ensure_transition_allowed(payment.status, changes["status"])
     for field, value in changes.items():
@@ -85,9 +108,100 @@ def update_payment(payment: Payment, **changes: Any) -> Payment:
     return payment
 
 
+def delete_payment(payment: Payment, *, actor: Any) -> None:
+    """Cancella un pagamento in attesa o scaduto (non ancora incassato). Lascia una traccia.
+
+    La voce di audit si scrive prima della cancellazione, con importo e metodo: dopo non ci
+    sarebbe più nulla da descrivere. Un pagamento pagato non si cancella mai.
+    """
+    ensure_not_final(payment)
+    audit.record(
+        audit.Action.PAYMENT_DELETE,
+        actor=actor,
+        target=payment,
+        studio_id=payment.student.studio_id,
+        metadata={
+            "method": payment.method,
+            "amount": str(payment.amount),
+            "status": payment.status,
+        },
+    )
+    payment.delete()
+
+
+def reverse_payment(payment: Payment, *, reason: str, actor: Any) -> Payment:
+    """Storna un pagamento pagato: crea una riga di storno collegata, l'originale non si tocca.
+
+    L'originale resta "paid" e visibile; lo storno porta chi, quando e perché ed è datato a
+    oggi (mai a ritroso), così un mese già consegnato al commercialista non cambia. Una sola
+    volta per pagamento: lo garantisce il vincolo di unicità sul collegamento, e il lock sulla
+    riga dell'originale fa perdere con un 409 pulito chi arriva secondo. Non restituisce denaro:
+    corregge il registro (FR-007). Spiegazione: docs/learning/concetti/registro-di-cassa.md.
+    """
+    reason = reason.strip()
+    if not reason or len(reason) > 200:
+        raise ValidationError({"reason": "A reason of 1 to 200 characters is required."})
+    with transaction.atomic():
+        original = Payment.objects.select_for_update().select_related("student").get(pk=payment.pk)
+        if original.status == Payment.Status.REVERSAL:
+            raise IsReversal("A reversal cannot be reversed.")
+        if original.status != Payment.Status.PAID:
+            raise NotPaid("Only a paid entry can be reversed.")
+        if Payment.objects.filter(reversal_of=original).exists():
+            raise AlreadyReversed("This entry was already reversed.")
+        try:
+            with transaction.atomic():
+                reversal = Payment.objects.create(
+                    student=original.student,
+                    package=original.package,
+                    amount=original.amount,
+                    date=timezone.localdate(),
+                    method=original.method,
+                    status=Payment.Status.REVERSAL,
+                    reversal_of=original,
+                    reason=reason,
+                    recorded_by=_author(actor),
+                )
+        except IntegrityError as exc:
+            # Un'altra richiesta ha stornato lo stesso pagamento tra il controllo e l'insert.
+            raise AlreadyReversed("This entry was already reversed.") from exc
+        audit.record(
+            audit.Action.PAYMENT_REVERSE,
+            actor=actor,
+            target=reversal,
+            studio_id=original.student.studio_id,
+            metadata={"method": original.method, "amount": str(original.amount)},
+        )
+    return reversal
+
+
 # --- Pagamenti online (fase 3, ADR-013/014) ----------------------------------------------
 
 logger = logging.getLogger(__name__)
+
+
+class PaymentFinal(DomainConflict):
+    """Un pagamento pagato (o uno storno) è definitivo: si corregge con uno storno."""
+
+    code = "payment_final"
+
+
+class NotPaid(DomainConflict):
+    """Lo storno e la ricevuta esistono solo per un pagamento pagato."""
+
+    code = "not_paid"
+
+
+class AlreadyReversed(DomainConflict):
+    """Un pagamento si storna al massimo una volta (anche con due richieste insieme)."""
+
+    code = "already_reversed"
+
+
+class IsReversal(DomainConflict):
+    """Una riga di storno non si storna né riceve una ricevuta."""
+
+    code = "is_reversal"
 
 
 class PackageAlreadyPaid(DomainConflict):
@@ -97,8 +211,8 @@ class PackageAlreadyPaid(DomainConflict):
 
 
 def package_is_paid(package: Package) -> bool:
-    """Vero se esiste almeno un pagamento "paid" per il pacchetto."""
-    return Payment.objects.filter(package=package, status=Payment.Status.PAID).exists()
+    """Vero se il pacchetto ha almeno un pagamento "paid" che non sia stato stornato."""
+    return selectors.effective_paid(Payment.objects.filter(package=package)).exists()
 
 
 def _cents(amount: Decimal) -> int:
@@ -278,3 +392,131 @@ def reconcile_open_checkouts(limit: int = 100) -> int:
             apply_session_state(checkout, session)
             resolved += checkout.status != CheckoutSession.Status.OPEN
     return resolved
+
+
+# --- Istruzioni di pagamento dello studio (fase 8, ADR-036) -------------------------------
+
+MAX_LINKS = 5
+INSTRUCTION_FIELDS = ("account_holder", "iban", "bank_name", "note", "links")
+
+
+def _clean_links(raw: Any) -> list[dict[str, str]]:
+    """Fino a 5 link di pagamento esterni: etichetta di 1-40 caratteri e indirizzo `https`."""
+    links = list(raw or [])
+    if len(links) > MAX_LINKS:
+        raise ValidationError({"links": f"At most {MAX_LINKS} payment links are allowed."})
+    cleaned = []
+    for item in links:
+        label = str(item.get("label", "")).strip()
+        url = str(item.get("url", "")).strip()
+        parts = urlsplit(url)
+        if not 1 <= len(label) <= 40:
+            raise ValidationError({"links": "Each link needs a label of 1 to 40 characters."})
+        # Solo https: un link `http`, `javascript:` o `data:` non deve mai arrivare a un genitore.
+        if parts.scheme != "https" or not parts.netloc or len(url) > 500 or " " in url:
+            raise ValidationError({"links": "Each link must be a secure https address."})
+        cleaned.append({"label": label, "url": url})
+    return cleaned
+
+
+def _clean_instructions(data: dict[str, Any]) -> dict[str, Any]:
+    holder = str(data.get("account_holder", "")).strip()
+    raw_iban = str(data.get("iban", "")).strip()
+    cleaned_iban = iban.normalise(raw_iban)
+    if cleaned_iban and not iban.is_valid(cleaned_iban):
+        raise ValidationError({"iban": "This IBAN is not valid. Check it and try again."})
+    if cleaned_iban and not holder:
+        raise ValidationError({"account_holder": "The account holder is required with an IBAN."})
+    return {
+        "account_holder": holder,
+        "iban": cleaned_iban,
+        "bank_name": str(data.get("bank_name", "")).strip(),
+        "note": str(data.get("note", "")).strip(),
+        "links": _clean_links(data.get("links")),
+    }
+
+
+def has_content(instructions: PaymentInstructions) -> bool:
+    return any(getattr(instructions, field) for field in INSTRUCTION_FIELDS)
+
+
+@transaction.atomic
+def save_instructions(
+    studio: Studio, *, actor: Any, data: dict[str, Any]
+) -> PaymentInstructions | None:
+    """Salva (o svuota) le istruzioni dello studio. Restituisce None se ora non ce ne sono.
+
+    Un corpo tutto vuoto le cancella: nessuna riga con dati vuoti. Il registro delle azioni
+    riceve solo i NOMI dei campi cambiati, mai i loro valori: l'IBAN non deve finire altrove
+    (FR-023, SC-008). Non cambiando nulla non si scrive nulla.
+    """
+    new = _clean_instructions(data)
+    current = PaymentInstructions.objects.select_for_update().filter(studio=studio).first()
+    old = {f: getattr(current, f) for f in INSTRUCTION_FIELDS} if current else {}
+    changed = [f for f in INSTRUCTION_FIELDS if new[f] != old.get(f, [] if f == "links" else "")]
+    if not changed:
+        return current if current and has_content(current) else None
+    empty = not any(new.values())
+    if empty:
+        if current:
+            current.delete()
+        result = None
+    else:
+        result, _ = PaymentInstructions.objects.update_or_create(
+            studio=studio, defaults={**new, "updated_by": _author(actor)}
+        )
+    audit.record(
+        audit.Action.INSTRUCTIONS_CHANGE,
+        actor=actor,
+        target=result or current,
+        studio_id=studio.pk,
+        metadata={"fields": ",".join(changed), "cleared": empty},
+    )
+    return result
+
+
+# --- Ricevute non fiscali (fase 8, ADR-035) ------------------------------------------------
+
+
+def issue_receipt(payment: Payment, *, language: str, actor: Any) -> tuple[Receipt, bool]:
+    """Emette la ricevuta di un pagamento incassato. Restituisce (ricevuta, creata ora?).
+
+    Idempotente: se la ricevuta esiste già si restituisce quella, con lo stesso numero e la
+    stessa lingua. Altrimenti si blocca la riga dello studio (`select_for_update`, come
+    `add_teacher_to_studio`) e si prende `massimo + 1` per l'anno locale in corso: le emissioni
+    contemporanee dello stesso studio si mettono in coda, quindi i numeri sono distinti e senza
+    buchi; se la transazione annulla, il numero non è consumato. Si usa il massimo e non il
+    conteggio perché i numeri restino unici anche se le ricevute vecchie spariscono con la
+    conservazione. Il vincolo di unicità è la rete di sicurezza dietro il lock.
+    Solo un pagamento "paid" ha una ricevuta: non una riga di storno, non uno in sospeso.
+    """
+    if language not in Receipt.Language.values:
+        raise ValidationError({"language": "Choose it or en."})
+    with transaction.atomic():
+        payment = Payment.objects.select_for_update().select_related("student").get(pk=payment.pk)
+        if payment.status == Payment.Status.REVERSAL:
+            raise IsReversal("A reversal entry has no receipt.")
+        if payment.status != Payment.Status.PAID:
+            raise NotPaid("Only a paid entry has a receipt.")
+        existing = Receipt.objects.filter(payment=payment).first()
+        if existing is not None:
+            return existing, False
+        studio = Studio.objects.select_for_update().get(pk=payment.student.studio_id)
+        year = timezone.localdate().year
+        last = Receipt.objects.filter(studio=studio, year=year).aggregate(last=Max("sequence"))
+        receipt = Receipt.objects.create(
+            payment=payment,
+            studio=studio,
+            year=year,
+            sequence=(last["last"] or 0) + 1,
+            language=language,
+            issued_by=_author(actor),
+        )
+        audit.record(
+            audit.Action.RECEIPT_ISSUE,
+            actor=actor,
+            target=receipt,
+            studio_id=studio.pk,
+            metadata={"number": receipt.number},
+        )
+    return receipt, True

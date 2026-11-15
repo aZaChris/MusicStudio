@@ -12,7 +12,8 @@ import { lessonTone, paymentTone } from '../../components/tones'
 import { formatDateTime, formatDay } from '../../lib/dates'
 import { fullName } from '../../lib/names'
 import { useStudentLessons, useStudents } from '../teacher/api/students'
-import { usePayments } from '../teacher/api/payments'
+import { useOpenInstructions } from '../teacher/api/instructions'
+import { useDownloadReceipt, usePayments, useReceipts } from '../teacher/api/payments'
 
 export function ParentPortal() {
   const { t, i18n } = useTranslation()
@@ -26,6 +27,13 @@ export function ParentPortal() {
   const pkg = active?.active_package
   const lessons = useStudentLessons(activeId)
   const payments = usePayments(activeId) // filtered by the server: ?student=<id>
+  // Receipts already issued for this child; a parent downloads them, never issues them.
+  const receipts = useReceipts(activeId)
+  const downloadReceipt = useDownloadReceipt()
+  // How to pay: only the studios where THIS student has a package still to pay (the server
+  // decides what is open; a paid package or a studio without instructions gives nothing).
+  const openInstructions = useOpenInstructions()
+  const howToPay = (openInstructions.data ?? []).filter((i) => i.student_ids.includes(activeId))
 
   const isItalian = i18n.language.startsWith('it')
   const money = new Intl.NumberFormat(isItalian ? 'it-IT' : 'en-GB', { style: 'currency', currency: 'EUR' })
@@ -165,6 +173,74 @@ export function ParentPortal() {
                 {t('parent.paymentsHint')}
               </p>
             </section>
+            {(receipts.data ?? []).length > 0 && (
+              <section className="panel" style={{ gap: 6 }}>
+                <h2 className="section-title" style={{ marginBottom: 6 }}>
+                  {t('parent.receipts')}
+                </h2>
+                {receipts.data?.map((receipt) => (
+                  <div key={receipt.id} className="list-line">
+                    <div className="list-line__main">
+                      <span style={{ fontSize: 15, fontWeight: 700 }}>{receipt.number}</span>
+                      <span className="muted">
+                        {formatDay(receipt.date, i18n.language)} · {money.format(Number(receipt.amount))}
+                        {receipt.cancelled ? ` · ${t('parent.receiptCancelled')}` : ''}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="ms-btn ms-btn--secondary ms-btn--s"
+                      disabled={downloadReceipt.isPending}
+                      onClick={() => downloadReceipt.mutate(receipt.id)}
+                    >
+                      {t('parent.receiptDownload')}
+                    </button>
+                  </div>
+                ))}
+              </section>
+            )}
+            {howToPay.map((studio) => (
+              <section key={studio.studio_id} className="panel" style={{ gap: 6 }}>
+                <h2 className="section-title" style={{ marginBottom: 6 }}>
+                  {t('parent.howToPay')} — {studio.studio_name}
+                </h2>
+                <dl style={{ margin: 0 }}>
+                  {studio.account_holder && (
+                    <>
+                      <dt>{t('parent.payHolder')}</dt>
+                      <dd>{studio.account_holder}</dd>
+                    </>
+                  )}
+                  {studio.iban && (
+                    <>
+                      <dt>{t('parent.payIban')}</dt>
+                      <dd>{studio.iban}</dd>
+                    </>
+                  )}
+                  {studio.bank_name && (
+                    <>
+                      <dt>{t('parent.payBank')}</dt>
+                      <dd>{studio.bank_name}</dd>
+                    </>
+                  )}
+                </dl>
+                {studio.note && <p style={{ margin: 0 }}>{studio.note}</p>}
+                {(studio.links ?? []).length > 0 && (
+                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                    {studio.links?.map((link) => (
+                      <li key={link.url}>
+                        <a href={link.url} target="_blank" rel="noopener noreferrer">
+                          {link.label}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="muted" style={{ margin: '8px 0 0', fontWeight: 500 }}>
+                  {t('parent.payOutside')}
+                </p>
+              </section>
+            ))}
           </div>
         </QueryState>
         <AppDownload />

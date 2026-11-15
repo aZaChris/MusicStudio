@@ -17,6 +17,7 @@ import { ParentPortal } from './features/parent/ParentPortal'
 import { AccountPage } from './features/account/AccountPage'
 import { AuditPage } from './features/audit/AuditPage'
 import { PrivacyPage } from './features/privacy/PrivacyPage'
+import { PaymentInstructionsPage } from './features/team/PaymentInstructionsPage'
 import { TeamPage } from './features/team/TeamPage'
 
 const teacherOnly = ['teacher', 'studio_owner'] as const
@@ -74,6 +75,14 @@ function App() {
         element={
           <RequireRole roles={['studio_owner']}>
             <TeamPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/payment-instructions"
+        element={
+          <RequireRole roles={[...teacherOnly]}>
+            <PaymentInstructionsPage />
           </RequireRole>
         }
       />

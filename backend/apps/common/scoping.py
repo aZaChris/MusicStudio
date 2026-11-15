@@ -55,6 +55,14 @@ STUDENT_CHILD_PATHS = TenantPaths(
     student="student",
 )
 
+# Le ricevute seguono il pagamento, quindi lo studente del pagamento (fase 8).
+RECEIPT_PATHS = TenantPaths(
+    studio="payment__student__studio",
+    teacher="payment__student__teacher",
+    parent="payment__student__parent_accounts",
+    student="payment__student",
+)
+
 
 def scope[M: Model](qs: QuerySet[M], ctx: TenantContext, paths: TenantPaths) -> QuerySet[M]:
     # Il ruolo decide il filtro. L'ordine non è casuale: un ruolo sconosciuto cade nell'ultimo

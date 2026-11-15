@@ -15,6 +15,7 @@ import uuid
 from django.conf import settings
 from django.db import models
 
+from apps.common.fields import EncryptedTextField
 from apps.packages.models import Package
 from apps.students.models import Student
 
@@ -43,6 +44,9 @@ class Payment(models.Model):
         PAID = "paid", "Paid"
         PENDING = "pending", "Pending"
         OVERDUE = "overdue", "Overdue"
+        # Riga di storno (fase 8): annulla un pagamento pagato senza riscriverlo. Vedi
+        # `reversal_of` e specs/008-cash-register-receipts/data-model.md.
+        REVERSAL = "reversal", "Reversal"
 
     # Lo studente cancellato porta con sé i suoi pagamenti (CASCADE). La cancellazione GDPR
     # però è un'anonimizzazione, non un delete: vedi ADR-032 e apps/privacy.
@@ -65,6 +69,20 @@ class Payment(models.Model):
         blank=True,
         related_name="payment",
     )
+    # Solo sulla riga di storno: punta al pagamento originale. OneToOne = al massimo uno storno
+    # per pagamento, garantito dal database anche con due richieste insieme (FR-004, FR-009).
+    # CASCADE e non PROTECT: il job di conservazione cancella i pagamenti vecchi in blocco, e uno
+    # storno recente di un pagamento molto vecchio non deve bloccarlo.
+    reversal_of = models.OneToOneField(
+        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="reversal"
+    )
+    # Perché si è stornato: testo libero, quindi cifrato (constitution X). Al massimo 200 caratteri,
+    # controllati dal serializer.
+    reason = EncryptedTextField(blank=True)
+    # Chi ha creato la riga. Null per le righe vecchie e per il pagamento online (webhook).
+    recorded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -76,6 +94,23 @@ class Payment(models.Model):
             models.Index(fields=["student", "-date"], name="payment_student_date_idx"),
             # Conteggio dei pagamenti in sospeso nella dashboard e filtro ?status=.
             models.Index(fields=["status"], name="payment_status_idx"),
+            # Filtri per periodo del registro di cassa.
+            models.Index(fields=["date"], name="payment_date_idx"),
+        ]
+        constraints = [
+            # Uno storno ha sempre il collegamento, e solo lo storno lo ha.
+            models.CheckConstraint(
+                condition=(
+                    models.Q(status="reversal", reversal_of__isnull=False)
+                    | (~models.Q(status="reversal") & models.Q(reversal_of__isnull=True))
+                ),
+                name="payment_reversal_link_matches_status",
+            ),
+            # Lo storno ripete l'importo dell'originale: il segno lo dà lo stato.
+            models.CheckConstraint(
+                condition=~models.Q(status="reversal") | models.Q(amount__gt=0),
+                name="payment_reversal_amount_positive",
+            ),
         ]
 
     def __str__(self) -> str:
@@ -161,3 +196,77 @@ class WebhookEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.type} {self.stripe_event_id}"
+
+
+class PaymentInstructions(models.Model):
+    """Come lo studio vuole essere pagato: un solo insieme per studio (fase 8, ADR-036).
+
+    Intestatario e IBAN sono cifrati a riposo (constitution X, ADR-030) e non compaiono mai nei
+    log, nei report di errore o nel registro delle azioni. MusicStudio non muove né verifica
+    denaro: i genitori pagano fuori dall'app e l'insegnante segna il pagamento come ricevuto.
+    """
+
+    studio = models.OneToOneField(
+        "studios.Studio", on_delete=models.CASCADE, related_name="payment_instructions"
+    )
+    account_holder = EncryptedTextField(blank=True)
+    iban = EncryptedTextField(blank=True)
+    bank_name = models.CharField(max_length=100, blank=True)
+    # Per esempio cosa scrivere nella causale del bonifico: non è un segreto, resta in chiaro.
+    note = models.CharField(max_length=200, blank=True)
+    # Elenco intero letto e scritto in blocco, mai interrogato: JSON basta (research R8).
+    # Fino a 5 voci {"label": ..., "url": ...}; il controllo è nel serializer.
+    links = models.JSONField(default=list, blank=True)
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        # Nessun dato bancario nella rappresentazione testuale (finirebbe nell'admin e nei log).
+        return f"Payment instructions of studio #{self.studio_id}"
+
+
+class Receipt(models.Model):
+    """Ricevuta di pagamento non fiscale di un pagamento incassato (fase 8, ADR-035).
+
+    Al massimo una per pagamento. Il numero è `AAAA-NNNN`, unico per studio e anno, assegnato una
+    volta sola alla prima emissione e mai cambiato né riusato. Il PDF non si salva: si genera al
+    momento dai dati attuali (un nome salvato sopravviverebbe a una richiesta di cancellazione).
+    Spiegazione: docs/learning/concetti/ricevute-non-fiscali.md.
+    """
+
+    class Language(models.TextChoices):
+        IT = "it", "Italiano"
+        EN = "en", "English"
+
+    # CASCADE solo per il job di conservazione dei pagamenti vecchi (10 anni): le ricevute
+    # seguono il loro pagamento. I numeri non si riusano comunque: si prende il massimo.
+    payment = models.OneToOneField(Payment, on_delete=models.CASCADE, related_name="receipt")
+    # Salvato (anche se ricavabile dallo studente) per poter dichiarare l'unicità del numero
+    # per studio direttamente nel database.
+    studio = models.ForeignKey("studios.Studio", on_delete=models.PROTECT, related_name="+")
+    year = models.PositiveSmallIntegerField()
+    sequence = models.PositiveIntegerField()
+    language = models.CharField(max_length=2, choices=Language.choices)
+    issued_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    issued_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-year", "-sequence"]
+        constraints = [
+            # La rete di sicurezza dietro il lock: due ricevute dello stesso studio e anno non
+            # possono avere lo stesso numero, qualunque cosa faccia il codice.
+            models.UniqueConstraint(
+                fields=["studio", "year", "sequence"], name="unique_receipt_number_per_studio_year"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"Receipt {self.number}"
+
+    @property
+    def number(self) -> str:
+        return f"{self.year}-{self.sequence:04d}"

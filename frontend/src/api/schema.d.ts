@@ -506,6 +506,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/payment-instructions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payment_instructions_retrieve"];
+        put: operations["v1_payment_instructions_update"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment-instructions/open/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payment_instructions_open_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/payments/": {
         parameters: {
             query?: never;
@@ -536,6 +568,86 @@ export interface paths {
         options?: never;
         head?: never;
         patch: operations["v1_payments_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/payments/{id}/receipt/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_payments_receipt_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/{id}/reverse/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_payments_reverse_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/register/export/csv/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payments_register_export_csv_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/register/export/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payments_register_export_pdf_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/register/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payments_register_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/privacy/consents/": {
@@ -594,6 +706,38 @@ export interface paths {
             cookie?: never;
         };
         get: operations["v1_privacy_export_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/receipts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_receipts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/receipts/{id}/pdf/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_receipts_pdf_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -761,9 +905,14 @@ export interface components {
          *     * `privacy.export` - Privacy Export
          *     * `privacy.erase` - Privacy Erase
          *     * `payment.record` - Payment Record
+         *     * `payment.reverse` - Payment Reverse
+         *     * `payment.delete` - Payment Delete
+         *     * `register.export` - Register Export
+         *     * `instructions.change` - Instructions Change
+         *     * `receipt.issue` - Receipt Issue
          * @enum {string}
          */
-        ActionEnum: "registration" | "email.confirm" | "login.success" | "login.failure" | "login.locked" | "password.reset" | "password.change" | "mfa.enable" | "mfa.disable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "account.unlock_by_operator" | "invitation.send" | "invitation.accept" | "invitation.revoke" | "role.change" | "consent.give" | "consent.withdraw" | "privacy.export" | "privacy.erase" | "payment.record";
+        ActionEnum: "registration" | "email.confirm" | "login.success" | "login.failure" | "login.locked" | "password.reset" | "password.change" | "mfa.enable" | "mfa.disable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "account.unlock_by_operator" | "invitation.send" | "invitation.accept" | "invitation.revoke" | "role.change" | "consent.give" | "consent.withdraw" | "privacy.export" | "privacy.erase" | "payment.record" | "payment.reverse" | "payment.delete" | "register.export" | "instructions.change" | "receipt.issue";
         AuditEntry: {
             readonly id: number;
             /** Format: date-time */
@@ -975,6 +1124,19 @@ export interface components {
             mfa_token: string;
             code: string;
         };
+        OpenInstructions: {
+            account_holder?: string;
+            iban?: string;
+            bank_name?: string;
+            note?: string;
+            links?: components["schemas"]["PaymentLink"][];
+            /** Format: date-time */
+            readonly updated_at: string | null;
+            studio_id: number;
+            studio_name: string;
+            student_ids: number[];
+            notice: string;
+        };
         /**
          * @description * `success` - Success
          *     * `failure` - Failure
@@ -1098,6 +1260,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Payment"][];
+        };
+        PaginatedReceiptList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Receipt"][];
         };
         PaginatedStudentList: {
             /** @example 123 */
@@ -1229,6 +1406,36 @@ export interface components {
             status?: components["schemas"]["PaymentStatusEnum"];
             /** Format: uuid */
             readonly checkout: string | null;
+            readonly reversal_of: number | null;
+            readonly reversed: boolean;
+            readonly reversal_id: number | null;
+            readonly receipt_number: string | null;
+            readonly recorded_by: number | null;
+            readonly reason: string;
+        };
+        PaymentInstructions: {
+            account_holder?: string;
+            iban?: string;
+            bank_name?: string;
+            note?: string;
+            links?: components["schemas"]["PaymentLink"][];
+            /** Format: date-time */
+            readonly updated_at: string | null;
+        };
+        PaymentInstructionsRequest: {
+            account_holder?: string;
+            iban?: string;
+            bank_name?: string;
+            note?: string;
+            links?: components["schemas"]["PaymentLinkRequest"][];
+        };
+        PaymentLink: {
+            label: string;
+            url: string;
+        };
+        PaymentLinkRequest: {
+            label: string;
+            url: string;
         };
         /**
          * @description Restrict writable related fields to objects the requesting user may see.
@@ -1253,9 +1460,10 @@ export interface components {
          * @description * `paid` - Paid
          *     * `pending` - Pending
          *     * `overdue` - Overdue
+         *     * `reversal` - Reversal
          * @enum {string}
          */
-        PaymentStatusEnum: "paid" | "pending" | "overdue";
+        PaymentStatusEnum: "paid" | "pending" | "overdue" | "reversal";
         /**
          * @description * `en` - English
          *     * `it` - Italiano
@@ -1265,6 +1473,45 @@ export interface components {
         /** @description Target teacher, validated against the owner's own studio only. */
         ReassignStudentRequest: {
             teacher: number;
+        };
+        Receipt: {
+            readonly id: number;
+            readonly payment: number;
+            readonly number: string;
+            readonly language: components["schemas"]["PreferredLanguageEnum"];
+            /** Format: date-time */
+            readonly issued_at: string;
+            readonly cancelled: boolean;
+            readonly student_name: string;
+            /** Format: decimal */
+            readonly amount: string;
+            /** Format: date */
+            readonly date: string;
+            readonly method: string;
+        };
+        ReceiptRequestRequest: {
+            language?: components["schemas"]["PreferredLanguageEnum"];
+        };
+        RegisterCounts: {
+            paid: number;
+            pending: number;
+            overdue: number;
+            reversal: number;
+        };
+        RegisterMethod: {
+            /** Format: decimal */
+            received: string;
+            /** Format: decimal */
+            reversed: string;
+            /** Format: decimal */
+            net: string;
+            method: components["schemas"]["MethodEnum"];
+        };
+        RegisterPeriod: {
+            /** Format: date */
+            to: string;
+            /** Format: date */
+            from: string;
         };
         RegisterRequest: {
             first_name: string;
@@ -1276,6 +1523,53 @@ export interface components {
             accept_terms: boolean;
             /** @default it */
             preferred_language: components["schemas"]["PreferredLanguageEnum"];
+        };
+        RegisterSummary: {
+            period: components["schemas"]["RegisterPeriod"];
+            totals: components["schemas"]["RegisterTotals"];
+            by_method: components["schemas"]["RegisterMethod"][];
+            counts: components["schemas"]["RegisterCounts"];
+        };
+        RegisterTotals: {
+            /** Format: decimal */
+            received: string;
+            /** Format: decimal */
+            reversed: string;
+            /** Format: decimal */
+            net: string;
+        };
+        /**
+         * @description Restrict writable related fields to objects the requesting user may see.
+         *
+         *     DRF validates a primary key against the field's queryset. With the default
+         *     `Model.objects.all()` any id in the database is accepted — that was the
+         *     cross-tenant write hole of feature 001 (audit G1). Replacing the queryset per request
+         *     turns a foreign id into an ordinary 400 "Invalid pk", without revealing whether the
+         *     object exists.
+         */
+        Reversal: {
+            readonly id: number;
+            student: number;
+            readonly student_name: string;
+            package?: number | null;
+            /** Format: decimal */
+            amount: string;
+            /** Format: date */
+            date: string;
+            method: components["schemas"]["MethodEnum"];
+            status?: components["schemas"]["PaymentStatusEnum"];
+            /** Format: uuid */
+            readonly checkout: string | null;
+            readonly reversal_of: number | null;
+            readonly reversed: boolean;
+            readonly reversal_id: number | null;
+            readonly receipt_number: string | null;
+            readonly recorded_by: number | null;
+            readonly reason: string;
+            readonly refund: boolean;
+        };
+        ReverseRequestRequest: {
+            reason: string;
         };
         Student: {
             readonly id: number;
@@ -1350,7 +1644,7 @@ export interface operations {
     v1_audit_list: {
         parameters: {
             query?: {
-                action?: "account.unlock_by_operator" | "consent.give" | "consent.withdraw" | "email.confirm" | "invitation.accept" | "invitation.revoke" | "invitation.send" | "login.failure" | "login.locked" | "login.success" | "mfa.disable" | "mfa.enable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "password.change" | "password.reset" | "payment.record" | "privacy.erase" | "privacy.export" | "registration" | "role.change";
+                action?: "account.unlock_by_operator" | "consent.give" | "consent.withdraw" | "email.confirm" | "instructions.change" | "invitation.accept" | "invitation.revoke" | "invitation.send" | "login.failure" | "login.locked" | "login.success" | "mfa.disable" | "mfa.enable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "password.change" | "password.reset" | "payment.delete" | "payment.record" | "payment.reverse" | "privacy.erase" | "privacy.export" | "receipt.issue" | "register.export" | "registration" | "role.change";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description ISO 8601 date-time */
@@ -3573,17 +3867,180 @@ export interface operations {
             };
         };
     };
+    v1_payment_instructions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentInstructions"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payment_instructions_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PaymentInstructionsRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaymentInstructionsRequest"];
+                "multipart/form-data": components["schemas"]["PaymentInstructionsRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentInstructions"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payment_instructions_open_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OpenInstructions"][];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     v1_payments_list: {
         parameters: {
             query?: {
+                date_from?: string;
+                date_to?: string;
+                /**
+                 * @description * `cash` - Cash
+                 *     * `bank_transfer` - Bank transfer
+                 *     * `manual_entry` - Manual entry
+                 *     * `card` - Online (Stripe)
+                 */
+                method?: "bank_transfer" | "card" | "cash" | "manual_entry";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /**
                  * @description * `paid` - Paid
                  *     * `pending` - Pending
                  *     * `overdue` - Overdue
+                 *     * `reversal` - Reversal
                  */
-                status?: "overdue" | "paid" | "pending";
+                status?: "overdue" | "paid" | "pending" | "reversal";
                 student?: number;
             };
             header?: never;
@@ -3951,6 +4408,310 @@ export interface operations {
             };
         };
     };
+    v1_payments_receipt_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReceiptRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReceiptRequestRequest"];
+                "multipart/form-data": components["schemas"]["ReceiptRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Receipt"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Receipt"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found or outside your studio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payments_reverse_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description A unique integer value identifying this payment. */
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReverseRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReverseRequestRequest"];
+                "multipart/form-data": components["schemas"]["ReverseRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reversal"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found or outside your studio. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payments_register_export_csv_retrieve: {
+        parameters: {
+            query?: {
+                /** @description First day, YYYY-MM-DD, inclusive. */
+                date_from?: string;
+                /** @description Last day, YYYY-MM-DD, inclusive. */
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV attachment, one row per entry */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payments_register_export_pdf_retrieve: {
+        parameters: {
+            query?: {
+                /** @description First day, YYYY-MM-DD, inclusive. */
+                date_from?: string;
+                /** @description Last day, YYYY-MM-DD, inclusive. */
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF attachment with the period totals */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payments_register_summary_retrieve: {
+        parameters: {
+            query?: {
+                /** @description First day, YYYY-MM-DD, inclusive. */
+                date_from?: string;
+                /** @description Last day, YYYY-MM-DD, inclusive. */
+                date_to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegisterSummary"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     v1_privacy_consents_list: {
         parameters: {
             query?: never;
@@ -4157,6 +4918,112 @@ export interface operations {
             };
             /** @description Role or object not allowed. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_receipts_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                student?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedReceiptList"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_receipts_pdf_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description PDF attachment */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Not found or outside your studio. */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

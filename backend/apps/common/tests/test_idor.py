@@ -83,6 +83,7 @@ WRITES = [
         {"student": "{student}", "amount": "0.01", "date": "2030-01-01", "method": "cash"},
     ),
     ("delete", "/api/v1/payments/{payment}/", "payment", None),
+    ("post", "/api/v1/payments/{payment}/reverse/", "payment", {"reason": "pwned"}),
 ]
 LISTS = [
     "/api/v1/students/",
@@ -108,6 +109,22 @@ ROUTES = {
     "packages/<pk>/checkout/",
     "payments/",
     "payments/<pk>/",
+    # Phase 8: reverse is in WRITES above; the paid-entry variants are in
+    # apps/payments/tests/test_register_cross_tenant.py.
+    "payments/<pk>/reverse/",
+    # Register endpoints take no id: the studio comes from the caller's own tenant context.
+    # Role and scope cases: apps/payments/tests/test_register_scope.py.
+    # Payment instructions take no id either: the studio is the caller's own (see
+    # apps/payments/tests/test_instructions_cross_tenant.py).
+    "payment-instructions/",
+    "payment-instructions/open/",
+    # Receipts: cross-studio and family cases in apps/payments/tests/test_receipts_scope.py.
+    "payments/<pk>/receipt/",
+    "receipts/",
+    "receipts/<pk>/pdf/",
+    "payments/register/summary/",
+    "payments/register/export/csv/",
+    "payments/register/export/pdf/",
     "dashboard/",
     "studio/",
     "studio/teachers/",

@@ -311,3 +311,19 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **Retention (conservazione).** Per quanto tempo si tengono i dati prima di cancellarli o anonimizzarli.
 
 **TOTP.** Il codice di sei cifre che cambia ogni 30 secondi, calcolato da un segreto e dall'ora (RFC 6238).
+
+## Termini aggiunti nella fase 8
+
+**Cash register (registro di cassa).** L'elenco dei pagamenti di uno studio, con i totali per periodo. Un pagamento incassato non si modifica: si corregge con uno storno.
+
+**CSV injection (iniezione di formule).** Un valore che inizia con `=`, `+`, `-` o `@` e che un foglio di calcolo esegue come formula. Nell'esportazione del registro i testi scritti da persone ricevono un apostrofo davanti.
+
+**Gapless numbering (numerazione senza buchi).** Numeri progressivi senza salti né ripetizioni. Si ottengono bloccando una riga prima di leggere l'ultimo numero: chi arriva dopo aspetta. Una sequenza del database, invece, lascia buchi quando una transazione annulla.
+
+**IBAN checksum (mod-97).** Il numero di conto internazionale ha due cifre di controllo. Si spostano le prime quattro posizioni in fondo, si trasformano le lettere in numeri e il resto della divisione per 97 deve essere 1. Intercetta quasi ogni errore di battitura, ma non dice se il conto esiste.
+
+**Payment instructions (istruzioni di pagamento).** Come uno studio vuole essere pagato: intestatario, IBAN, nota e link. I genitori le vedono accanto ai pacchetti ancora da pagare. MusicStudio non muove né verifica denaro.
+
+**Receipt (ricevuta non fiscale).** Un PDF che prova che un pagamento è stato registrato, con un numero unico per studio e anno. Dice chiaramente che non è un documento fiscale e si genera ogni volta dai dati attuali.
+
+**Reversal (storno).** Una riga nuova che annulla un pagamento incassato, collegata all'originale, con chi, quando e perché. L'originale non si tocca. Corregge il registro: non restituisce denaro.

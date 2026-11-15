@@ -12,23 +12,18 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
-from rest_framework.permissions import AllowAny, BasePermission
+from rest_framework.permissions import AllowAny
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.common.permissions import IsTeacherOrOwnerRole
 from apps.common.tenancy import get_tenant
 from apps.common.throttling import ScopedRateThrottle
 
 from . import invitations
 from .models import Invitation, User
-
-
-class IsTeacherOrOwnerRole(BasePermission):
-    # Solo insegnanti e titolari mandano e vedono inviti; i genitori non passano da qui.
-    def has_permission(self, request: Request, view: Any) -> bool:
-        return getattr(request.user, "role", None) in (User.Role.TEACHER, User.Role.STUDIO_OWNER)
 
 
 class InvitationSerializer(serializers.ModelSerializer[Invitation]):

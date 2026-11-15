@@ -92,3 +92,98 @@ def test_num_queries_constant_for_parent_roster():
         add_child()
 
     assert with_one == _count(parent.user, "/api/v1/students/") == 4
+
+
+def test_payments_list_budget_holds_with_reversed_entries():
+    # Phase 8: `reversed`, `reversal_id` and `reversal_of` come from the same query
+    # (select_related("reversal")), so reversals must not add queries per row.
+    from apps.common.factories import PaymentFactory, make_reversal
+
+    teacher = TeacherFactory()
+
+    def seed_with_reversal() -> None:
+        student = StudentFactory(teacher=teacher)
+        make_reversal(PaymentFactory(student=student), recorded_by=teacher.user)
+        PaymentFactory(student=student)
+
+    seed_with_reversal()
+    with_one = _count(teacher.user, "/api/v1/payments/")
+    for _ in range(14):
+        seed_with_reversal()
+    with_many = _count(teacher.user, "/api/v1/payments/")
+
+    assert with_one == with_many == 3  # same as without reversals
+
+
+def test_register_endpoints_hold_a_constant_query_count():
+    # Phase 8: the summary is one aggregate and the CSV rows come from one query, however many
+    # entries the period holds (SC-003, no N+1 on the student or the reversal).
+    from apps.common.factories import PaymentFactory, make_reversal
+
+    teacher = TeacherFactory()
+    period = "?date_from=2020-01-01&date_to=2020-12-31"
+
+    def seed() -> None:
+        student = StudentFactory(teacher=teacher)
+        make_reversal(PaymentFactory(student=student, date="2020-05-05"), date="2020-06-06")
+
+    seed()
+    summary_one = _count(teacher.user, "/api/v1/payments/register/summary/" + period)
+    csv_one = _count(teacher.user, "/api/v1/payments/register/export/csv/" + period)
+    list_one = _count(teacher.user, "/api/v1/payments/" + period)
+    for _ in range(19):
+        seed()
+
+    assert summary_one == _count(teacher.user, "/api/v1/payments/register/summary/" + period) == 2
+    # teacher, rows, and the audit entry written by the export
+    assert csv_one == _count(teacher.user, "/api/v1/payments/register/export/csv/" + period) == 3
+    assert list_one == _count(teacher.user, "/api/v1/payments/" + period) == 3
+
+
+def test_payment_instructions_endpoints_hold_a_constant_query_count():
+    # Phase 8: the parent's list is the tenant lookup, one query for the (studio, student) pairs
+    # of the open packages and one for the instructions, whether the family has 1 or 15.
+    from apps.common.factories import PackageFactory
+    from apps.payments.models import PaymentInstructions
+
+    owner = make_studio_owner()
+    PaymentInstructions.objects.create(
+        studio=owner.studio, account_holder="Studio", iban="IT60X0542811101000000123456"
+    )
+    parent = ParentAccountFactory()
+    student = StudentFactory(teacher=owner)
+    link_parent_to_student(parent, student)
+
+    PackageFactory(student=student)
+    open_one = _count(parent.user, "/api/v1/payment-instructions/open/")
+    owner_read = _count(owner.user, "/api/v1/payment-instructions/")
+    for _ in range(14):
+        PackageFactory(student=student)
+
+    assert open_one == _count(parent.user, "/api/v1/payment-instructions/open/") == 3
+    assert owner_read == _count(owner.user, "/api/v1/payment-instructions/") == 2
+
+
+def test_receipts_list_and_payments_with_receipts_hold_a_constant_query_count():
+    # Phase 8: receipt number, student name and the cancelled flag come from the same query
+    # (select_related), so more receipts do not mean more queries.
+    from apps.common.factories import PaymentFactory, make_reversal
+    from apps.payments.services import issue_receipt
+
+    teacher = TeacherFactory()
+
+    def seed(reverse: bool) -> None:
+        student = StudentFactory(teacher=teacher)
+        payment = PaymentFactory(student=student)
+        issue_receipt(payment, language="it", actor=teacher.user)
+        if reverse:
+            make_reversal(payment)
+
+    seed(False)
+    receipts_one = _count(teacher.user, "/api/v1/receipts/")
+    payments_one = _count(teacher.user, "/api/v1/payments/")
+    for i in range(19):
+        seed(i % 2 == 0)
+
+    assert receipts_one == _count(teacher.user, "/api/v1/receipts/") == 3  # teacher, count, rows
+    assert payments_one == _count(teacher.user, "/api/v1/payments/") == 3

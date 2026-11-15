@@ -37,6 +37,11 @@ COVERED_ELSEWHERE = {
     "consent.withdraw",  # apps/privacy/tests
     "privacy.export",  # apps/privacy/tests
     "privacy.erase",  # apps/privacy/tests
+    "payment.reverse",  # apps/payments/tests/test_register_integrity.py
+    "payment.delete",  # apps/payments/tests/test_register_integrity.py
+    "register.export",  # apps/payments/tests/test_register_export.py
+    "instructions.change",  # apps/payments/tests/test_instructions.py
+    "receipt.issue",  # apps/payments/tests/test_receipts.py
 }
 
 

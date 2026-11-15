@@ -1,4 +1,4 @@
-import type { Dashboard, Lesson, Me, Payment, Student } from '../api/types'
+import type { Dashboard, Lesson, Me, Payment, Receipt, RegisterSummary, Student } from '../api/types'
 
 export const teacherMe: Me = {
   id: 1,
@@ -85,6 +85,12 @@ export const payment = (id: number, over: Partial<Payment> = {}): Payment => ({
   method: 'bank_transfer',
   status: 'paid',
   checkout: null,
+  reversal_of: null,
+  reversed: false,
+  reversal_id: null,
+  receipt_number: null,
+  recorded_by: 3,
+  reason: '',
   ...over,
 })
 
@@ -110,3 +116,30 @@ export const studentMe: Me = {
   email_verified: true,
   mfa_enabled: false,
 }
+
+export const receipt = (id: number, over: Partial<Receipt> = {}): Receipt => ({
+  id,
+  payment: 3,
+  number: '2026-0001',
+  language: 'it',
+  issued_at: '2026-11-03T10:00:00Z',
+  cancelled: false,
+  student_name: 'Giulia Rossi',
+  amount: '120.00',
+  date: '2026-11-02',
+  method: 'bank_transfer',
+  ...over,
+})
+
+export const registerSummary = (over: Partial<RegisterSummary> = {}): RegisterSummary => ({
+  period: { from: '2026-11-01', to: '2026-11-30' },
+  totals: { received: '250.00', reversed: '100.00', net: '150.00' },
+  by_method: [
+    { method: 'cash', received: '100.00', reversed: '0.00', net: '100.00' },
+    { method: 'bank_transfer', received: '100.00', reversed: '100.00', net: '0.00' },
+    { method: 'manual_entry', received: '20.00', reversed: '0.00', net: '20.00' },
+    { method: 'card', received: '30.00', reversed: '0.00', net: '30.00' },
+  ],
+  counts: { paid: 5, pending: 1, overdue: 1, reversal: 1 },
+  ...over,
+})

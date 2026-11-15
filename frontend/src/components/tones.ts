@@ -4,7 +4,13 @@ import type { LessonStatus, PaymentStatus } from '../api/types'
 export type Tone = 'ok' | 'wait' | 'bad' | 'plan' | 'off' | 'low'
 
 export const paymentTone = (status: PaymentStatus | string | null | undefined): Tone =>
-  status === 'paid' ? 'ok' : status === 'overdue' ? 'bad' : 'wait'
+  status === 'paid'
+    ? 'ok'
+    : status === 'overdue'
+      ? 'bad'
+      : status === 'reversed' || status === 'reversal'
+        ? 'off' // phase 8: a reversed entry and its reversal are history, not money to collect
+        : 'wait'
 
 export const lessonTone = (status: LessonStatus): Tone =>
   status === 'completed' ? 'ok' : status === 'scheduled' ? 'plan' : 'off'

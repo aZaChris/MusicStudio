@@ -34,6 +34,13 @@ class DomainConflict(DomainError):
     code = "conflict"
 
 
+class PeriodTooLong(DomainError):
+    """Un periodo di esportazione oltre il massimo consentito (HTTP 400, fase 8)."""
+
+    status_code = status.HTTP_400_BAD_REQUEST
+    code = "period_too_long"
+
+
 class ServiceUnavailable(DomainError):
     """Una dipendenza (es. il gateway di pagamento) non è configurata o non risponde (503)."""
 

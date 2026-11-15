@@ -7,7 +7,8 @@
     "team": "Squadra",
     "audit": "Registro attività",
     "account": "Account",
-    "privacy": "Privacy"
+    "privacy": "Privacy",
+    "instructions": "Come pagare"
   },
   "dashboard": {
     "greeting": "Ciao, {{name}}",
@@ -82,7 +83,9 @@
     "statusName": {
       "paid": "Pagato",
       "pending": "In sospeso",
-      "overdue": "Scaduto"
+      "overdue": "Scaduto",
+      "reversed": "Stornato",
+      "reversal": "Storno"
     },
     "toCollect_one": "{{count}} da incassare",
     "toCollect_other": "{{count}} da incassare",
@@ -90,6 +93,22 @@
       "all": "Tutti",
       "pending": "Da incassare",
       "paid": "Pagati"
+    },
+    "reverse": {
+      "action": "Storna",
+      "title": "Storna questo pagamento",
+      "subtitle": "{{student}} · {{amount}} · {{date}}",
+      "reason": "Motivo (visibile nel registro)",
+      "hint": "La registrazione originale resta nel registro, segnata come stornata. Poi registra di nuovo il pagamento, se serve.",
+      "cardNotice": "Era un pagamento online con carta. Nessun denaro viene restituito: il registro viene corretto, non c'è nessun rimborso.",
+      "confirm": "Storna il pagamento",
+      "done": "Pagamento stornato.",
+      "of": "Storno del pagamento n. {{id}}",
+      "reasonLabel": "Motivo: {{reason}}"
+    },
+    "receipt": {
+      "action": "Ricevuta",
+      "download": "Ricevuta {{number}}"
     }
   },
   "parent": {
@@ -106,7 +125,15 @@
     "noNextLesson": "Nessuna lezione in programma",
     "remaining_one": "{{count}} lezione rimasta nel pacchetto",
     "remaining_other": "{{count}} lezioni rimaste nel pacchetto",
-    "paymentsHint": "Per pagare o correggere un importo, scrivi allo studio."
+    "paymentsHint": "Per pagare o correggere un importo, scrivi allo studio.",
+    "howToPay": "Come pagare",
+    "payOutside": "Paghi fuori da MusicStudio. L'insegnante segna il pagamento come ricevuto; MusicStudio non controlla nessuna banca.",
+    "payIban": "IBAN",
+    "payHolder": "Intestatario",
+    "payBank": "Banca",
+    "receipts": "Ricevute",
+    "receiptDownload": "Scarica",
+    "receiptCancelled": "annullata"
   },
   "auth": {
     "login": "Accedi",
@@ -155,7 +182,14 @@
     "server": "Il server ha avuto un problema. Riprova più tardi.",
     "rejected": "Il server ha rifiutato la richiesta.",
     "rejectedWithReason": "Il server ha rifiutato la richiesta: {{reason}}",
-    "unexpected": "Qualcosa è andato storto."
+    "unexpected": "Qualcosa è andato storto.",
+    "codes": {
+      "payment_final": "Questa registrazione è definitiva. Stornala invece di modificarla.",
+      "not_paid": "Solo un pagamento già incassato si può stornare o avere una ricevuta.",
+      "already_reversed": "Questo pagamento è già stato stornato.",
+      "is_reversal": "Uno storno non si può stornare.",
+      "period_too_long": "Il periodo è troppo lungo: scegline uno di al massimo un anno."
+    }
   },
   "student": {
     "lessons": "Lezioni",
@@ -184,7 +218,7 @@
     "expiresOn": "scade il {{date}}"
   },
   "register": {
-    "title": "Crea l'account del tuo studio",
+    "title": "Registro di cassa",
     "hint": "Per i titolari di uno studio. Insegnanti e genitori entrano su invito.",
     "firstName": "Nome",
     "lastName": "Cognome",
@@ -194,7 +228,24 @@
     "submit": "Crea account",
     "haveAccount": "Ho già un account",
     "checkEmailTitle": "Controlla la tua email",
-    "checkEmail": "Se l'indirizzo è utilizzabile, ti abbiamo mandato un link per confermarlo. Vale 48 ore."
+    "checkEmail": "Se l'indirizzo è utilizzabile, ti abbiamo mandato un link per confermarlo. Vale 48 ore.",
+    "mode": {
+      "day": "Giorno",
+      "month": "Mese",
+      "range": "Periodo libero"
+    },
+    "from": "Dal",
+    "to": "Al",
+    "received": "Incassato",
+    "reversed": "Stornato",
+    "net": "Netto",
+    "totals": "Totali del periodo",
+    "invalidPeriod": "L'inizio del periodo è dopo la sua fine.",
+    "tooLong": "Le esportazioni coprono al massimo un anno. Scegli un periodo più breve per esportare.",
+    "export": {
+      "csv": "Esporta CSV",
+      "pdf": "Esporta PDF"
+    }
   },
   "confirm": {
     "title": "Conferma la tua email",
@@ -399,5 +450,22 @@
     "installHint": "Android ti chiederà di consentire l'installazione da questa fonte: è normale, perché l'app non è ancora sul Play Store.",
     "comingSoon": "La versione per Android arriva a breve.",
     "iphone": "La versione per iPhone non è ancora disponibile."
+  },
+  "instructions": {
+    "title": "Come pagare",
+    "intro": "I genitori vedono questi dati accanto ai pacchetti ancora da pagare dei loro figli. Pagano fuori da MusicStudio e tu segni il pagamento come ricevuto: MusicStudio non muove né controlla denaro.",
+    "readOnly": "Solo il titolare dello studio può modificare questi dati.",
+    "holder": "Intestatario del conto",
+    "iban": "IBAN",
+    "bank": "Banca (facoltativa)",
+    "note": "Nota per i genitori (facoltativa)",
+    "noteHint": "Per esempio cosa scrivere nella causale del bonifico.",
+    "links": "Link di pagamento (fino a 5, solo https)",
+    "linkLabel": "Etichetta",
+    "linkUrl": "Indirizzo",
+    "addLink": "Aggiungi un link",
+    "removeLink": "Rimuovi",
+    "save": "Salva",
+    "saved": "Salvato."
   }
 }
