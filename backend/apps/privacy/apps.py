@@ -1,3 +1,5 @@
+"""Configurazione dell'app Django `privacy` (consensi, esportazione, cancellazione)."""
+
 from django.apps import AppConfig
 
 

@@ -1,7 +1,8 @@
-"""The family export (GDPR access/portability): everything held about one account.
+"""Esportazione per la famiglia (GDPR, accesso e portabilità): tutto ciò che abbiamo su un account.
 
-Scope is decided here by who the account is, never by an id from the request: a parent gets
-the children linked to them, an adult student gets their own record.
+L'ambito si decide qui da chi è l'account, mai da un id nella richiesta: un genitore riceve i
+figli collegati, uno studente adulto il proprio record. Quindi non c'è un id da manipolare
+(docs/learning/concetti/isolamento-tenant-e-bola.md, gdpr-per-sviluppatori.md).
 """
 
 from typing import Any
@@ -18,12 +19,16 @@ from .models import ConsentRecord
 
 
 def students_of(user: User) -> QuerySet[Student]:
+    # Lo studente adulto vede solo se stesso; il genitore i figli collegati. Gli altri ruoli non
+    # arrivano qui (la view lo vieta), e comunque otterrebbero un elenco vuoto.
     if user.role == User.Role.STUDENT:
         return Student.objects.filter(user=user)
     return Student.objects.filter(parent_accounts__user=user)
 
 
 def build_export(user: User) -> dict[str, Any]:
+    # Una query per tabella (prefetch), non una per figlio: il costo non cresce con il numero
+    # di figli. L'ordine è fisso così due esportazioni dello stesso account sono uguali.
     children = list(
         students_of(user)
         .select_related("studio")
@@ -35,6 +40,7 @@ def build_export(user: User) -> dict[str, Any]:
         .order_by("id")
     )
     consents = ConsentRecord.objects.filter(parent__user=user).prefetch_related("students")
+    # Solo dati dell'account e dei figli collegati. Nessun dato di altri genitori o di altri studi.
     return {
         "account": {
             "email": user.email,

@@ -1,4 +1,4 @@
-"""Run the retention rules now (the same job Celery beat runs every night)."""
+"""Esegue subito le regole di conservazione (lo stesso job che Celery beat lancia ogni notte)."""
 
 from typing import Any
 
@@ -8,6 +8,8 @@ from apps.privacy import services
 
 
 class Command(BaseCommand):
+    # `help` è il testo che mostra `manage.py help run_retention`: resta in inglese come il resto
+    # dell'interfaccia dei comandi.
     help = "Anonymise or delete data past its retention period."
 
     def handle(self, *args: Any, **options: Any) -> None:
