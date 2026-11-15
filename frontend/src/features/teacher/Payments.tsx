@@ -8,7 +8,7 @@ import { Icon, StatusChip } from '../../components/ui'
 import { paymentTone } from '../../components/tones'
 import { formatDay, localDateISO } from '../../lib/dates'
 import { monthPeriod, type Period } from '../../lib/period'
-import { useRegisterPayment, usePayments } from './api/payments'
+import { useIssueReceipt, usePayments, useRegisterPayment } from './api/payments'
 import { useStudents } from './api/students'
 import { RegisterPanel } from './RegisterPanel'
 import { ReversePaymentDialog } from './ReversePaymentDialog'
@@ -31,6 +31,7 @@ export function Payments() {
   const payments = usePayments(undefined, period)
   const { data: students } = useStudents()
   const registerPayment = useRegisterPayment()
+  const issueReceipt = useIssueReceipt()
 
   const [studentId, setStudentId] = useState('')
   const [amount, setAmount] = useState('')
@@ -126,14 +127,33 @@ export function Payments() {
                         )}
                       </td>
                       <td>
-                        {payment.status === 'paid' && !payment.reversed && (
-                          <button
-                            type="button"
-                            className="ms-btn ms-btn--secondary ms-btn--s"
-                            onClick={() => setToReverse(payment)}
-                          >
-                            {t('payments.reverse.action')}
-                          </button>
+                        {payment.status === 'paid' && (
+                          <>
+                            <button
+                              type="button"
+                              className="ms-btn ms-btn--secondary ms-btn--s"
+                              disabled={issueReceipt.isPending}
+                              onClick={() =>
+                                issueReceipt.mutate({
+                                  paymentId: payment.id,
+                                  language: i18n.language.startsWith('it') ? 'it' : 'en',
+                                })
+                              }
+                            >
+                              {payment.receipt_number
+                                ? t('payments.receipt.download', { number: payment.receipt_number })
+                                : t('payments.receipt.action')}
+                            </button>
+                            {!payment.reversed && (
+                              <button
+                                type="button"
+                                className="ms-btn ms-btn--secondary ms-btn--s"
+                                onClick={() => setToReverse(payment)}
+                              >
+                                {t('payments.reverse.action')}
+                              </button>
+                            )}
+                          </>
                         )}
                       </td>
                     </tr>
@@ -226,6 +246,7 @@ export function Payments() {
           )}
         </form>
       </div>
+      <ErrorText error={issueReceipt.error} />
       {toReverse && (
         <ReversePaymentDialog payment={toReverse} money={money} onClose={() => setToReverse(null)} />
       )}

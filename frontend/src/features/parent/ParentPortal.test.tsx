@@ -1,8 +1,8 @@
-import { fireEvent, screen } from '@testing-library/react'
-import { expect, test } from 'vitest'
+import { fireEvent, screen, waitFor } from '@testing-library/react'
+import { expect, test, vi } from 'vitest'
 
 import { page } from '../../test/fake-api'
-import { lesson, parentMe, payment, student } from '../../test/fixtures'
+import { lesson, parentMe, payment, receipt, student } from '../../test/fixtures'
 import { renderApp, signedInAs } from '../../test/utils'
 
 const routes = {
@@ -113,4 +113,35 @@ test('two studios: each studio shows only for the child that owes it', async () 
   expect(await screen.findByText(/How to pay — Scuola Due/)).toBeInTheDocument()
   expect(screen.getByText('DE89370400440532013000')).toBeInTheDocument()
   expect(screen.queryByText(/Studio Armonia/)).not.toBeInTheDocument()
+})
+
+test('a parent lists the issued receipts of the child and downloads one, but cannot issue', async () => {
+  const click = vi.fn<() => void>()
+  vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(click)
+  vi.stubGlobal('URL', { ...URL, createObjectURL: vi.fn(() => 'blob:x'), revokeObjectURL: vi.fn() })
+  const api = signedInAs(parentMe, {
+    ...routes,
+    'GET /receipts/?student=7': {
+      status: 200,
+      body: page([receipt(5), receipt(6, { number: '2026-0002', cancelled: true })]),
+    },
+    'GET /receipts/5/pdf/': { status: 200, body: { any: 'pdf' } },
+  })
+  renderApp('/')
+
+  expect(await screen.findByText('2026-0001')).toBeInTheDocument()
+  expect(screen.getByText(/cancelled/)).toBeInTheDocument()
+  fireEvent.click(screen.getAllByRole('button', { name: 'Download' })[0])
+
+  await waitFor(() => expect(click).toHaveBeenCalledTimes(1))
+  expect(api.callsTo('GET /receipts/5/pdf/')).toHaveLength(1)
+  expect(screen.queryByRole('button', { name: /^Receipt/ })).not.toBeInTheDocument() // no issuing
+})
+
+test('a child with no issued receipts shows no receipts section', async () => {
+  signedInAs(parentMe, { ...routes, 'GET /receipts/?student=7': { status: 200, body: page([]) } })
+  renderApp('/')
+
+  await screen.findByText('Bravissima')
+  expect(screen.queryByText('Receipts')).not.toBeInTheDocument()
 })

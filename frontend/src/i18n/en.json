@@ -105,6 +105,10 @@
       "done": "Payment reversed.",
       "of": "Reversal of payment #{{id}}",
       "reasonLabel": "Reason: {{reason}}"
+    },
+    "receipt": {
+      "action": "Receipt",
+      "download": "Receipt {{number}}"
     }
   },
   "parent": {
@@ -126,7 +130,10 @@
     "payOutside": "You pay outside MusicStudio. The teacher marks the payment as received; MusicStudio does not check any bank.",
     "payIban": "IBAN",
     "payHolder": "Account holder",
-    "payBank": "Bank"
+    "payBank": "Bank",
+    "receipts": "Receipts",
+    "receiptDownload": "Download",
+    "receiptCancelled": "cancelled"
   },
   "auth": {
     "login": "Log in",
@@ -178,7 +185,7 @@
     "unexpected": "Something went wrong.",
     "codes": {
       "payment_final": "This entry is final. Reverse it instead of changing it.",
-      "not_paid": "Only a paid entry can be reversed.",
+      "not_paid": "Only a paid entry can be reversed or have a receipt.",
       "already_reversed": "This entry was already reversed.",
       "is_reversal": "A reversal cannot be reversed.",
       "period_too_long": "The period is too long: choose at most one year."

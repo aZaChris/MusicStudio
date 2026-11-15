@@ -105,6 +105,10 @@
       "done": "Pagamento stornato.",
       "of": "Storno del pagamento n. {{id}}",
       "reasonLabel": "Motivo: {{reason}}"
+    },
+    "receipt": {
+      "action": "Ricevuta",
+      "download": "Ricevuta {{number}}"
     }
   },
   "parent": {
@@ -126,7 +130,10 @@
     "payOutside": "Paghi fuori da MusicStudio. L'insegnante segna il pagamento come ricevuto; MusicStudio non controlla nessuna banca.",
     "payIban": "IBAN",
     "payHolder": "Intestatario",
-    "payBank": "Banca"
+    "payBank": "Banca",
+    "receipts": "Ricevute",
+    "receiptDownload": "Scarica",
+    "receiptCancelled": "annullata"
   },
   "auth": {
     "login": "Accedi",
@@ -178,7 +185,7 @@
     "unexpected": "Qualcosa è andato storto.",
     "codes": {
       "payment_final": "Questa registrazione è definitiva. Stornala invece di modificarla.",
-      "not_paid": "Si può stornare solo un pagamento già incassato.",
+      "not_paid": "Solo un pagamento già incassato si può stornare o avere una ricevuta.",
       "already_reversed": "Questo pagamento è già stato stornato.",
       "is_reversal": "Uno storno non si può stornare.",
       "period_too_long": "Il periodo è troppo lungo: scegline uno di al massimo un anno."
