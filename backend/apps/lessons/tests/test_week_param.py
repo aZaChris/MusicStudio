@@ -38,7 +38,9 @@ def test_week_param_selects_that_week_only():
 
 def test_upcoming_and_student_lessons_endpoints():
     student = StudentFactory()
-    LessonFactory(student=student)
+    # Explicitly in the future: the factory may move its default start into the past
+    # on Sunday evenings to stay inside the current week.
+    LessonFactory(student=student, start_time=timezone.now() + datetime.timedelta(minutes=5))
     client = client_for(student.teacher.user)
 
     upcoming = client.get("/api/v1/lessons/upcoming/")
