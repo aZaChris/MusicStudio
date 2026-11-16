@@ -7,6 +7,7 @@ import { AppShell } from '../../components/AppShell'
 import { ErrorText, QueryState } from '../../components/QueryState'
 import { Icon } from '../../components/ui'
 import { useInstructions, useSaveInstructions } from '../teacher/api/instructions'
+import { PaymentAccountSection } from './PaymentAccountSection'
 
 const MAX_LINKS = 5
 type Link = { label: string; url: string }
@@ -37,6 +38,8 @@ export function PaymentInstructionsPage() {
           />
         )}
       </QueryState>
+      {/* Online payments to the studio's own Stripe account: only there once the feature is on. */}
+      <PaymentAccountSection canEdit={canEdit} />
     </AppShell>
   )
 }

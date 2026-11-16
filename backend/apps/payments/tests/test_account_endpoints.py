@@ -57,8 +57,8 @@ def test_the_owner_starts_onboarding_and_gets_the_stripe_page(fake_stripe):
     assert account.state == "information_needed"  # un conto nuovo aspetta i dati del titolare
     link = fake_stripe.links[0]
     assert link["account_id"] == account.stripe_account_id
-    assert link["return_url"].endswith("/settings/payments?return=1")
-    assert link["refresh_url"].endswith("/settings/payments?refresh=1")
+    assert link["return_url"].endswith("/payment-instructions?return=1")
+    assert link["refresh_url"].endswith("/payment-instructions?refresh=1")
 
 
 def test_nothing_personal_is_sent_to_stripe_at_creation(fake_stripe):

@@ -467,5 +467,42 @@
     "removeLink": "Remove",
     "save": "Save",
     "saved": "Saved."
+  },
+  "paymentAccount": {
+    "title": "Online payments",
+    "intro": "Parents can pay a package online and the money goes straight to your studio's own Stripe account. MusicStudio never receives or holds it, and takes no fee.",
+    "testMode": "Test mode: no real money moves yet. Payments here are only for trying the feature.",
+    "stateLabel": "Account status",
+    "state": {
+      "not_started": "Not started",
+      "in_progress": "In progress",
+      "information_needed": "Information needed",
+      "active": "Active",
+      "restricted": "Restricted",
+      "disconnected": "Disconnected"
+    },
+    "hint": {
+      "not_started": "Open your account on Stripe's own page. You enter your details there; MusicStudio never sees them.",
+      "in_progress": "Stripe is reviewing your details. Check again in a few minutes.",
+      "information_needed": "Stripe needs more information from you. Continue on Stripe's page to finish.",
+      "active": "Your account can receive online payments.",
+      "restricted": "Stripe has restricted the account. Open your Stripe page to see what to do; online payment is off until then.",
+      "disconnected": "The account was disconnected from MusicStudio. Start again to link a new one."
+    },
+    "start": "Open my account on Stripe",
+    "continue": "Continue on Stripe",
+    "startAgain": "Start again",
+    "check": "Check status",
+    "openStripe": "Open my Stripe page",
+    "readOnly": "Only the studio owner can open or change the account.",
+    "attentionTitle": "Things to check on Stripe",
+    "attentionIntro": "These events from Stripe do not match your register. Check them on your Stripe page.",
+    "attention": {
+      "refund_unmatched": "A refund that matches no payment in the register",
+      "dispute_unmatched": "A dispute that matches no payment in the register",
+      "refund_exceeds": "A refund larger than what is left of the payment",
+      "amount_differs": "A payment for a different amount than the package",
+      "duplicate_payment": "A second payment for a package that was already paid"
+    }
   }
 }

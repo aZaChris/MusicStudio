@@ -33,6 +33,8 @@ export function signedInAs(me: Me, routes: Parameters<typeof installFakeApi>[0] 
   return installFakeApi({
     'GET /auth/me/': { status: 200, body: me },
     'GET /payments/': { status: 200, body: page([]) },
+    // Online payments are switched off by default: the server answers 404 and pages show nothing.
+    'GET /payment-account/': { status: 404, body: { detail: 'Not found.', code: 'online_payments_off' } },
     ...routes,
   })
 }

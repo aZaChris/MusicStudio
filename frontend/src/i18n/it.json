@@ -467,5 +467,42 @@
     "removeLink": "Rimuovi",
     "save": "Salva",
     "saved": "Salvato."
+  },
+  "paymentAccount": {
+    "title": "Pagamenti online",
+    "intro": "I genitori possono pagare un pacchetto online e i soldi vanno direttamente sul conto Stripe del tuo studio. MusicStudio non li riceve né li tiene, e non prende commissioni.",
+    "testMode": "Modalità di prova: per ora non si muove denaro vero. I pagamenti qui servono solo a provare la funzione.",
+    "stateLabel": "Stato del conto",
+    "state": {
+      "not_started": "Non iniziato",
+      "in_progress": "In corso",
+      "information_needed": "Servono informazioni",
+      "active": "Attivo",
+      "restricted": "Limitato",
+      "disconnected": "Scollegato"
+    },
+    "hint": {
+      "not_started": "Apri il tuo conto sulla pagina di Stripe. I dati li inserisci lì: MusicStudio non li vede mai.",
+      "in_progress": "Stripe sta controllando i tuoi dati. Ricontrolla tra qualche minuto.",
+      "information_needed": "Stripe ha bisogno di altre informazioni da te. Continua sulla sua pagina per finire.",
+      "active": "Il tuo conto può ricevere pagamenti online.",
+      "restricted": "Stripe ha limitato il conto. Apri la tua pagina Stripe per vedere cosa fare; fino ad allora il pagamento online è spento.",
+      "disconnected": "Il conto è stato scollegato da MusicStudio. Ricomincia per collegarne uno nuovo."
+    },
+    "start": "Apri il mio conto su Stripe",
+    "continue": "Continua su Stripe",
+    "startAgain": "Ricomincia",
+    "check": "Controlla lo stato",
+    "openStripe": "Apri la mia pagina Stripe",
+    "readOnly": "Solo il titolare dello studio può aprire o cambiare il conto.",
+    "attentionTitle": "Da controllare su Stripe",
+    "attentionIntro": "Questi eventi di Stripe non combaciano con il tuo registro. Controllali sulla tua pagina Stripe.",
+    "attention": {
+      "refund_unmatched": "Un rimborso che non corrisponde a nessun pagamento del registro",
+      "dispute_unmatched": "Una contestazione che non corrisponde a nessun pagamento del registro",
+      "refund_exceeds": "Un rimborso più grande di ciò che resta del pagamento",
+      "amount_differs": "Un pagamento di un importo diverso dal pacchetto",
+      "duplicate_payment": "Un secondo pagamento per un pacchetto già pagato"
+    }
   }
 }

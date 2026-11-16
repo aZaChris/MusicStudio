@@ -794,8 +794,8 @@ def start_onboarding(studio: Studio, *, actor: Any) -> gateway.AccountLink:
             )
         return gateway.create_account_link(
             account_id=account.stripe_account_id,
-            return_url=_portal_url("/settings/payments?return=1"),
-            refresh_url=_portal_url("/settings/payments?refresh=1"),
+            return_url=_portal_url("/payment-instructions?return=1"),
+            refresh_url=_portal_url("/payment-instructions?refresh=1"),
         )
 
 
