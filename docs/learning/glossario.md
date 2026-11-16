@@ -327,3 +327,21 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **Receipt (ricevuta non fiscale).** Un PDF che prova che un pagamento è stato registrato, con un numero unico per studio e anno. Dice chiaramente che non è un documento fiscale e si genera ogni volta dai dati attuali.
 
 **Reversal (storno).** Una riga nuova che annulla un pagamento incassato, collegata all'originale, con chi, quando e perché. L'originale non si tocca. Corregge il registro: non restituisce denaro.
+
+## Termini aggiunti nella fase 9
+
+**Connected account (conto collegato).** Il conto Stripe di uno studio, collegato alla piattaforma. È lo studio il titolare del conto e a ricevere il denaro. Noi salviamo solo l'id e uno stato.
+
+**Direct charge (pagamento diretto).** Un pagamento creato direttamente sul conto collegato, con l'intestazione `Stripe-Account`. Il denaro non passa dal conto della piattaforma.
+
+**Hosted onboarding (attivazione ospitata).** La pagina di Stripe dove il titolare di un conto inserisce i suoi dati e accetta i termini. Lì si fanno anche le verifiche di identità: MusicStudio non le vede.
+
+**Dispute / chargeback (contestazione).** Un cliente chiede alla propria banca di annullare un pagamento. Stripe toglie il denaro allo studio e poi decide chi ha ragione. Se lo studio perde, nel registro nasce uno storno con causa `dispute`.
+
+**Feature switch (interruttore).** Un'impostazione che accende o spegne una funzione senza toccare il codice. `ONLINE_PAYMENTS_ENABLED` tiene spenti i pagamenti online finché il titolare non decide.
+
+**Provider reference (riferimento del fornitore).** L'id che Stripe dà a un rimborso o a una contestazione. Nel registro è unico: una notifica ripetuta non può scrivere due righe.
+
+**Scrubbing (ripulitura).** Salvare solo i campi che servono di un evento, togliendo nomi, email, indirizzi e dati di carta. Una lista bianca di campi permessi.
+
+**Thin event (evento sottile).** Un tipo di evento della nuova API di Stripe che porta poco più dell'id di ciò che è cambiato. Per lo stato dei conti nuovi non li usiamo: rileggiamo il conto.

@@ -57,6 +57,12 @@ L'incassato è la somma dei pagamenti pagati per la loro data. Lo stornato è la
 
 **Misure vere.** Su questo portatile, in-process e senza rete: il riepilogo di un mese con 2.000 voci ha impiegato 22 ms (mediana di cinque prove; la primissima chiamata, a freddo, 874 ms). L'esportazione CSV di un anno con 5.000 righe ha impiegato 629 ms. Non dicono nulla su un server sotto carico.
 
+## Aggiornamento della fase 9: più storni
+
+Nella fase 8 un pagamento aveva **al massimo uno storno**, intero. Dalla fase 9 può averne più d'uno: servono ai rimborsi parziali che lo studio fa sulla pagina di Stripe. `reversal_of` è ora una chiave esterna, ogni riga di storno ha una causa (`manual`, `refund`, `dispute`) e gli storni di Stripe portano il loro id, unico. Lo storno **manuale** resta uno solo e intero, e si può fare solo se il pagamento non ha altri storni.
+
+"Stornato" è ora una somma: un pagamento è stornato quando gli storni coprono l'importo. Un rimborso parziale abbassa il netto e lascia il pacchetto pagato. I totali e le esportazioni sommano ogni storno, qualunque sia la causa, e il CSV ha due colonne in più (`cause` e `provider_ref`). Dettagli: `rimborsi-e-contestazioni.md` e ADR-038.
+
 ## Alternative considerate
 
 - **Segnare l'originale come stornato**: riscrive la storia e sposta i totali.
