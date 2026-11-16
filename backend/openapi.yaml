@@ -32,8 +32,12 @@ paths:
           - password.change
           - password.reset
           - payment.delete
+          - payment.dispute
           - payment.record
+          - payment.refund
           - payment.reverse
+          - payment_account.start
+          - payment_account.state
           - privacy.erase
           - privacy.export
           - receipt.issue
@@ -3433,6 +3437,10 @@ components:
       - register.export
       - instructions.change
       - receipt.issue
+      - payment_account.start
+      - payment_account.state
+      - payment.refund
+      - payment.dispute
       type: string
       description: |-
         * `registration` - Registration
@@ -3461,6 +3469,10 @@ components:
         * `register.export` - Register Export
         * `instructions.change` - Instructions Change
         * `receipt.issue` - Receipt Issue
+        * `payment_account.start` - Payment Account Start
+        * `payment_account.state` - Payment Account State
+        * `payment.refund` - Payment Refund
+        * `payment.dispute` - Payment Dispute
     AuditEntry:
       type: object
       properties:

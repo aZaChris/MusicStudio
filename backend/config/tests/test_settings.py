@@ -72,6 +72,15 @@ def test_dev_settings_are_debug():
     assert dev.DEBUG is True
 
 
+def test_phase9_settings_exist_and_the_new_throttle_has_a_rate(settings):
+    # Senza una tariffa nei settings di test il throttle "fail open" lascerebbe passare tutto
+    # senza dirlo (già successo con le esportazioni della fase 8).
+    rates = settings.REST_FRAMEWORK["DEFAULT_THROTTLE_RATES"]
+
+    assert rates["payment_account"]
+    assert isinstance(settings.STRIPE_CONNECT_WEBHOOK_SECRET, str)
+
+
 def test_prod_settings_refuse_missing_or_unsafe_field_keys():
     without = {k: v for k, v in PROD_ENV.items() if k != "FIELD_ENCRYPTION_KEYS"}
     dev_key = {**PROD_ENV, "FIELD_ENCRYPTION_KEYS": "ZGV2LW9ubHktaW5zZWN1cmUtZmllbGQta2V5LTAwMDA="}

@@ -176,6 +176,8 @@ REST_FRAMEWORK = {
         "invitation_accept": env("THROTTLE_INVITATION_ACCEPT", default="10/hour"),
         # Esportazioni del registro di cassa e PDF delle ricevute: letture pesanti (fase 8).
         "register_export": env("THROTTLE_REGISTER_EXPORT", default="20/hour"),
+        # Conto di pagamento dello studio (fase 9): onboarding e rilettura dello stato su Stripe.
+        "payment_account": env("THROTTLE_PAYMENT_ACCOUNT", default="20/hour"),
     },
 }
 
@@ -246,6 +248,9 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
 # A restricted key (rk_test_...) with "Checkout Sessions: write" is recommended over sk_test_.
 STRIPE_API_KEY: str = env("STRIPE_API_KEY", default="")
 STRIPE_WEBHOOK_SECRET: str = env("STRIPE_WEBHOOK_SECRET", default="")
+# Segreto dell'endpoint "Connected accounts" (fase 9, ADR-039): gli eventi dei conti degli studi
+# arrivano a un endpoint di tipo diverso, con una firma sua. Vuoto = l'endpoint risponde 400.
+STRIPE_CONNECT_WEBHOOK_SECRET: str = env("STRIPE_CONNECT_WEBHOOK_SECRET", default="")
 # Second layer after the signature (ADR-021): only Stripe's published webhook addresses.
 # Empty = no address check (dev, tests, or a temporary escape hatch); signature still applies.
 STRIPE_WEBHOOK_ALLOWED_IPS: list[str] = env.list("STRIPE_WEBHOOK_ALLOWED_IPS", default=[])

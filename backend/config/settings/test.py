@@ -34,6 +34,7 @@ REST_FRAMEWORK = {
         "privacy": "50/min",
         "invitation_accept": "5/min",
         "register_export": "5/min",
+        "payment_account": "20/min",
     },
 }
 

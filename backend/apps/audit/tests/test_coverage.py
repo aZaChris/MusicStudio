@@ -42,6 +42,11 @@ COVERED_ELSEWHERE = {
     "register.export",  # apps/payments/tests/test_register_export.py
     "instructions.change",  # apps/payments/tests/test_instructions.py
     "receipt.issue",  # apps/payments/tests/test_receipts.py
+    # Fase 9: ogni voce la verifica la suite della storia che la scrive (specs/009, tasks).
+    "payment_account.start",  # US1 (T014, T018): apps/payments/tests/test_account_endpoints.py
+    "payment_account.state",  # US1 (T014, T015): apps/payments/tests/test_account_events.py
+    "payment.refund",  # US3 (T008, T038): apps/payments/tests/test_refunds.py
+    "payment.dispute",  # US3 (T035, T039): apps/payments/tests/test_disputes.py
 }
 
 
