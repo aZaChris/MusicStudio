@@ -496,10 +496,75 @@ export interface paths {
         /**
          * @description Online payment link (Stripe Checkout, test mode) for this package.
          *
-         *     Anyone who can see the package may ask — typically the parent who pays.
+         *     Anyone who can see the package may ask — typically the parent who pays. The payment goes
+         *     to the studio's own Stripe account; 409 when the studio has no active account.
          *     Repeated calls return the same open attempt.
          */
         post: operations["v1_packages_checkout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment-account/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_payment_account_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment-account/onboarding/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_payment_account_onboarding_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment-account/refresh/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_payment_account_refresh_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payment-account/restart/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["v1_payment_account_restart_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -860,6 +925,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/webhooks/stripe-connect/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Stripe events, verified with the Stripe-Signature header. */
+        post: operations["v1_webhooks_stripe_connect_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -910,9 +992,21 @@ export interface components {
          *     * `register.export` - Register Export
          *     * `instructions.change` - Instructions Change
          *     * `receipt.issue` - Receipt Issue
+         *     * `payment_account.start` - Payment Account Start
+         *     * `payment_account.state` - Payment Account State
+         *     * `payment.refund` - Payment Refund
+         *     * `payment.dispute` - Payment Dispute
          * @enum {string}
          */
-        ActionEnum: "registration" | "email.confirm" | "login.success" | "login.failure" | "login.locked" | "password.reset" | "password.change" | "mfa.enable" | "mfa.disable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "account.unlock_by_operator" | "invitation.send" | "invitation.accept" | "invitation.revoke" | "role.change" | "consent.give" | "consent.withdraw" | "privacy.export" | "privacy.erase" | "payment.record" | "payment.reverse" | "payment.delete" | "register.export" | "instructions.change" | "receipt.issue";
+        ActionEnum: "registration" | "email.confirm" | "login.success" | "login.failure" | "login.locked" | "password.reset" | "password.change" | "mfa.enable" | "mfa.disable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "account.unlock_by_operator" | "invitation.send" | "invitation.accept" | "invitation.revoke" | "role.change" | "consent.give" | "consent.withdraw" | "privacy.export" | "privacy.erase" | "payment.record" | "payment.reverse" | "payment.delete" | "register.export" | "instructions.change" | "receipt.issue" | "payment_account.start" | "payment_account.state" | "payment.refund" | "payment.dispute";
+        AttentionItem: {
+            id: number;
+            kind: string;
+            /** Format: date-time */
+            received_at: string;
+            /** Format: decimal */
+            amount: string | null;
+        };
         AuditEntry: {
             readonly id: number;
             /** Format: date-time */
@@ -925,6 +1019,13 @@ export interface components {
             target_id?: number | null;
             metadata?: unknown;
         };
+        /**
+         * @description * `manual` - Manual correction
+         *     * `refund` - Refund
+         *     * `dispute` - Dispute
+         * @enum {string}
+         */
+        CauseEnum: "manual" | "refund" | "dispute";
         /** @description Response of POST /packages/{id}/checkout/: where to send the payer. */
         Checkout: {
             /** Format: uuid */
@@ -1124,6 +1225,11 @@ export interface components {
             mfa_token: string;
             code: string;
         };
+        OnboardingLink: {
+            url: string;
+            /** Format: date-time */
+            expires_at: string | null;
+        };
         OpenInstructions: {
             account_holder?: string;
             iban?: string;
@@ -1166,6 +1272,8 @@ export interface components {
             price: string;
             readonly status: string;
             readonly is_low: boolean;
+            /** @default false */
+            readonly can_pay_online: boolean;
         };
         /**
          * @description Restrict writable related fields to objects the requesting user may see.
@@ -1375,7 +1483,8 @@ export interface components {
             /** Format: date */
             date?: string;
             method?: components["schemas"]["MethodEnum"];
-            status?: components["schemas"]["PaymentStatusEnum"];
+            /** @default pending */
+            status: components["schemas"]["PaymentStatusEnum"];
         };
         PatchedStudentRequest: {
             first_name?: string;
@@ -1403,15 +1512,30 @@ export interface components {
             /** Format: date */
             date: string;
             method: components["schemas"]["MethodEnum"];
-            status?: components["schemas"]["PaymentStatusEnum"];
+            /** @default pending */
+            status: components["schemas"]["PaymentStatusEnum"];
             /** Format: uuid */
             readonly checkout: string | null;
             readonly reversal_of: number | null;
             readonly reversed: boolean;
             readonly reversal_id: number | null;
+            /** Format: decimal */
+            readonly reversed_amount: string;
+            readonly under_dispute: boolean;
+            /** @default manual */
+            readonly cause: components["schemas"]["CauseEnum"];
             readonly receipt_number: string | null;
             readonly recorded_by: number | null;
             readonly reason: string;
+        };
+        PaymentAccount: {
+            readonly state: components["schemas"]["StateEnum"];
+            can_accept_online: boolean;
+            test_mode: boolean;
+            dashboard_url: string | null;
+            /** Format: date-time */
+            state_changed_at: string | null;
+            needs_attention: components["schemas"]["AttentionItem"][];
         };
         PaymentInstructions: {
             account_holder?: string;
@@ -1454,7 +1578,8 @@ export interface components {
             /** Format: date */
             date: string;
             method: components["schemas"]["MethodEnum"];
-            status?: components["schemas"]["PaymentStatusEnum"];
+            /** @default pending */
+            status: components["schemas"]["PaymentStatusEnum"];
         };
         /**
          * @description * `paid` - Paid
@@ -1557,12 +1682,18 @@ export interface components {
             /** Format: date */
             date: string;
             method: components["schemas"]["MethodEnum"];
-            status?: components["schemas"]["PaymentStatusEnum"];
+            /** @default pending */
+            status: components["schemas"]["PaymentStatusEnum"];
             /** Format: uuid */
             readonly checkout: string | null;
             readonly reversal_of: number | null;
             readonly reversed: boolean;
             readonly reversal_id: number | null;
+            /** Format: decimal */
+            readonly reversed_amount: string;
+            readonly under_dispute: boolean;
+            /** @default manual */
+            readonly cause: components["schemas"]["CauseEnum"];
             readonly receipt_number: string | null;
             readonly recorded_by: number | null;
             readonly reason: string;
@@ -1571,6 +1702,16 @@ export interface components {
         ReverseRequestRequest: {
             reason: string;
         };
+        /**
+         * @description * `not_started` - not_started
+         *     * `in_progress` - in_progress
+         *     * `information_needed` - information_needed
+         *     * `active` - active
+         *     * `restricted` - restricted
+         *     * `disconnected` - disconnected
+         * @enum {string}
+         */
+        StateEnum: "not_started" | "in_progress" | "information_needed" | "active" | "restricted" | "disconnected";
         Student: {
             readonly id: number;
             first_name: string;
@@ -1644,7 +1785,7 @@ export interface operations {
     v1_audit_list: {
         parameters: {
             query?: {
-                action?: "account.unlock_by_operator" | "consent.give" | "consent.withdraw" | "email.confirm" | "instructions.change" | "invitation.accept" | "invitation.revoke" | "invitation.send" | "login.failure" | "login.locked" | "login.success" | "mfa.disable" | "mfa.enable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "password.change" | "password.reset" | "payment.delete" | "payment.record" | "payment.reverse" | "privacy.erase" | "privacy.export" | "receipt.issue" | "register.export" | "registration" | "role.change";
+                action?: "account.unlock_by_operator" | "consent.give" | "consent.withdraw" | "email.confirm" | "instructions.change" | "invitation.accept" | "invitation.revoke" | "invitation.send" | "login.failure" | "login.locked" | "login.success" | "mfa.disable" | "mfa.enable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "password.change" | "password.reset" | "payment.delete" | "payment.dispute" | "payment.record" | "payment.refund" | "payment.reverse" | "payment_account.start" | "payment_account.state" | "privacy.erase" | "privacy.export" | "receipt.issue" | "register.export" | "registration" | "role.change";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description ISO 8601 date-time */
@@ -3867,6 +4008,216 @@ export interface operations {
             };
         };
     };
+    v1_payment_account_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAccount"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payment_account_onboarding_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OnboardingLink"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payment_account_refresh_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaymentAccount"];
+                };
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_payment_account_restart_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid input. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ValidationError"];
+                };
+            };
+            /** @description Missing or invalid token. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Role or object not allowed. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     v1_payment_instructions_retrieve: {
         parameters: {
             query?: never;
@@ -5641,6 +5992,47 @@ export interface operations {
         };
     };
     v1_webhooks_stripe_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Event received (or duplicate) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid payload or signature */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Caller is not a Stripe webhook address */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Rate limit exceeded; see Retry-After. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    v1_webhooks_stripe_connect_create: {
         parameters: {
             query?: never;
             header?: never;

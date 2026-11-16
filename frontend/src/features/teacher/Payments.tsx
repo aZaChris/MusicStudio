@@ -108,6 +108,7 @@ export function Payments() {
                         {payment.student_name}
                         {payment.status === 'reversal' && (
                           <small style={{ display: 'block' }}>
+                            {payment.cause !== 'manual' && `${t(`payments.cause.${payment.cause}`)} · `}
                             {t('payments.reverse.of', { id: payment.reversal_of })}
                             {payment.reason &&
                               ` — ${t('payments.reverse.reasonLabel', { reason: payment.reason })}`}
@@ -124,6 +125,16 @@ export function Payments() {
                           </StatusChip>
                         ) : (
                           '—'
+                        )}
+                        {payment.under_dispute && (
+                          <small style={{ display: 'block' }}>{t('payments.underDispute')}</small>
+                        )}
+                        {!payment.reversed && Number(payment.reversed_amount) > 0 && (
+                          <small style={{ display: 'block' }}>
+                            {t('payments.partlyRefunded', {
+                              amount: money.format(Number(payment.reversed_amount)),
+                            })}
+                          </small>
                         )}
                       </td>
                       <td>
@@ -144,7 +155,7 @@ export function Payments() {
                                 ? t('payments.receipt.download', { number: payment.receipt_number })
                                 : t('payments.receipt.action')}
                             </button>
-                            {!payment.reversed && (
+                            {!payment.reversed && Number(payment.reversed_amount) === 0 && (
                               <button
                                 type="button"
                                 className="ms-btn ms-btn--secondary ms-btn--s"

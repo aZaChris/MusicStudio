@@ -94,6 +94,10 @@ A ogni push GitHub Actions esegue lint, formattazione, tipi, controllo delle mig
 - **Il blocco dell'account si può usare contro una persona**: chi conosce un'email può bloccarla. Il tetto di 24 ore e il reset via email lo limitano.
 - **I numeri del load test** vengono da un portatile, con client e server sulla stessa CPU. Servono a trovare problemi, non a promettere prestazioni.
 
+## Fase 9: pagamenti online sul conto dello studio
+
+Il pagamento online non va più sul conto della piattaforma: ogni studio ha un **conto Stripe collegato** (tabella `StudioPaymentAccount`, solo id e stato) e il genitore paga direttamente lì. Le chiamate a Stripe restano tutte in `apps/payments/gateway.py`. Un secondo webhook riceve gli eventi dei conti collegati. Rimborsi e contestazioni diventano righe di storno del registro, anche parziali. Gli eventi si salvano ripuliti dei dati personali. Tutto è dietro l'interruttore `ONLINE_PAYMENTS_ENABLED`, **spento di default**, e in modalità test. Dettagli: `concetti/stripe-connect-pagamenti-diretti.md` e `concetti/rimborsi-e-contestazioni.md`.
+
 ## Dove andare dopo
 
 - Per capire da dove siamo partiti: `docs/learning/audit-iniziale.md`.

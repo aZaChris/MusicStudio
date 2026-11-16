@@ -79,3 +79,51 @@ def test_the_guard_itself_sees_a_violation():
         if isinstance(n, ast.Call) and getattr(n.func, "attr", "") == "update"
     )
     assert not _chain_starts_at_payment(other.func.value)
+
+
+# --- Fase 9: le righe del registro nascono solo dai service -----------------------------------
+
+# (file, funzione) in cui si crea una riga di `Payment`. Un pagamento pagato è definitivo e uno
+# storno si aggiunge solo con le regole dei service (blocco di riga, somma <= importo, id unico).
+CREATE_ALLOWED = {
+    ("payments/services.py", "create_payment"),  # a mano
+    ("payments/services.py", "reverse_payment"),  # storno a mano
+    ("payments/services.py", "add_provider_reversal"),  # rimborso o contestazione di Stripe
+    ("payments/services.py", "_fulfil"),  # pagamento online confermato
+    # Dati finti per le prove di carico, solo su un database di prova (comando di gestione).
+    ("common/management/commands/seed_loadtest.py", "_seed"),
+}
+
+
+def _payment_creations() -> set[tuple[str, str]]:
+    found: set[tuple[str, str]] = set()
+    for path in sorted(APPS.rglob("*.py")):
+        relative = path.relative_to(APPS).as_posix()
+        if "/tests/" in f"/{relative}" or "/migrations/" in f"/{relative}":
+            continue
+        if relative == "common/factories.py":
+            continue
+        for function in ast.walk(ast.parse(path.read_text())):
+            if not isinstance(function, ast.FunctionDef | ast.AsyncFunctionDef):
+                continue
+            for node in ast.walk(function):
+                if not isinstance(node, ast.Call):
+                    continue
+                direct = isinstance(node.func, ast.Name) and node.func.id == "Payment"
+                manager = (
+                    isinstance(node.func, ast.Attribute)
+                    and node.func.attr in {"create", "bulk_create", "get_or_create"}
+                    and _chain_starts_at_payment(node.func.value)
+                )
+                if direct or manager:
+                    found.add((relative, function.name))
+    return found
+
+
+def test_payment_rows_are_only_created_by_the_services():
+    found = _payment_creations()
+
+    assert found == CREATE_ALLOWED, (
+        "A payment row is created outside the services: corrections and refunds go through "
+        f"them. New places: {found - CREATE_ALLOWED}. Gone: {CREATE_ALLOWED - found}."
+    )

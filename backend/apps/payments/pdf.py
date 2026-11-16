@@ -28,6 +28,7 @@ LABELS: dict[str, dict[str, str]] = {
         "total": "Total",
         "produced": "Produced on {day}",
         "not_tax": "This document is not a tax document.",
+        "provider_note": "Refunds and disputes come from the payment provider (Stripe).",
         "receipt_title": "Payment receipt",
         "receipt_no": "Receipt no. {number}",
         "studio": "Studio",
@@ -53,6 +54,7 @@ LABELS: dict[str, dict[str, str]] = {
         "total": "Totale",
         "produced": "Prodotto il {day}",
         "not_tax": "Questo documento non è un documento fiscale.",
+        "provider_note": "Rimborsi e contestazioni arrivano dal fornitore dei pagamenti (Stripe).",
         "receipt_title": "Ricevuta di pagamento",
         "receipt_no": "Ricevuta n. {number}",
         "studio": "Studio",
@@ -143,6 +145,7 @@ def register_pdf(
         Spacer(1, 10 * mm),
         Paragraph(text["produced"].format(day=_day(produced_on, language)), small),
         Paragraph(text["not_tax"], small),
+        Paragraph(text["provider_note"], small),
     ]
     doc.build(story)
     return buffer.getvalue()

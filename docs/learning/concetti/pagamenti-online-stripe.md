@@ -60,9 +60,17 @@ session = _client().v1.checkout.sessions.create(
 
 ## Aggiornamento della fase 8: il registro
 
-Dalla fase 8 i pagamenti online seguono le regole del registro di cassa (`registro-di-cassa.md`, ADR-034). Il pagamento con carta creato dal webhook è un pagamento "pagato" come gli altri: è definitivo, non si modifica e non si cancella. Se l'insegnante lo storna, il registro viene corretto ma **non viene restituito nessun denaro**: la risposta dice `refund: false` e la schermata lo spiega. Un rimborso su Stripe resta fuori dal perimetro (rimborsi e contestazioni non sono gestiti).
+Dalla fase 8 i pagamenti online seguono le regole del registro di cassa (`registro-di-cassa.md`, ADR-034). Il pagamento con carta creato dal webhook è un pagamento "pagato" come gli altri: è definitivo, non si modifica e non si cancella. Se l'insegnante lo storna, il registro viene corretto ma **non viene restituito nessun denaro**: la risposta dice `refund: false` e la schermata lo spiega. Un rimborso su Stripe, fino alla fase 9, restava fuori dal perimetro: ora lo gestisce la fase 9 (vedi sotto).
 
 Cambia anche la definizione di "pacchetto già pagato", usata dal checkout: ora vuol dire che esiste un pagamento pagato **non stornato**. Se il pagamento è stato stornato, il pacchetto si può pagare di nuovo e `start_checkout` non risponde più 409. Un test lo verifica: dopo lo storno la richiesta di checkout torna 200.
+
+## Aggiornamento della fase 9: il denaro va allo studio
+
+Il pagamento descritto sopra, fino alla fase 8, finiva sul conto Stripe **della piattaforma**. Dalla fase 9 non è più così: la Checkout Session nasce sul **conto collegato dello studio** (pagamento diretto, senza commissioni) e `start_checkout` rifiuta con 409 se lo studio non ha un conto attivo. Le chiamate a Stripe sono sempre tutte in `gateway.py`, ma ora il gateway sa anche creare il conto dello studio e il link di attivazione.
+
+Cambia anche la strada degli eventi: un pagamento diretto genera eventi sul conto dello studio, che arrivano a un **secondo endpoint webhook** con un segreto suo. Gli eventi si salvano ripuliti dei dati personali. Rimborsi e contestazioni diventano righe di storno del registro.
+
+Tutto è dietro l'interruttore `ONLINE_PAYMENTS_ENABLED`, spento di default, e resta in modalità test. Per i dettagli: `stripe-connect-pagamenti-diretti.md`, `rimborsi-e-contestazioni.md`, ADR-037, ADR-038 e ADR-039.
 
 ## Alternative considerate
 

@@ -9,7 +9,7 @@ from apps.accounts.models import User
 from apps.lessons.models import Lesson
 from apps.lessons.selectors import week_bounds
 from apps.packages.models import Package
-from apps.payments.models import Payment
+from apps.payments.models import Payment, StudioPaymentAccount
 from apps.students.models import ParentAccount, ParentStudentLink, Student
 from apps.studios.models import Studio, Teacher
 
@@ -37,6 +37,17 @@ class StudioFactory(factory.django.DjangoModelFactory[Studio]):
         model = Studio
 
     name = factory.Sequence(lambda n: f"Studio {n}")
+
+
+class StudioPaymentAccountFactory(factory.django.DjangoModelFactory[StudioPaymentAccount]):
+    # Il conto Stripe di uno studio (fase 9). Per default è attivo: la maggior parte dei test
+    # sui pagamenti online parte da un conto che può incassare.
+    class Meta:
+        model = StudioPaymentAccount
+
+    studio = factory.SubFactory(StudioFactory)
+    stripe_account_id = factory.Sequence(lambda n: f"acct_test_{n + 100}")
+    state = StudioPaymentAccount.State.ACTIVE
 
 
 class TeacherFactory(factory.django.DjangoModelFactory[Teacher]):
@@ -112,6 +123,14 @@ class ParentAccountFactory(factory.django.DjangoModelFactory[ParentAccount]):
         model = ParentAccount
 
     user = factory.SubFactory(UserFactory, role=User.Role.PARENT)
+
+
+def connected_package(**overrides: object) -> Package:
+    # Un pacchetto il cui studio ha un conto Stripe attivo: il solo caso in cui si può pagare online
+    # (fase 9). Serve ai test del checkout e dei webhook.
+    package = PackageFactory(**overrides)
+    StudioPaymentAccountFactory(studio=package.student.studio)
+    return package
 
 
 def link_parent_to_student(parent: ParentAccount, student: Student) -> ParentStudentLink:

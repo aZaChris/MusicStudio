@@ -118,6 +118,12 @@ ROUTES = {
     # apps/payments/tests/test_instructions_cross_tenant.py).
     "payment-instructions/",
     "payment-instructions/open/",
+    # Phase 9: the studio payment account takes no id either; the studio is the caller's own.
+    # Cross-studio, role and switch cases: apps/payments/tests/test_account_cross_tenant.py.
+    "payment-account/",
+    "payment-account/onboarding/",
+    "payment-account/refresh/",
+    "payment-account/restart/",
     # Receipts: cross-studio and family cases in apps/payments/tests/test_receipts_scope.py.
     "payments/<pk>/receipt/",
     "receipts/",

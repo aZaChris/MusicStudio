@@ -32,3 +32,19 @@ def reconcile_open_checkouts() -> int:
     È la rete di sicurezza: si pianifica in config/celery.py (Celery beat).
     """
     return services.reconcile_open_checkouts()
+
+
+@shared_task
+def refresh_payment_accounts() -> int:
+    """Ogni ora: rilegge lo stato dei conti di pagamento degli studi (fase 9, ADR-037).
+
+    Spento con l'interruttore dei pagamenti online. Un errore su un conto non ferma gli altri
+    (lo gestisce il service), quindi non serve riprovare l'intero giro.
+    """
+    return services.refresh_accounts()
+
+
+@shared_task
+def purge_old_webhook_events() -> int:
+    """Ogni notte: toglie gli eventi di Stripe già elaborati da più di 90 giorni (ADR-039)."""
+    return services.purge_old_webhook_events()

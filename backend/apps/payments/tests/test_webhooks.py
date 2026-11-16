@@ -1,30 +1,51 @@
 """Stripe webhooks: verified, stored once, processed idempotently (US2, ADR-014)."""
 
 import datetime
+import json
 
 import pytest
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from apps.common.factories import PackageFactory
+from apps.common.factories import connected_package
 from apps.payments import services
 from apps.payments.models import CheckoutSession, Payment, WebhookEvent
 
-from .fakes import session_payload, signed_event
+from . import fakes
+from .fakes import session_payload
 
 pytestmark = pytest.mark.django_db
 URL = "/api/v1/webhooks/stripe/"
+CONNECT_URL = "/api/v1/webhooks/stripe-connect/"
+
+
+def signed_event(event_id: str, event_type: str, session: dict):
+    """Un pagamento nasce sul conto dello studio (fase 9): il suo evento porta quel conto e arriva
+    all'endpoint dei conti collegati, firmato col suo segreto. Eventi senza tentativo noto restano
+    quelli della piattaforma."""
+    account = (
+        CheckoutSession.objects.filter(stripe_session_id=session["id"])
+        .values_list("stripe_account_id", flat=True)
+        .first()
+    )
+    if not account:
+        return fakes.signed_event(event_id, event_type, session)
+    return fakes.signed_event(
+        event_id, event_type, session, secret=fakes.CONNECT_WEBHOOK_SECRET, account=account
+    )
 
 
 def _open_checkout(fake_stripe, price="120.00") -> CheckoutSession:
-    package = PackageFactory(price=price)
+    package = connected_package(price=price)
     return services.start_checkout(package, user=package.student.teacher.user)
 
 
 def _post(body: bytes, signature: str | None, capture) -> object:
     headers = {"HTTP_STRIPE_SIGNATURE": signature} if signature else {}
+    # L'endpoint dipende dall'evento: con un conto collegato è quello dei conti collegati.
+    url = CONNECT_URL if json.loads(body).get("account") else URL
     with capture(execute=True):
-        return APIClient().post(URL, data=body, content_type="application/json", **headers)
+        return APIClient().post(url, data=body, content_type="application/json", **headers)
 
 
 def test_completed_paid_session_records_one_card_payment(

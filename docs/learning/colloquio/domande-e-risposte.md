@@ -298,6 +298,32 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Punto debole.** Chi ha accesso al database e alla chiave di cifratura può leggere l'IBAN: è dato che il titolare, gli insegnanti e i genitori devono poter vedere. La cifratura protegge da una copia del database, non da un amministratore.
 
+## Pagamenti sul conto dello studio (fase 9)
+
+### 47. Come hai fatto in modo che la piattaforma non tocchi i soldi dei pagamenti online?
+
+**Risposta modello.** Con Stripe Connect e i pagamenti diretti: ogni studio ha un conto collegato e la Checkout Session nasce su quel conto, con l'intestazione `Stripe-Account`. Non mando mai una commissione, un `on_behalf_of` o un trasferimento, e un test sul codice fallisce se qualcuno li aggiunge. Salvo solo l'id del conto e uno stato ricavato da ciò che Stripe riferisce. I dati del titolare li inserisce lui sulla pagina di Stripe.
+
+**Punto debole.** Il pagamento diretto, un rimborso e una contestazione li ho provati con un finto gateway e con eventi che hanno la forma della documentazione, non con eventi veri catturati dal sandbox. E il costo per la piattaforma (zero se Stripe fattura le commissioni) l'ho letto sul listino pubblico: che i parametri della nuova API corrispondano a quel modello va confermato.
+
+### 48. Hai dovuto cambiare qualcosa in corsa? Come l'hai gestito?
+
+**Risposta modello.** Sì. Il piano usava un conto Standard della vecchia API. Provandolo sul sandbox, Stripe lo ha rifiutato per una piattaforma nuova e ha indicato la nuova API (Accounts v2). Ho aggiornato il piano e ho cambiato solo il gateway, perché tutte le chiamate a Stripe stanno in un modulo. Ho anche provato a completare il conto via API per far risparmiare tempo al proprietario: Stripe lo rifiuta, perché i termini li accetta solo il titolare. L'ho scritto nella ricerca invece di nasconderlo.
+
+**Punto debole.** Lo stato del conto non arriva da eventi (per i conti della nuova API sono di un altro tipo): lo rileggo a richiesta e ogni ora. È più semplice, ma meno immediato.
+
+### 49. Come gestisci un rimborso parziale in un registro che non si riscrive?
+
+**Risposta modello.** Un pagamento può avere più righe di storno, ognuna con una causa (manuale, rimborso, contestazione) e, se vengono da Stripe, l'id del rimborso, unico nel database. "Stornato" è una somma calcolata in un solo posto: un parziale abbassa il netto e lascia il pacchetto pagato, un rimborso totale lo riapre. La regola "gli storni non superano l'importo" non è un vincolo del database, quindi la controllo sotto il lock di riga dell'originale, e l'ho provata con thread veri.
+
+**Punto debole.** La somma sta nel codice e non nel database. Ho messo un test che fallisce se una riga di pagamento nasce fuori dai service.
+
+### 50. Come eviti che un evento di uno studio tocchi i dati di un altro?
+
+**Risposta modello.** L'evento porta il campo `account`: da lì so di quale studio parla, mai da un dato scelto dal chiamante. Il pagamento a cui si riferisce si cerca per id del pagamento Stripe **e** per conto, quindi un id esistente altrove non basta. Un evento di un conto sconosciuto o con `livemode` vero si conserva e si ignora. Salvo l'evento ripulito di nomi, email e indirizzi, e lo cancello dopo 90 giorni.
+
+**Punto debole.** Un'anomalia scoperta dalla riconciliazione oraria resta solo nel log: non ha un evento da mostrare allo studio.
+
 ## Domanda finale tipica
 
 ### 19. Cosa faresti diversamente o cosa miglioreresti per primo?

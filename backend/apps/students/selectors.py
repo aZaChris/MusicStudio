@@ -12,6 +12,7 @@ from apps.common.scoping import students_visible_to
 from apps.common.tenancy import TenantContext
 from apps.packages.models import Package
 from apps.payments.models import Payment
+from apps.payments.selectors import not_fully_reversed, with_can_pay_online, with_reversals
 
 from .models import ACTIVE_PACKAGES_ATTR, Student
 
@@ -21,7 +22,11 @@ def active_packages_prefetch(lookup: str = "packages") -> Prefetch:
     # Il risultato finisce in `student.active_packages`, già ordinato dal più recente.
     return Prefetch(
         lookup,
-        queryset=Package.objects.filter(lessons_remaining__gt=0).order_by("-purchase_date", "-id"),
+        # `can_pay_online` (fase 9) è una colonna della stessa query: il portale del genitore lo
+        # legge dal pacchetto attivo dello studente, senza una query in più.
+        queryset=with_can_pay_online(
+            Package.objects.filter(lessons_remaining__gt=0).order_by("-purchase_date", "-id")
+        ),
         to_attr=ACTIVE_PACKAGES_ATTR,
     )
 
@@ -29,8 +34,11 @@ def active_packages_prefetch(lookup: str = "packages") -> Prefetch:
 def latest_payment_status_subquery() -> Subquery:
     # Sottoquery correlata: lo stato dell'ultimo pagamento entra come colonna della stessa query
     # degli studenti, senza una query per riga.
+    # Le righe di storno e i pagamenti stornati per intero non contano per lo stato (fase 8);
+    # un rimborso parziale lascia il pagamento valido (fase 9, ADR-038).
     return Subquery(
-        Payment.objects.filter(student=OuterRef("pk"), reversal__isnull=True)
+        with_reversals(Payment.objects.filter(student=OuterRef("pk")))
+        .filter(not_fully_reversed())
         .exclude(status=Payment.Status.REVERSAL)
         .order_by("-date", "-id")
         .values("status")[:1]

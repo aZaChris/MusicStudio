@@ -140,9 +140,40 @@ La procedura è nello script `scripts/restore-drill.sh` e la prova eseguita è r
 3. Ripristina in un database **nuovo** e controlla i conteggi delle righe con lo script. Solo quando i conteggi tornano, punta l'applicazione al database ripristinato.
 4. Riavvia i servizi e fai le verifiche dopo il deploy.
 
+## Pagamenti online sul conto dello studio (fase 9, spenti)
+
+La funzione è costruita ma **spenta**: finché `ONLINE_PAYMENTS_ENABLED` non è `true`, le rotte `/payment-account/` rispondono 404, nessun pacchetto è pagabile online e il portale non mostra nulla. Restano in **modalità test**: una chiave `sk_live_` blocca ancora l'avvio. Per i soldi veri servono un emendamento alla costituzione, i termini d'uso e una decisione scritta del titolare: non fanno parte di questo capitolo. Il perché è in ADR-037.
+
+**Variabili** (nel Compose, già previste):
+
+- `ONLINE_PAYMENTS_ENABLED`: `false` di default. `true` solo per provare.
+- `STRIPE_CONNECT_WEBHOOK_SECRET`: il segreto dell'endpoint dei conti collegati (sotto).
+- `THROTTLE_PAYMENT_ACCOUNT`: limite di frequenza di onboarding e rilettura (default `20/hour`).
+- `CHECKOUT_SUCCESS_URL` e `CHECKOUT_CANCEL_URL`: dove Stripe rimanda chi ha pagato. Valori: `https://<portale>/payments/success` e `https://<portale>/payments/cancel`.
+
+**Registrare l'endpoint dei conti collegati su Stripe** (nel sandbox o, più avanti, in produzione):
+
+1. Nella Dashboard di Stripe: Sviluppatori, Webhook, aggiungi un endpoint. Come ascoltatore scegli **"Account connessi"** (non "Il tuo account").
+2. Indirizzo: `https://<backend>/api/v1/webhooks/stripe-connect/`.
+3. Eventi da selezionare: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `refund.created`, `refund.updated`, `charge.dispute.created`, `charge.dispute.closed`, `account.application.deauthorized`.
+4. Copia il segreto di firma (`whsec_...`) in `STRIPE_CONNECT_WEBHOOK_SECRET` e fai redeploy. Non incollarlo in chat né nel repository.
+5. Se usi `STRIPE_WEBHOOK_ALLOWED_IPS`, vale anche per questo endpoint.
+
+In locale, con la Stripe CLI: `stripe listen --forward-connect-to localhost:8000/api/v1/webhooks/stripe-connect/` stampa il segreto da usare.
+
+**Cosa guardare quando qualcosa non torna**
+
+- Nella pagina "Come pagare" il titolare vede lo **stato del conto** e, sotto "Da controllare su Stripe", gli ultimi eventi che non combaciano col registro (un rimborso senza pagamento, un importo diverso, un doppio pagamento, una valuta diversa): tipo e importo, mai i dati di chi ha pagato.
+- Un conto **limitato** da Stripe smette di offrire il pagamento online. Il titolare apre la sua pagina Stripe e segue ciò che chiede. Lo stato si aggiorna da solo ogni ora, o subito con "Controlla lo stato".
+- Un conto **scollegato** (il titolare ha tolto MusicStudio dal suo Stripe) si riparte con "Ricomincia".
+- Gli eventi già elaborati si cancellano dopo 90 giorni (ogni notte).
+
+**Ancora da verificare con Stripe vero** (serve un conto di prova che finisca l'attivazione sulla sua pagina, con l'SMS di test `000-000`): un pagamento diretto, un rimborso, una contestazione, la forma degli eventi e se PayPal compare.
+
 ## Cose che restano da fare a mano
 
 - Il deploy di produzione e la misura del tempo di rollback (lo staging è stato fatto il 13 novembre 2026).
 - L'account Sentry e il DSN.
 - La prova di ripristino da un backup vero di chi amministra il server.
 - La protezione del branch su GitHub, così la CI rossa blocca il merge.
+- Fase 9: la prova completa sul sandbox di Stripe, l'endpoint webhook dei conti collegati, i termini d'uso e, solo se e quando si deciderà, i soldi veri.

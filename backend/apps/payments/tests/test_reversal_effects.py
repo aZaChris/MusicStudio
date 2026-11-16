@@ -2,7 +2,13 @@
 
 import pytest
 
-from apps.common.factories import LessonFactory, PackageFactory, PaymentFactory, StudentFactory
+from apps.common.factories import (
+    LessonFactory,
+    PackageFactory,
+    PaymentFactory,
+    StudentFactory,
+    connected_package,
+)
 from apps.common.tests.helpers import client_for
 from apps.lessons.models import Lesson
 from apps.payments.models import Payment
@@ -17,7 +23,7 @@ def _reverse(client, payment):
 
 
 def test_reversing_the_only_paid_entry_makes_the_package_payable_again(fake_stripe):
-    package = PackageFactory()
+    package = connected_package()
     payment = PaymentFactory(student=package.student, package=package)
     client = client_for(package.student.teacher.user)
     assert client.post(f"/api/v1/packages/{package.pk}/checkout/").status_code == 409

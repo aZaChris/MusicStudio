@@ -100,7 +100,7 @@
       "subtitle": "{{student}} · {{amount}} · {{date}}",
       "reason": "Motivo (visibile nel registro)",
       "hint": "La registrazione originale resta nel registro, segnata come stornata. Poi registra di nuovo il pagamento, se serve.",
-      "cardNotice": "Era un pagamento online con carta. Nessun denaro viene restituito: il registro viene corretto, non c'è nessun rimborso.",
+      "cardNotice": "Era un pagamento online con carta. Nessun denaro viene restituito: il registro viene corretto, non c'è nessun rimborso. Per rimborsare usa la tua pagina Stripe: il rimborso compare poi qui da solo.",
       "confirm": "Storna il pagamento",
       "done": "Pagamento stornato.",
       "of": "Storno del pagamento n. {{id}}",
@@ -109,7 +109,13 @@
     "receipt": {
       "action": "Ricevuta",
       "download": "Ricevuta {{number}}"
-    }
+    },
+    "cause": {
+      "refund": "Rimborso da Stripe",
+      "dispute": "Contestazione persa su Stripe"
+    },
+    "underDispute": "In contestazione",
+    "partlyRefunded": "Rimborsato in parte: {{amount}}"
   },
   "parent": {
     "portalTitle": "Le tue lezioni",
@@ -133,7 +139,12 @@
     "payBank": "Banca",
     "receipts": "Ricevute",
     "receiptDownload": "Scarica",
-    "receiptCancelled": "annullata"
+    "receiptCancelled": "annullata",
+    "payOnline": "Paga online",
+    "payOnlineTitle": "Paga questo pacchetto online",
+    "payOnlineIntro": "Paghi sulla pagina sicura di Stripe e i soldi vanno direttamente sul conto dello studio. MusicStudio non li riceve e non prende commissioni.",
+    "payOnlineButton": "Paga {{amount}} online",
+    "payOnlineTest": "Modalità di prova: non viene addebitato denaro vero."
   },
   "auth": {
     "login": "Accedi",
@@ -188,7 +199,10 @@
       "not_paid": "Solo un pagamento già incassato si può stornare o avere una ricevuta.",
       "already_reversed": "Questo pagamento è già stato stornato.",
       "is_reversal": "Uno storno non si può stornare.",
-      "period_too_long": "Il periodo è troppo lungo: scegline uno di al massimo un anno."
+      "period_too_long": "Il periodo è troppo lungo: scegline uno di al massimo un anno.",
+      "online_payments_not_available": "Questo studio al momento non accetta pagamenti online. Usa i dati di pagamento qui sotto, o scrivi allo studio.",
+      "package_already_paid": "Questo pacchetto è già pagato.",
+      "payments_unavailable": "Il pagamento online non è disponibile in questo momento. Riprova tra poco o usa i dati di pagamento qui sotto."
     }
   },
   "student": {
@@ -467,5 +481,51 @@
     "removeLink": "Rimuovi",
     "save": "Salva",
     "saved": "Salvato."
+  },
+  "paymentAccount": {
+    "title": "Pagamenti online",
+    "intro": "I genitori possono pagare un pacchetto online e i soldi vanno direttamente sul conto Stripe del tuo studio. MusicStudio non li riceve né li tiene, e non prende commissioni.",
+    "testMode": "Modalità di prova: per ora non si muove denaro vero. I pagamenti qui servono solo a provare la funzione.",
+    "stateLabel": "Stato del conto",
+    "state": {
+      "not_started": "Non iniziato",
+      "in_progress": "In corso",
+      "information_needed": "Servono informazioni",
+      "active": "Attivo",
+      "restricted": "Limitato",
+      "disconnected": "Scollegato"
+    },
+    "hint": {
+      "not_started": "Apri il tuo conto sulla pagina di Stripe. I dati li inserisci lì: MusicStudio non li vede mai.",
+      "in_progress": "Stripe sta controllando i tuoi dati. Ricontrolla tra qualche minuto.",
+      "information_needed": "Stripe ha bisogno di altre informazioni da te. Continua sulla sua pagina per finire.",
+      "active": "Il tuo conto può ricevere pagamenti online.",
+      "restricted": "Stripe ha limitato il conto. Apri la tua pagina Stripe per vedere cosa fare; fino ad allora il pagamento online è spento.",
+      "disconnected": "Il conto è stato scollegato da MusicStudio. Ricomincia per collegarne uno nuovo."
+    },
+    "start": "Apri il mio conto su Stripe",
+    "continue": "Continua su Stripe",
+    "startAgain": "Ricomincia",
+    "check": "Controlla lo stato",
+    "openStripe": "Apri la mia pagina Stripe",
+    "readOnly": "Solo il titolare dello studio può aprire o cambiare il conto.",
+    "attentionTitle": "Da controllare su Stripe",
+    "attentionIntro": "Questi eventi di Stripe non combaciano con il tuo registro. Controllali sulla tua pagina Stripe.",
+    "attention": {
+      "refund_unmatched": "Un rimborso che non corrisponde a nessun pagamento del registro",
+      "dispute_unmatched": "Una contestazione che non corrisponde a nessun pagamento del registro",
+      "refund_exceeds": "Un rimborso più grande di ciò che resta del pagamento",
+      "amount_differs": "Un pagamento di un importo diverso dal pacchetto",
+      "duplicate_payment": "Un secondo pagamento per un pacchetto già pagato",
+      "currency_differs": "Un pagamento in una valuta diversa dall'euro, non registrato",
+      "dispute_exceeds": "Una contestazione persa più grande di ciò che resta del pagamento"
+    }
+  },
+  "payReturn": {
+    "successTitle": "Grazie",
+    "successBody": "Stiamo confermando il pagamento con Stripe. Compare nell'elenco dei pagamenti entro un minuto o due. Non pagare di nuovo.",
+    "cancelTitle": "Pagamento annullato",
+    "cancelBody": "Non è stato addebitato nulla. Puoi riprovare quando vuoi.",
+    "back": "Torna alle tue lezioni"
   }
 }

@@ -29,6 +29,8 @@ COLUMNS = [
     "reason",
     "reversal_of",
     "package",
+    "cause",  # fase 9: manual | refund | dispute (solo sulle righe di storno)
+    "provider_ref",  # id del rimborso o della contestazione di Stripe
 ]
 
 _FORMULA_STARTS = ("=", "+", "-", "@", "\t", "\r")

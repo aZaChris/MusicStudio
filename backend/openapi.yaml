@@ -32,8 +32,12 @@ paths:
           - password.change
           - password.reset
           - payment.delete
+          - payment.dispute
           - payment.record
+          - payment.refund
           - payment.reverse
+          - payment_account.start
+          - payment_account.state
           - privacy.erase
           - privacy.export
           - receipt.issue
@@ -1840,7 +1844,8 @@ paths:
       description: |-
         Online payment link (Stripe Checkout, test mode) for this package.
 
-        Anyone who can see the package may ask — typically the parent who pays.
+        Anyone who can see the package may ask — typically the parent who pays. The payment goes
+        to the studio's own Stripe account; 409 when the studio has no active account.
         Repeated calls return the same open attempt.
       parameters:
       - in: path
@@ -1880,6 +1885,148 @@ paths:
                 $ref: '#/components/schemas/Error'
         '404':
           description: Not found or outside your studio.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/payment-account/:
+    get:
+      operationId: v1_payment_account_retrieve
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentAccount'
+          description: ''
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/payment-account/onboarding/:
+    post:
+      operationId: v1_payment_account_onboarding_create
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingLink'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/payment-account/refresh/:
+    post:
+      operationId: v1_payment_account_refresh_create
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentAccount'
+          description: ''
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/payment-account/restart/:
+    post:
+      operationId: v1_payment_account_restart_create
+      tags:
+      - payments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+        '400':
+          description: Invalid input.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationError'
+        '401':
+          description: Missing or invalid token.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Role or object not allowed.
           content:
             application/json:
               schema:
@@ -3360,6 +3507,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /api/v1/webhooks/stripe-connect/:
+    post:
+      operationId: v1_webhooks_stripe_connect_create
+      description: Stripe events, verified with the Stripe-Signature header.
+      tags:
+      - payments
+      security:
+      - {}
+      responses:
+        '200':
+          description: Event received (or duplicate)
+        '400':
+          description: Invalid payload or signature
+        '403':
+          description: Caller is not a Stripe webhook address
+        '429':
+          description: Rate limit exceeded; see Retry-After.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     AcceptInvitationRequest:
@@ -3433,6 +3601,10 @@ components:
       - register.export
       - instructions.change
       - receipt.issue
+      - payment_account.start
+      - payment_account.state
+      - payment.refund
+      - payment.dispute
       type: string
       description: |-
         * `registration` - Registration
@@ -3461,6 +3633,30 @@ components:
         * `register.export` - Register Export
         * `instructions.change` - Instructions Change
         * `receipt.issue` - Receipt Issue
+        * `payment_account.start` - Payment Account Start
+        * `payment_account.state` - Payment Account State
+        * `payment.refund` - Payment Refund
+        * `payment.dispute` - Payment Dispute
+    AttentionItem:
+      type: object
+      properties:
+        id:
+          type: integer
+        kind:
+          type: string
+        received_at:
+          type: string
+          format: date-time
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - amount
+      - id
+      - kind
+      - received_at
     AuditEntry:
       type: object
       properties:
@@ -3494,6 +3690,16 @@ components:
       - actor_email
       - created_at
       - id
+    CauseEnum:
+      enum:
+      - manual
+      - refund
+      - dispute
+      type: string
+      description: |-
+        * `manual` - Manual correction
+        * `refund` - Refund
+        * `dispute` - Dispute
     Checkout:
       type: object
       description: 'Response of POST /packages/{id}/checkout/: where to send the payer.'
@@ -3952,6 +4158,18 @@ components:
       required:
       - code
       - mfa_token
+    OnboardingLink:
+      type: object
+      properties:
+        url:
+          type: string
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - expires_at
+      - url
     OpenInstructions:
       type: object
       properties:
@@ -4042,7 +4260,12 @@ components:
         is_low:
           type: boolean
           readOnly: true
+        can_pay_online:
+          type: boolean
+          readOnly: true
+          default: false
       required:
+      - can_pay_online
       - id
       - is_low
       - lessons_remaining
@@ -4400,7 +4623,9 @@ components:
         method:
           $ref: '#/components/schemas/MethodEnum'
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          default: pending
     PatchedStudentRequest:
       type: object
       properties:
@@ -4452,7 +4677,9 @@ components:
         method:
           $ref: '#/components/schemas/MethodEnum'
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          default: pending
         checkout:
           type: string
           format: uuid
@@ -4469,6 +4696,19 @@ components:
           type: integer
           nullable: true
           readOnly: true
+        reversed_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        under_dispute:
+          type: boolean
+          readOnly: true
+        cause:
+          allOf:
+          - $ref: '#/components/schemas/CauseEnum'
+          readOnly: true
+          default: manual
         receipt_number:
           type: string
           nullable: true
@@ -4482,6 +4722,7 @@ components:
           readOnly: true
       required:
       - amount
+      - cause
       - checkout
       - date
       - id
@@ -4492,8 +4733,39 @@ components:
       - reversal_id
       - reversal_of
       - reversed
+      - reversed_amount
       - student
       - student_name
+      - under_dispute
+    PaymentAccount:
+      type: object
+      properties:
+        state:
+          allOf:
+          - $ref: '#/components/schemas/StateEnum'
+          readOnly: true
+        can_accept_online:
+          type: boolean
+        test_mode:
+          type: boolean
+        dashboard_url:
+          type: string
+          nullable: true
+        state_changed_at:
+          type: string
+          format: date-time
+          nullable: true
+        needs_attention:
+          type: array
+          items:
+            $ref: '#/components/schemas/AttentionItem'
+      required:
+      - can_accept_online
+      - dashboard_url
+      - needs_attention
+      - state
+      - state_changed_at
+      - test_mode
     PaymentInstructions:
       type: object
       properties:
@@ -4591,7 +4863,9 @@ components:
         method:
           $ref: '#/components/schemas/MethodEnum'
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          default: pending
       required:
       - amount
       - date
@@ -4835,7 +5109,9 @@ components:
         method:
           $ref: '#/components/schemas/MethodEnum'
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          default: pending
         checkout:
           type: string
           format: uuid
@@ -4852,6 +5128,19 @@ components:
           type: integer
           nullable: true
           readOnly: true
+        reversed_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        under_dispute:
+          type: boolean
+          readOnly: true
+        cause:
+          allOf:
+          - $ref: '#/components/schemas/CauseEnum'
+          readOnly: true
+          default: manual
         receipt_number:
           type: string
           nullable: true
@@ -4868,6 +5157,7 @@ components:
           readOnly: true
       required:
       - amount
+      - cause
       - checkout
       - date
       - id
@@ -4879,8 +5169,10 @@ components:
       - reversal_id
       - reversal_of
       - reversed
+      - reversed_amount
       - student
       - student_name
+      - under_dispute
     ReverseRequestRequest:
       type: object
       properties:
@@ -4890,6 +5182,22 @@ components:
           maxLength: 200
       required:
       - reason
+    StateEnum:
+      enum:
+      - not_started
+      - in_progress
+      - information_needed
+      - active
+      - restricted
+      - disconnected
+      type: string
+      description: |-
+        * `not_started` - not_started
+        * `in_progress` - in_progress
+        * `information_needed` - information_needed
+        * `active` - active
+        * `restricted` - restricted
+        * `disconnected` - disconnected
     Student:
       type: object
       properties:

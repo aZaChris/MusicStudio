@@ -100,3 +100,58 @@ describe('payments register: reversal', () => {
     expect(screen.queryByText(/No money is returned/)).not.toBeInTheDocument()
   })
 })
+
+describe('payments register: refunds and disputes from Stripe (phase 9)', () => {
+  test('a refund row says where it comes from; the original shows a partial refund and has no Reverse', async () => {
+    signedInAs(
+      teacherMe,
+      base([
+        payment(1, { method: 'card', amount: '100.00', reversed_amount: '30.00', student_name: 'Anna Neri' }),
+        payment(2, {
+          method: 'card',
+          status: 'reversal',
+          cause: 'refund',
+          reversal_of: 1,
+          amount: '30.00',
+          student_name: 'Anna Neri',
+        }),
+      ]),
+    )
+    renderApp('/payments')
+
+    await screen.findAllByText('Anna Neri')
+    expect(screen.getByText(/Refund from Stripe/)).toBeInTheDocument()
+    expect(screen.getByText(/Partly refunded/)).toBeInTheDocument()
+    // A manual reversal is only for an entry with no reversal at all: no button here.
+    expect(screen.queryByRole('button', { name: 'Reverse' })).not.toBeInTheDocument()
+  })
+
+  test('an entry under dispute is marked as such, and a lost dispute is named', async () => {
+    signedInAs(
+      teacherMe,
+      base([
+        payment(1, { method: 'card', under_dispute: true, student_name: 'Mario Bianchi' }),
+        payment(2, {
+          method: 'card',
+          status: 'reversal',
+          cause: 'dispute',
+          reversal_of: 9,
+          student_name: 'Carla Verdi',
+        }),
+      ]),
+    )
+    renderApp('/payments')
+
+    expect(await screen.findByText('Under dispute')).toBeInTheDocument()
+    expect(screen.getByText(/Dispute lost on Stripe/)).toBeInTheDocument()
+  })
+
+  test('the reverse dialog of a card entry points to the Stripe page for refunds', async () => {
+    signedInAs(teacherMe, base([payment(1, { method: 'card', student_name: 'Giulia Rossi' })]))
+    renderApp('/payments')
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Reverse' }))
+
+    expect(await screen.findByText(/To refund, use your Stripe page/)).toBeInTheDocument()
+  })
+})

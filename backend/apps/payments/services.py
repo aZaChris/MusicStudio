@@ -5,31 +5,41 @@ Qui vive la logica; le view e i task sono involucri sottili
 Per i pagamenti online leggere prima docs/learning/concetti/pagamenti-online-stripe.md,
 ADR-013 (Stripe Checkout) e ADR-014 (webhook salvati, poi elaborati).
 
-FUTURO (pagamenti dentro l'app): `start_checkout` è il punto da cui partirebbe un pagamento
-reale. Prima di attivarlo servono le decisioni elencate in testa a models.py (ADR da scrivere,
-prossimo numero libero: ADR-034).
+Dalla fase 9 `start_checkout` crea il pagamento sul conto Stripe dello studio e rifiuta (409) se
+lo studio non ha un conto attivo o se l'interruttore `ONLINE_PAYMENTS_ENABLED` è spento: vedi
+ADR-037 e specs/009-stripe-connect-payments.
 """
 
 import datetime
 import logging
+import uuid
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
 from urllib.parse import urlsplit
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Max
+from django.db.models import Max, Sum
 from django.utils import timezone
 
 from apps.audit import services as audit
-from apps.common.exceptions import DomainConflict
+from apps.common.exceptions import DomainConflict, DomainError
 from apps.packages.models import Package
 from apps.students.models import Student
 from apps.studios.models import Studio
 
 from . import gateway, iban, selectors
-from .models import CheckoutSession, Payment, PaymentInstructions, Receipt, WebhookEvent
+from .models import (
+    CheckoutSession,
+    Payment,
+    PaymentDispute,
+    PaymentInstructions,
+    Receipt,
+    StudioPaymentAccount,
+    WebhookEvent,
+)
 
 
 def ensure_package_matches_student(student: Student, package: Package | None) -> None:
@@ -175,6 +185,69 @@ def reverse_payment(payment: Payment, *, reason: str, actor: Any) -> Payment:
     return reversal
 
 
+class ProviderReversalResult:
+    """Esito di `add_provider_reversal`: cosa è successo alla notifica del fornitore."""
+
+    CREATED = "created"  # nuova riga di storno
+    DUPLICATE = "duplicate"  # lo stesso rimborso o la stessa contestazione era già registrato
+    EXCEEDS = "exceeds"  # la somma degli storni supererebbe l'importo: niente scritto
+    NOT_APPLICABLE = "not_applicable"  # non è un pagamento incassato: niente scritto
+
+
+def add_provider_reversal(
+    original: Payment, *, amount: Decimal, cause: str, provider_ref: str
+) -> tuple[Payment | None, str]:
+    """Aggiunge uno storno dovuto a un rimborso o a una contestazione persa (fase 9, ADR-038).
+
+    Come per lo storno manuale l'originale non si tocca mai: nasce una riga nuova, datata a oggi
+    (un mese già consegnato al commercialista non cambia). A differenza dello storno manuale può
+    essere parziale e un pagamento può averne più d'uno; la regola è che la somma degli storni non
+    supera mai l'importo. Non si può esprimere come vincolo del database, quindi si controlla qui
+    sotto il lock di riga dell'originale (lo stesso schema dei numeri di ricevuta); un secondo
+    storno contemporaneo aspetta e poi vede la somma aggiornata. `provider_ref` (id Stripe) è unico:
+    una notifica ripetuta non crea una seconda riga. Ritorna la riga creata (o None) e l'esito.
+    """
+    if cause not in (Payment.Cause.REFUND, Payment.Cause.DISPUTE) or amount <= 0:
+        raise ValueError(
+            "A provider reversal needs a refund or dispute cause and a positive amount."
+        )
+    with transaction.atomic():
+        locked = Payment.objects.select_for_update().select_related("student").get(pk=original.pk)
+        if locked.status != Payment.Status.PAID:
+            return None, ProviderReversalResult.NOT_APPLICABLE
+        if Payment.objects.filter(provider_ref=provider_ref).exists():
+            return None, ProviderReversalResult.DUPLICATE
+        already = Payment.objects.filter(reversal_of=locked).aggregate(total=Sum("amount"))["total"]
+        if (already or Decimal("0.00")) + amount > locked.amount:
+            return None, ProviderReversalResult.EXCEEDS
+        try:
+            with transaction.atomic():
+                reversal = Payment.objects.create(
+                    student=locked.student,
+                    package=locked.package,
+                    amount=amount,
+                    date=timezone.localdate(),
+                    method=locked.method,
+                    status=Payment.Status.REVERSAL,
+                    reversal_of=locked,
+                    cause=cause,
+                    provider_ref=provider_ref,
+                )
+        except IntegrityError:
+            # Un'altra notifica con lo stesso id è passata tra il controllo e l'insert.
+            return None, ProviderReversalResult.DUPLICATE
+        audit.record(
+            audit.Action.PAYMENT_REFUND
+            if cause == Payment.Cause.REFUND
+            else audit.Action.PAYMENT_DISPUTE,
+            actor=None,  # lo fa il fornitore, non una persona
+            target=reversal,
+            studio_id=locked.student.studio_id,
+            metadata={"cause": cause, "amount": str(amount), "ref": provider_ref},
+        )
+    return reversal, ProviderReversalResult.CREATED
+
+
 # --- Pagamenti online (fase 3, ADR-013/014) ----------------------------------------------
 
 logger = logging.getLogger(__name__)
@@ -223,6 +296,8 @@ def _cents(amount: Decimal) -> int:
 def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
     """Restituisce un tentativo di checkout aperto per `package`, creandolo se serve.
 
+    Il pagamento va sul conto Stripe dello studio, non su quello della piattaforma (pagamento
+    diretto, ADR-037): senza un conto attivo (o con l'interruttore spento) si rifiuta con 409.
     La riga del pacchetto resta bloccata per tutta l'operazione, chiamata a Stripe compresa:
     un doppio clic aspetta la prima richiesta e poi riusa il suo tentativo, invece di aprire
     una seconda pagina di pagamento. La chiamata a Stripe porta una chiave di idempotenza,
@@ -234,11 +309,16 @@ def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
     with transaction.atomic():
         # Blocca e rilegge: il prezzo addebitato è quello nel database in questo momento.
         package = Package.objects.select_for_update().select_related("student").get(pk=package.pk)
-        # Un tentativo ancora valido (aperto, con almeno un minuto davanti) si riusa.
+        account = StudioPaymentAccount.objects.filter(studio_id=package.student.studio_id).first()
+        if not online_payments_enabled() or account is None or not account.can_accept_online:
+            raise OnlinePaymentsNotAvailable("This studio does not accept online payments.")
+        # Un tentativo ancora valido (aperto, con almeno un minuto davanti, sullo stesso conto) si
+        # riusa.
         reusable = (
             CheckoutSession.objects.filter(
                 package=package,
                 status=CheckoutSession.Status.OPEN,
+                stripe_account_id=account.stripe_account_id,
                 stripe_session_id__isnull=False,
                 expires_at__gt=timezone.now() + datetime.timedelta(minutes=1),
             )
@@ -251,6 +331,7 @@ def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
         checkout = CheckoutSession.objects.create(
             package=package,
             created_by=user if getattr(user, "is_authenticated", False) else None,
+            stripe_account_id=account.stripe_account_id,
             amount=package.price,
             currency=settings.STRIPE_CURRENCY,
         )
@@ -264,6 +345,7 @@ def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
             customer_email=getattr(user, "email", None)
             if getattr(user, "role", "") == "parent"
             else None,
+            stripe_account=account.stripe_account_id,
         )
         checkout.stripe_session_id = info.id
         checkout.url = info.url
@@ -272,14 +354,55 @@ def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
         return checkout
 
 
+# Cosa si conserva di un evento (ADR-039): identificativi, stati e importi. Niente nomi, email,
+# indirizzi o dati di carta: una copia grezza dell'evento sarebbe una copia di dati personali che
+# nessuno potrebbe esportare né cancellare (constitution X).
+_EVENT_KEYS = ("id", "object", "type", "livemode", "account", "created")
+_OBJECT_KEYS = (
+    "id",
+    "object",
+    "status",
+    "payment_status",
+    "amount",
+    "amount_total",
+    "amount_refunded",
+    "currency",
+    "payment_intent",
+    "charge",
+    "client_reference_id",
+    "expires_at",
+    "reason",
+)
+_REFERENCE_KEYS = ("payment_intent", "charge")  # a volte arrivano espansi: si tiene solo l'id
+_METADATA_KEYS = ("checkout_id", "studio_id")
+
+
+def scrub_event(event: dict[str, Any]) -> dict[str, Any]:
+    """Una copia dell'evento con i soli campi che servono a elaborarlo (lista bianca)."""
+    obj = (event.get("data") or {}).get("object") or {}
+    kept: dict[str, Any] = {k: obj[k] for k in _OBJECT_KEYS if k in obj}
+    for key in _REFERENCE_KEYS:
+        if isinstance(kept.get(key), dict):
+            kept[key] = kept[key].get("id")
+    kept["metadata"] = {k: v for k, v in (obj.get("metadata") or {}).items() if k in _METADATA_KEYS}
+    top = {k: event[k] for k in _EVENT_KEYS if k in event}
+    return {**top, "data": {"object": kept}}
+
+
 def record_webhook_event(event: dict[str, Any]) -> tuple[WebhookEvent, bool]:
-    """Salva un evento verificato una volta sola; in coda solo alla prima consegna."""
+    """Salva un evento verificato (ripulito) una volta sola; in coda solo alla prima consegna."""
     from .tasks import process_webhook_event  # tasks importa services: evita un ciclo
 
     with transaction.atomic():
         stored, created = WebhookEvent.objects.get_or_create(
             stripe_event_id=event["id"],
-            defaults={"type": event.get("type", ""), "payload": event},
+            defaults={
+                "type": event.get("type", ""),
+                "payload": scrub_event(event),
+                # Il conto collegato che ha generato l'evento: così lo si attribuisce a uno studio.
+                "stripe_account_id": event.get("account") or "",
+                "livemode": bool(event.get("livemode")),
+            },
         )
         if created:
             # Dopo il commit: il worker deve poter leggere la riga che deve elaborare.
@@ -287,13 +410,45 @@ def record_webhook_event(event: dict[str, Any]) -> tuple[WebhookEvent, bool]:
     return stored, created
 
 
+# Un gestore riceve l'evento (già bloccato, dentro la transazione) e ritorna l'esito.
+EventHandler = Callable[[WebhookEvent], str]
+EVENT_HANDLERS: dict[str, EventHandler] = {}
+
+
+def handles(*event_types: str) -> Callable[[EventHandler], EventHandler]:
+    """Registra un gestore per uno o più tipi di evento (ogni storia ne aggiunge)."""
+
+    def register(handler: EventHandler) -> EventHandler:
+        for event_type in event_types:
+            EVENT_HANDLERS[event_type] = handler
+        return handler
+
+    return register
+
+
 # Eventi che chiudono il pagamento come riuscito.
 FULFIL_EVENTS = {"checkout.session.completed", "checkout.session.async_payment_succeeded"}
-# Tutti gli eventi di cui ci occupiamo; gli altri si salvano e si ignorano.
+# Eventi di Checkout di cui ci occupiamo; gli altri si salvano e si ignorano.
 HANDLED_EVENTS = FULFIL_EVENTS | {
     "checkout.session.async_payment_failed",
     "checkout.session.expired",
 }
+
+
+def _dispatch(event: WebhookEvent) -> str:
+    # Si lavora solo in modalità test (constitution IV): un evento "live" si conserva e si ignora.
+    if event.livemode:
+        return WebhookEvent.Outcome.IGNORED
+    # Un evento di un conto che nessuno studio ha collegato non si attribuisce a nessuno.
+    if (
+        event.stripe_account_id
+        and not StudioPaymentAccount.objects.filter(
+            stripe_account_id=event.stripe_account_id
+        ).exists()
+    ):
+        return WebhookEvent.Outcome.IGNORED
+    handler = EVENT_HANDLERS.get(event.type)
+    return handler(event) if handler else WebhookEvent.Outcome.IGNORED
 
 
 def process_webhook_event(event_pk: int) -> bool:
@@ -304,16 +459,38 @@ def process_webhook_event(event_pk: int) -> bool:
         if event.processed_at is not None:
             return False  # già elaborato: nessun effetto
         event.attempts += 1
-        if event.type in HANDLED_EVENTS:
-            session = gateway.SessionInfo.from_dict(event.payload["data"]["object"])
-            _apply_to_checkout(session, failed=event.type.endswith("async_payment_failed"))
+        event.outcome = _dispatch(event)
         event.processed_at = timezone.now()
-        event.save(update_fields=["processed_at", "attempts"])
+        event.save(update_fields=["processed_at", "attempts", "outcome", "attention_kind"])
         return True
 
 
-def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) -> None:
-    # Ritrova il tentativo dalla sessione di Stripe e ne aggiorna lo stato.
+@handles(*HANDLED_EVENTS)
+def _handle_checkout_event(event: WebhookEvent) -> str:
+    session = gateway.SessionInfo.from_dict(event.payload["data"]["object"])
+    attention = _apply_to_checkout(
+        session,
+        failed=event.type.endswith("async_payment_failed"),
+        stripe_account_id=event.stripe_account_id,
+    )
+    if attention is None:
+        return WebhookEvent.Outcome.IGNORED
+    if attention:
+        # Registrato, ma c'è qualcosa che lo studio deve guardare (importo, doppio pagamento...).
+        event.attention_kind = attention
+        return WebhookEvent.Outcome.NEEDS_ATTENTION
+    return WebhookEvent.Outcome.APPLIED
+
+
+def _apply_to_checkout(
+    session: gateway.SessionInfo, *, failed: bool = False, stripe_account_id: str = ""
+) -> str | None:
+    """Ritrova il tentativo dalla sessione di Stripe e ne aggiorna lo stato.
+
+    Ritorna None se non c'è un tentativo corrispondente (o se l'evento viene da un conto diverso
+    da quello del tentativo: mai attribuire un pagamento a uno studio per un evento di un altro),
+    altrimenti "" se tutto combacia o il tipo di anomalia da mostrare allo studio.
+    """
     checkout = (
         CheckoutSession.objects.select_for_update()
         .select_related("package__student")
@@ -323,40 +500,56 @@ def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) ->
     if checkout is None:
         # Non è un errore: può essere un evento di un altro ambiente o di un test.
         logger.warning("Stripe session %s matches no checkout attempt; ignored", session.id)
-        return
-    apply_session_state(checkout, session, failed=failed)
+        return None
+    if checkout.stripe_account_id != stripe_account_id:
+        logger.warning("Stripe session %s came from an unexpected account; ignored", session.id)
+        return None
+    return apply_session_state(checkout, session, failed=failed)
 
 
 def apply_session_state(
     checkout: CheckoutSession, session: gateway.SessionInfo, *, failed: bool = False
-) -> None:
+) -> str:
     """Porta un tentativo (già bloccato) allo stato che Stripe riporta. Idempotente.
 
     Si completa solo quando i soldi ci sono: con metodi di pagamento differiti (per esempio
-    l'addebito SEPA) la sessione si chiude come `unpaid` e l'esito arriva più tardi.
+    l'addebito SEPA) la sessione si chiude come `unpaid` e l'esito arriva più tardi. Ritorna ""
+    se tutto combacia, altrimenti il tipo di anomalia (`amount_differs`, `duplicate_payment`,
+    `currency_differs`) che lo studio deve poter vedere.
     """
     if checkout.status != CheckoutSession.Status.OPEN:
-        return  # gli stati finali non cambiano più; le ripetizioni non fanno nulla
+        return ""  # gli stati finali non cambiano più; le ripetizioni non fanno nulla
     if session.status == "complete" and session.payment_status in ("paid", "no_payment_required"):
-        _fulfil(checkout, session)
-    elif failed:
+        return _fulfil(checkout, session)
+    if failed:
         checkout.status = CheckoutSession.Status.FAILED
         checkout.save(update_fields=["status", "updated_at"])
     elif session.status == "expired":
         checkout.status = CheckoutSession.Status.EXPIRED
         checkout.save(update_fields=["status", "updated_at"])
+    return ""
 
 
-def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> None:
+def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> str:
     # Crea il pagamento "paid" e chiude il tentativo; il tutto dentro la transazione del chiamante.
     package = checkout.package
-    if package_is_paid(package):
-        # Pagato a mano nel frattempo: i soldi sono stati comunque presi, quindi si registra
-        # e si avvisa nel log (rimborso da gestire a mano).
-        logger.warning("Package %s was already paid; recording online payment too", package.pk)
+    if session.currency and session.currency != checkout.currency.lower():
+        # Soldi presi in un'altra valuta: non si possono registrare in euro (solo euro, FR-029).
+        # Nessuna riga nel registro; lo studio lo risolve sulla sua pagina Stripe.
+        checkout.status = CheckoutSession.Status.FAILED
+        checkout.save(update_fields=["status", "updated_at"])
+        return "currency_differs"
     amount = (
         Decimal(session.amount_total) / 100 if session.amount_total is not None else checkout.amount
     )
+    attention = ""
+    if package_is_paid(package):
+        # Pagato a mano nel frattempo: i soldi sono stati comunque presi, quindi si registra e si
+        # avvisa lo studio (un rimborso da fare sulla sua pagina Stripe), mai contato due volte.
+        attention = "duplicate_payment"
+    elif amount != checkout.amount:
+        # Il pagante ha pagato un importo diverso da quello del pacchetto (il prezzo è cambiato).
+        attention = "amount_differs"
     payment = Payment.objects.create(
         student=package.student,
         package=package,
@@ -368,28 +561,37 @@ def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> None:
     )
     _record_audit(payment, None)
     checkout.status = CheckoutSession.Status.COMPLETED
-    checkout.save(update_fields=["status", "updated_at"])
+    checkout.stripe_payment_intent_id = session.payment_intent
+    checkout.save(update_fields=["status", "stripe_payment_intent_id", "updated_at"])
+    return attention
 
 
 def reconcile_open_checkouts(limit: int = 100) -> int:
-    """Rete di sicurezza per i webhook persi: chiede a Stripe dei tentativi aperti e scaduti."""
+    """Rete di sicurezza per i webhook persi: chiede a Stripe dei tentativi aperti e scaduti.
+
+    Ogni tentativo si rilegge con il conto su cui è nato (fase 9); quelli della fase 3, senza
+    conto, si leggono come prima. Un'anomalia (importo diverso...) scoperta qui non ha un evento
+    da mostrare allo studio: resta solo nel log.
+    """
     stale = CheckoutSession.objects.filter(
         status=CheckoutSession.Status.OPEN,
         stripe_session_id__isnull=False,
         expires_at__lt=timezone.now(),
-    ).values_list("pk", "stripe_session_id")[:limit]
+    ).values_list("pk", "stripe_session_id", "stripe_account_id")[:limit]
     resolved = 0
-    for pk, session_id in stale:
+    for pk, session_id, account_id in stale:
         if session_id is None:  # escluso dal filtro; serve solo a mypy
             continue
-        session = gateway.retrieve_checkout_session(session_id)
+        session = gateway.retrieve_checkout_session(session_id, account_id or None)
         with transaction.atomic():
             checkout = (
                 CheckoutSession.objects.select_for_update()
                 .select_related("package__student")
                 .get(pk=pk)
             )
-            apply_session_state(checkout, session)
+            attention = apply_session_state(checkout, session)
+            if attention:
+                logger.warning("Checkout %s settled with a mismatch: %s", pk, attention)
             resolved += checkout.status != CheckoutSession.Status.OPEN
     return resolved
 
@@ -520,3 +722,348 @@ def issue_receipt(payment: Payment, *, language: str, actor: Any) -> tuple[Recei
             metadata={"number": receipt.number},
         )
     return receipt, True
+
+
+# --- Conto di pagamento dello studio (fase 9, ADR-037) -------------------------------------
+
+
+class OnlinePaymentsOff(DomainError):
+    """L'interruttore dei pagamenti online è spento: per chi chiama la funzione non esiste (404)."""
+
+    status_code = 404
+    code = "online_payments_off"
+
+
+class NoPaymentAccount(DomainError):
+    """Lo studio non ha ancora un conto di pagamento (404)."""
+
+    status_code = 404
+    code = "no_payment_account"
+
+
+class AccountDisconnected(DomainConflict):
+    """Il conto è stato scollegato da Stripe: per ripartire serve prima `restart_account`."""
+
+    code = "account_disconnected"
+
+
+class NotDisconnected(DomainConflict):
+    """`restart_account` vale solo per un conto scollegato."""
+
+    code = "not_disconnected"
+
+
+class OnlinePaymentsNotAvailable(DomainConflict):
+    """Lo studio non ha un conto attivo (o la funzione è spenta): non si può pagare online."""
+
+    code = "online_payments_not_available"
+
+
+def online_payments_enabled() -> bool:
+    return bool(settings.ONLINE_PAYMENTS_ENABLED)
+
+
+def require_online_payments() -> None:
+    """Chiamata da ogni rotta del conto: con l'interruttore spento la funzione "non esiste"."""
+    if not online_payments_enabled():
+        raise OnlinePaymentsOff("Online payments are not available.")
+
+
+def state_from_account(info: gateway.AccountInfo) -> str:
+    """Lo stato dello studio, ricavato da ciò che Stripe riferisce (mai da ciò che supponiamo).
+
+    Solo "attivo" permette di incassare. Un conto con requisiti aperti è "servono informazioni"
+    (un conto appena creato lo è: Stripe aspetta i dati del titolare); "limitato" è un conto che
+    Stripe ha bloccato senza chiedere altro; "in corso" è la verifica ancora in revisione.
+    """
+    state = StudioPaymentAccount.State
+    if info.closed:
+        return state.DISCONNECTED
+    if info.card_payments == "active":
+        return state.ACTIVE
+    if info.card_payments == "pending":
+        return state.IN_PROGRESS
+    if info.open_requirements > 0:
+        return state.INFORMATION_NEEDED
+    if info.card_payments == "restricted":
+        return state.RESTRICTED
+    return state.IN_PROGRESS
+
+
+def _portal_url(path: str) -> str:
+    return f"{settings.FRONTEND_URL.rstrip('/')}{path}"
+
+
+def _set_state(account: StudioPaymentAccount, new_state: str) -> bool:
+    """Aggiorna lo stato se è cambiato e lo registra (l'autore è il fornitore, non una persona)."""
+    if account.state == new_state:
+        return False
+    previous = account.state
+    account.state = new_state
+    account.state_changed_at = timezone.now()
+    account.save(update_fields=["state", "state_changed_at", "updated_at"])
+    audit.record(
+        audit.Action.PAYMENT_ACCOUNT_STATE,
+        actor=None,
+        target=account,
+        studio_id=account.studio_id,
+        metadata={"from": previous, "to": new_state},
+    )
+    return True
+
+
+def start_onboarding(studio: Studio, *, actor: Any) -> gateway.AccountLink:
+    """Crea (una volta sola) il conto dello studio e ritorna dove mandare il titolare.
+
+    La riga dello studio resta bloccata per tutta l'operazione, chiamata a Stripe compresa: un
+    doppio clic aspetta il primo e poi vede il conto già creato, quindi ne esiste uno solo. Se
+    Stripe non risponde la transazione torna indietro e non resta nulla. Non mandiamo a Stripe né
+    email né nome: il titolare li scrive sulla pagina di Stripe (constitution X).
+    """
+    require_online_payments()
+    with transaction.atomic():
+        locked = Studio.objects.select_for_update().get(pk=studio.pk)
+        account = StudioPaymentAccount.objects.filter(studio=locked).first()
+        if account is not None and account.state == StudioPaymentAccount.State.DISCONNECTED:
+            raise AccountDisconnected("The account was disconnected; start again first.")
+        if account is None:
+            info = gateway.create_account(
+                studio_id=locked.pk, idempotency_key=f"account-studio-{locked.pk}-{uuid.uuid4()}"
+            )
+            account = StudioPaymentAccount.objects.create(
+                studio=locked,
+                stripe_account_id=info.id,
+                state=state_from_account(info),
+                created_by=actor if getattr(actor, "pk", None) else None,
+            )
+            audit.record(
+                audit.Action.PAYMENT_ACCOUNT_START,
+                actor=actor,
+                target=account,
+                studio_id=locked.pk,
+                metadata={"state": account.state},
+            )
+        return gateway.create_account_link(
+            account_id=account.stripe_account_id,
+            return_url=_portal_url("/payment-instructions?return=1"),
+            refresh_url=_portal_url("/payment-instructions?refresh=1"),
+        )
+
+
+def refresh_account(studio: Studio) -> StudioPaymentAccount:
+    """Rilegge il conto da Stripe e aggiorna lo stato (alla fine dell'onboarding e a richiesta)."""
+    require_online_payments()
+    with transaction.atomic():
+        account = StudioPaymentAccount.objects.select_for_update().filter(studio=studio).first()
+        if account is None:
+            raise NoPaymentAccount("This studio has no payment account yet.")
+        info = gateway.retrieve_account(account.stripe_account_id)
+        _set_state(account, state_from_account(info))
+        return account
+
+
+def restart_account(studio: Studio, *, actor: Any) -> None:
+    """Toglie il collegamento morto di un conto scollegato, così si può ricominciare."""
+    require_online_payments()
+    with transaction.atomic():
+        account = StudioPaymentAccount.objects.select_for_update().filter(studio=studio).first()
+        if account is None:
+            raise NoPaymentAccount("This studio has no payment account yet.")
+        if account.state != StudioPaymentAccount.State.DISCONNECTED:
+            raise NotDisconnected("Only a disconnected account can be started again.")
+        audit.record(
+            audit.Action.PAYMENT_ACCOUNT_STATE,
+            actor=actor,
+            target=account,
+            studio_id=studio.pk,
+            metadata={"from": account.state, "to": "removed"},
+        )
+        account.delete()
+
+
+def refresh_accounts(limit: int = 200) -> int:
+    """Rete di sicurezza oraria: rilegge i conti non scollegati e ritorna quanti sono cambiati.
+
+    L'API v2 non ci manda eventi sullo stato del conto (spike, research R1): senza questo giro un
+    conto bloccato da Stripe resterebbe "attivo" da noi, e un genitore proverebbe a pagare per
+    nulla. Un errore su un conto non ferma gli altri.
+    """
+    if not online_payments_enabled():
+        return 0
+    changed = 0
+    for account_id in (
+        StudioPaymentAccount.objects.exclude(state=StudioPaymentAccount.State.DISCONNECTED)
+        .order_by("id")
+        .values_list("pk", flat=True)[:limit]
+    ):
+        try:
+            with transaction.atomic():
+                account = StudioPaymentAccount.objects.select_for_update().get(pk=account_id)
+                info = gateway.retrieve_account(account.stripe_account_id)
+                changed += _set_state(account, state_from_account(info))
+        except (gateway.PaymentsUnavailable, StudioPaymentAccount.DoesNotExist):
+            logger.warning("Could not refresh payment account #%s", account_id)
+    return changed
+
+
+@handles("account.application.deauthorized")
+def _handle_account_deauthorized(event: WebhookEvent) -> str:
+    # Lo studio ha scollegato MusicStudio dal suo Stripe: da qui in poi niente più pagamenti.
+    account = (
+        StudioPaymentAccount.objects.select_for_update()
+        .filter(stripe_account_id=event.stripe_account_id)
+        .first()
+    )
+    if account is None:
+        return WebhookEvent.Outcome.IGNORED
+    _set_state(account, StudioPaymentAccount.State.DISCONNECTED)
+    return WebhookEvent.Outcome.APPLIED
+
+
+# --- Rimborsi e contestazioni dal lato Stripe (fase 9, ADR-038) -----------------------------
+
+
+def _payment_of_intent(payment_intent: str, account_id: str) -> Payment | None:
+    """Il pagamento del registro a cui si riferisce un rimborso o una contestazione.
+
+    Si cerca per id del pagamento Stripe E per conto: un evento del conto di uno studio non può
+    mai toccare il pagamento di un altro studio, nemmeno con un id che esiste altrove.
+    """
+    if not payment_intent or not account_id:
+        return None
+    checkout = (
+        CheckoutSession.objects.filter(
+            stripe_payment_intent_id=payment_intent, stripe_account_id=account_id
+        )
+        .select_related("payment")
+        .first()
+    )
+    if checkout is None:
+        return None
+    try:
+        return checkout.payment
+    except ObjectDoesNotExist:
+        return None
+
+
+def _euros(cents: Any) -> Decimal:
+    return (Decimal(cents or 0) / 100).quantize(Decimal("0.01"))
+
+
+def _needs_attention(event: WebhookEvent, kind: str) -> str:
+    event.attention_kind = kind
+    return WebhookEvent.Outcome.NEEDS_ATTENTION
+
+
+def _apply_reversal(
+    event: WebhookEvent, payment: Payment, *, amount: Decimal, cause: str, ref: str, exceeds: str
+) -> str:
+    _, result = add_provider_reversal(payment, amount=amount, cause=cause, provider_ref=ref)
+    if result == ProviderReversalResult.CREATED:
+        return WebhookEvent.Outcome.APPLIED
+    if result == ProviderReversalResult.DUPLICATE:
+        return WebhookEvent.Outcome.IGNORED  # lo stesso rimborso notificato di nuovo
+    if result == ProviderReversalResult.EXCEEDS:
+        return _needs_attention(event, exceeds)
+    return _needs_attention(event, "refund_unmatched")
+
+
+@handles("refund.created", "refund.updated")
+def _handle_refund(event: WebhookEvent) -> str:
+    """Un rimborso riuscito diventa una riga di storno con causa `refund`.
+
+    Conta solo con stato `succeeded` (un rimborso in attesa o fallito non ha mosso denaro).
+    Un rimborso senza pagamento nel registro (fatto a mano, o di un altro conto) non cambia nulla e
+    resta visibile allo studio.
+    """
+    obj = event.payload["data"]["object"]
+    if obj.get("status") != "succeeded":
+        return WebhookEvent.Outcome.IGNORED
+    payment = _payment_of_intent(obj.get("payment_intent") or "", event.stripe_account_id)
+    if payment is None:
+        return _needs_attention(event, "refund_unmatched")
+    return _apply_reversal(
+        event,
+        payment,
+        amount=_euros(obj.get("amount")),
+        cause=Payment.Cause.REFUND,
+        ref=obj["id"],
+        exceeds="refund_exceeds",
+    )
+
+
+@handles("charge.dispute.created")
+def _handle_dispute_opened(event: WebhookEvent) -> str:
+    """Una contestazione aperta si segna sul pagamento (non lo si tocca: è definitivo)."""
+    obj = event.payload["data"]["object"]
+    payment = _payment_of_intent(obj.get("payment_intent") or "", event.stripe_account_id)
+    if payment is None:
+        return _needs_attention(event, "dispute_unmatched")
+    dispute, created = PaymentDispute.objects.get_or_create(
+        stripe_dispute_id=obj["id"],
+        defaults={"payment": payment, "amount": _euros(obj.get("amount"))},
+    )
+    if created:
+        audit.record(
+            audit.Action.PAYMENT_DISPUTE,
+            actor=None,
+            target=dispute,
+            studio_id=payment.student.studio_id,
+            metadata={"event": "opened", "ref": dispute.stripe_dispute_id},
+        )
+    return WebhookEvent.Outcome.APPLIED
+
+
+@handles("charge.dispute.closed")
+def _handle_dispute_closed(event: WebhookEvent) -> str:
+    """Contestazione chiusa: persa = storno con causa `dispute`; vinta = il pagamento non cambia."""
+    obj = event.payload["data"]["object"]
+    payment = _payment_of_intent(obj.get("payment_intent") or "", event.stripe_account_id)
+    if payment is None:
+        return _needs_attention(event, "dispute_unmatched")
+    amount = _euros(obj.get("amount"))
+    dispute, _ = PaymentDispute.objects.get_or_create(
+        stripe_dispute_id=obj["id"], defaults={"payment": payment, "amount": amount}
+    )
+    if dispute.status != PaymentDispute.Status.OPEN:
+        return WebhookEvent.Outcome.IGNORED  # già chiusa: una notifica ripetuta
+    lost = obj.get("status") == "lost"
+    dispute.status = PaymentDispute.Status.LOST if lost else PaymentDispute.Status.WON
+    dispute.closed_at = timezone.now()
+    dispute.save(update_fields=["status", "closed_at"])
+    audit.record(
+        audit.Action.PAYMENT_DISPUTE,
+        actor=None,
+        target=dispute,
+        studio_id=payment.student.studio_id,
+        metadata={"event": "lost" if lost else "won", "ref": dispute.stripe_dispute_id},
+    )
+    if not lost:
+        return WebhookEvent.Outcome.APPLIED
+    return _apply_reversal(
+        event,
+        payment,
+        amount=amount,
+        cause=Payment.Cause.DISPUTE,
+        ref=dispute.stripe_dispute_id,
+        exceeds="dispute_exceeds",
+    )
+
+
+# --- Pulizia degli eventi di Stripe (fase 9, ADR-039) ---------------------------------------
+
+EVENT_RETENTION_DAYS = 90
+
+
+def purge_old_webhook_events(days: int = EVENT_RETENTION_DAYS) -> int:
+    """Cancella gli eventi già elaborati più vecchi di `days` giorni; ritorna quanti.
+
+    Un evento serve per elaborarlo una volta e per capire cosa è successo nei giorni dopo (anche
+    se già ripulito dei dati personali). Passati 90 giorni è solo spazio e superficie in più. Quelli
+    non ancora elaborati restano: li cerca ancora qualcuno.
+    """
+    cutoff = timezone.now() - datetime.timedelta(days=days)
+    deleted, _ = WebhookEvent.objects.filter(
+        processed_at__isnull=False, processed_at__lt=cutoff
+    ).delete()
+    return deleted

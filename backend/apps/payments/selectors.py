@@ -10,7 +10,21 @@ from decimal import Decimal
 from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
-from django.db.models import Count, Exists, OuterRef, Q, QuerySet, Sum
+from django.db.models import (
+    BooleanField,
+    Count,
+    DecimalField,
+    Exists,
+    ExpressionWrapper,
+    F,
+    OuterRef,
+    Q,
+    QuerySet,
+    Subquery,
+    Sum,
+    Value,
+)
+from django.db.models.functions import Coalesce
 from django.utils import timezone
 
 from apps.common.exceptions import PeriodTooLong
@@ -18,7 +32,14 @@ from apps.common.scoping import RECEIPT_PATHS, STUDENT_CHILD_PATHS, packages_vis
 from apps.common.tenancy import TenantContext
 from apps.packages.models import Package
 
-from .models import Payment, PaymentInstructions, Receipt
+from .models import (
+    Payment,
+    PaymentDispute,
+    PaymentInstructions,
+    Receipt,
+    StudioPaymentAccount,
+    WebhookEvent,
+)
 
 
 def payments_for(ctx: TenantContext) -> QuerySet[Payment]:
@@ -29,21 +50,67 @@ def payments_for(ctx: TenantContext) -> QuerySet[Payment]:
     un proprio studio: eredita quello dello studente, da qui STUDENT_CHILD_PATHS.
     `select_related("student")` evita una query per riga (concetti/orm-e-problema-n-piu-1.md).
     """
-    # `reversal` e `receipt` sono nel select_related così `reversed` e `receipt_number` del
-    # serializer non costano una query per riga.
-    return scope(
-        Payment.objects.select_related("student", "reversal", "receipt"), ctx, STUDENT_CHILD_PATHS
+    # `receipt` è nel select_related, e lo storno è un'annotazione (`with_reversals`): così
+    # `reversed`, `reversal_id` e `receipt_number` del serializer non costano una query per riga.
+    return with_reversals(
+        scope(Payment.objects.select_related("student", "receipt"), ctx, STUDENT_CHILD_PATHS)
+    ).annotate(
+        # Fase 9: una contestazione aperta si legge come colonna della stessa query.
+        under_dispute=Exists(
+            PaymentDispute.objects.filter(payment=OuterRef("pk"), status=PaymentDispute.Status.OPEN)
+        )
     )
 
 
+_MONEY = DecimalField(max_digits=12, decimal_places=2)
+
+
+def _reversed_total(outer_key: str) -> Coalesce:
+    # Somma degli importi delle righe di storno del pagamento `outer_key` (zero se non ce ne sono).
+    total = (
+        Payment.objects.filter(reversal_of=OuterRef(outer_key))
+        .order_by()
+        .values("reversal_of")
+        .annotate(total=Sum("amount"))
+        .values("total")
+    )
+    return Coalesce(Subquery(total), Value(Decimal("0.00")), output_field=_MONEY)
+
+
+def with_reversals(qs: QuerySet[Payment]) -> QuerySet[Payment]:
+    """Aggiunge `reversed_amount` (somma degli storni del pagamento) e `first_reversal_id`.
+
+    Dalla fase 9 un pagamento può avere più righe di storno (rimborsi parziali, ADR-038): lo
+    "stornato" non è più un sì/no ma una somma. Sono sottoquery correlate, quindi entrano come
+    colonne della stessa query, senza una query per riga e senza raggruppare il resto.
+    """
+    first = Payment.objects.filter(reversal_of=OuterRef("pk")).order_by("id").values("id")[:1]
+    return qs.annotate(reversed_amount=_reversed_total("pk"), first_reversal_id=Subquery(first))
+
+
+def not_fully_reversed() -> Q:
+    """Filtro: il pagamento NON è stato stornato per intero (richiede `with_reversals`).
+
+    Un rimborso parziale lascia il pagamento "incassato" (le lezioni ci sono state); lo storno
+    intero, manuale o di un rimborso totale, no. Un importo a zero non risulta mai stornato.
+    """
+    return Q(reversed_amount=0) | Q(reversed_amount__lt=F("amount"))
+
+
+def is_fully_reversed(amount: Decimal, reversed_amount: Decimal) -> bool:
+    """Lo stesso criterio di `not_fully_reversed`, per un oggetto già in memoria."""
+    return reversed_amount > 0 and reversed_amount >= amount
+
+
 def effective_paid(qs: QuerySet[Payment]) -> QuerySet[Payment]:
-    """I pagamenti che contano come denaro incassato: "paid" e non stornati (fase 8).
+    """I pagamenti che contano come denaro incassato: "paid" e non stornati per intero.
 
     Un pagamento stornato resta "paid" nel database (non si riscrive mai), ma non rende più
     pagato il pacchetto. Questa è l'unica definizione: checkout, stato dello studente e
-    pacchetti aperti la usano tutti (specs/008-cash-register-receipts/research.md, R5).
+    pacchetti aperti la usano tutti (specs/008-cash-register-receipts/research.md, R5). Dalla
+    fase 9 conta lo storno per intero, non uno storno qualsiasi (specs/009, research R6).
     """
-    return qs.filter(status=Payment.Status.PAID, reversal__isnull=True)
+    return with_reversals(qs.filter(status=Payment.Status.PAID)).filter(not_fully_reversed())
 
 
 def open_packages(ctx: TenantContext) -> QuerySet[Package]:
@@ -132,12 +199,22 @@ def register_summary(
     }
 
 
+def reversed_amount_of(payment: Payment) -> Decimal:
+    """Somma degli storni di un pagamento: dall'annotazione se c'è, altrimenti con una query.
+
+    Il percorso con la query serve solo per gli oggetti singoli (per esempio appena creati); gli
+    elenchi passano sempre da `with_reversals` e non fanno query per riga.
+    """
+    annotated = getattr(payment, "reversed_amount", None)
+    if annotated is not None:
+        return Decimal(annotated)
+    total = Payment.objects.filter(reversal_of=payment.pk).aggregate(total=Sum("amount"))["total"]
+    return Decimal(total or ZERO)
+
+
 def is_reversed(payment: Payment) -> bool:
-    """Il pagamento ha uno storno? (Senza, Django solleva ObjectDoesNotExist sull'accesso.)"""
-    try:
-        return payment.reversal is not None
-    except ObjectDoesNotExist:
-        return False
+    """Il pagamento è stato stornato per intero?"""
+    return is_fully_reversed(payment.amount, reversed_amount_of(payment))
 
 
 def _receipt_number(payment: Payment) -> str:
@@ -158,10 +235,7 @@ def register_rows(
     rows = []
     for payment in _payments_in_period(ctx, date_from, date_to).order_by("date", "id"):
         is_reversal = payment.status == Payment.Status.REVERSAL
-        try:
-            reversed_ = payment.reversal is not None
-        except ObjectDoesNotExist:
-            reversed_ = False
+        reversed_ = is_reversed(payment)
         rows.append(
             {
                 "date": payment.date,
@@ -171,6 +245,8 @@ def register_rows(
                 "amount": -payment.amount if is_reversal else payment.amount,
                 "status": "reversed" if reversed_ else payment.status,
                 "reason": payment.reason,
+                "cause": payment.cause if is_reversal else "",
+                "provider_ref": payment.provider_ref or "",
                 "reversal_of": payment.reversal_of_id or "",
                 "package": payment.package_id or "",
             }
@@ -223,10 +299,72 @@ def receipts_for(ctx: TenantContext) -> QuerySet[Receipt]:
 
     Come per i pagamenti il filtro passa da `scope` (qui con RECEIPT_PATHS): il titolare vede lo
     studio, l'insegnante i propri studenti, il genitore e lo studente adulto solo il proprio.
-    Pagamento, studente e storno sono nello stesso select_related: nessuna query per riga.
+    Pagamento e studente sono nello stesso select_related e lo storno è un'annotazione
+    (`payment_reversed_amount`): nessuna query per riga.
     """
     return scope(
-        Receipt.objects.select_related("payment__student", "payment__reversal"),
+        Receipt.objects.select_related("payment__student").annotate(
+            payment_reversed_amount=_reversed_total("payment_id")
+        ),
         ctx,
         RECEIPT_PATHS,
+    )
+
+
+# --- Conto di pagamento dello studio (fase 9) -----------------------------------------------
+
+
+def payment_account_for(ctx: TenantContext) -> StudioPaymentAccount | None:
+    """Il conto del proprio studio, per titolare e insegnanti. Mai da un id nella richiesta."""
+    if ctx.studio_id is None or not (ctx.is_owner or ctx.is_teacher):
+        return None
+    return StudioPaymentAccount.objects.filter(studio_id=ctx.studio_id).first()
+
+
+def attention_items(account: StudioPaymentAccount, limit: int = 20) -> list[dict[str, Any]]:
+    """Gli ultimi eventi del conto che non combaciano col registro (solo id, tipo, importo).
+
+    Mai il contenuto dell'evento: lo studio vede che c'è qualcosa da controllare su Stripe, non i
+    dati di chi ha pagato.
+    """
+    rows = WebhookEvent.objects.filter(
+        stripe_account_id=account.stripe_account_id,
+        outcome=WebhookEvent.Outcome.NEEDS_ATTENTION,
+    ).order_by("-received_at", "-id")[:limit]
+    items = []
+    for row in rows:
+        obj = (row.payload.get("data") or {}).get("object") or {}
+        cents = obj.get("amount_total", obj.get("amount"))
+        items.append(
+            {
+                "id": row.pk,
+                "kind": row.attention_kind,
+                "received_at": row.received_at,
+                "amount": (Decimal(cents) / 100).quantize(Decimal("0.01"))
+                if cents is not None
+                else None,
+            }
+        )
+    return items
+
+
+def with_can_pay_online(qs: QuerySet[Package]) -> QuerySet[Package]:
+    """Aggiunge `can_pay_online`: il conto dello studio è attivo e il pacchetto è ancora da pagare.
+
+    Sono due EXISTS nella stessa query dei pacchetti: nessuna query per riga. Con l'interruttore
+    dei pagamenti online spento è sempre falso (ADR-037).
+    """
+    from django.conf import settings
+    from django.db.models import Value
+
+    if not settings.ONLINE_PAYMENTS_ENABLED:
+        return qs.annotate(can_pay_online=Value(False, output_field=BooleanField()))
+    active_account = StudioPaymentAccount.objects.filter(
+        studio_id=OuterRef("student__studio_id"), state=StudioPaymentAccount.State.ACTIVE
+    )
+    paid = effective_paid(Payment.objects.filter(package=OuterRef("pk")))
+    return qs.annotate(
+        can_pay_online=ExpressionWrapper(
+            Q(Exists(active_account)) & ~Q(Exists(paid)), output_field=BooleanField()
+        )
     )

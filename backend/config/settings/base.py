@@ -176,6 +176,8 @@ REST_FRAMEWORK = {
         "invitation_accept": env("THROTTLE_INVITATION_ACCEPT", default="10/hour"),
         # Esportazioni del registro di cassa e PDF delle ricevute: letture pesanti (fase 8).
         "register_export": env("THROTTLE_REGISTER_EXPORT", default="20/hour"),
+        # Conto di pagamento dello studio (fase 9): onboarding e rilettura dello stato su Stripe.
+        "payment_account": env("THROTTLE_PAYMENT_ACCOUNT", default="20/hour"),
     },
 }
 
@@ -246,6 +248,9 @@ CELERY_BROKER_TRANSPORT_OPTIONS = {"visibility_timeout": 3600}
 # A restricted key (rk_test_...) with "Checkout Sessions: write" is recommended over sk_test_.
 STRIPE_API_KEY: str = env("STRIPE_API_KEY", default="")
 STRIPE_WEBHOOK_SECRET: str = env("STRIPE_WEBHOOK_SECRET", default="")
+# Segreto dell'endpoint "Connected accounts" (fase 9, ADR-039): gli eventi dei conti degli studi
+# arrivano a un endpoint di tipo diverso, con una firma sua. Vuoto = l'endpoint risponde 400.
+STRIPE_CONNECT_WEBHOOK_SECRET: str = env("STRIPE_CONNECT_WEBHOOK_SECRET", default="")
 # Second layer after the signature (ADR-021): only Stripe's published webhook addresses.
 # Empty = no address check (dev, tests, or a temporary escape hatch); signature still applies.
 STRIPE_WEBHOOK_ALLOWED_IPS: list[str] = env.list("STRIPE_WEBHOOK_ALLOWED_IPS", default=[])
@@ -257,6 +262,10 @@ CHECKOUT_CANCEL_URL: str = env(
     "CHECKOUT_CANCEL_URL", default="http://localhost:5173/payments/cancel"
 )
 CHECKOUT_TTL_MINUTES: int = env.int("CHECKOUT_TTL_MINUTES", default=30)
+# Interruttore dei pagamenti online sul conto dello studio (fase 9, ADR-037). SPENTO di default:
+# finché non si accende le rotte del conto rispondono 404, nessun pacchetto risulta pagabile
+# online e il checkout rifiuta. Si accende solo dopo la decisione del titolare (specs/009, T059).
+ONLINE_PAYMENTS_ENABLED: bool = env.bool("ONLINE_PAYMENTS_ENABLED", default=False)
 
 if STRIPE_API_KEY and not STRIPE_API_KEY.startswith(("sk_test_", "rk_test_")):
     # Fail fast: this project must never move real money (live keys are sk_live_/rk_live_).

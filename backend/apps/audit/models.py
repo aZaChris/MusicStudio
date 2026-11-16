@@ -44,6 +44,11 @@ class AuditEntry(models.Model):
         REGISTER_EXPORT = "register.export"
         INSTRUCTIONS_CHANGE = "instructions.change"
         RECEIPT_ISSUE = "receipt.issue"
+        # Fase 9 (pagamenti online sul conto dello studio): conto, rimborsi e contestazioni.
+        PAYMENT_ACCOUNT_START = "payment_account.start"
+        PAYMENT_ACCOUNT_STATE = "payment_account.state"
+        PAYMENT_REFUND = "payment.refund"
+        PAYMENT_DISPUTE = "payment.dispute"
 
     class Outcome(models.TextChoices):
         # success = riuscita; failure = tentata e fallita; denied = negata dai permessi.

@@ -2,7 +2,7 @@
 
 Questa cartella è materiale di studio, in italiano. Ogni file si capisce da solo e si può caricare singolarmente in NotebookLM. Il codice, i commenti e i commit sono in inglese.
 
-Stato: **fine della fase 8** (registro di cassa, istruzioni di pagamento e ricevute), 15 novembre 2026. Prima: fasi 1–4, Web 1 e fase 7.
+Stato: **fase 9 costruita e spenta** (pagamenti online sul conto dello studio), 16 novembre 2026. La prova con Stripe vero, un conto di prova attivato, è ancora da fare. Prima: fasi 1–4, Web 1, fase 7 e fase 8.
 
 ## Ordine di lettura consigliato
 
@@ -37,10 +37,12 @@ Stato: **fine della fase 8** (registro di cassa, istruzioni di pagamento e ricev
 29. `concetti/sicurezza-api-owasp.md` — la checklist OWASP, aggiornata a ogni fase.
 30. `concetti/registro-di-cassa.md` — storno al posto della modifica, totali per periodo, esportazione senza formule (fase 8).
 31. `concetti/ricevute-non-fiscali.md` — numeri senza buchi con un lock, PDF generato al volo (fase 8).
-32. Gli ADR, in ordine di numero.
-33. `../operations/runbook.md` — deploy, rollback, segreti, ripristino.
-34. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
-35. `glossario.md` — da consultare quando serve.
+32. `concetti/stripe-connect-pagamenti-diretti.md` — il pagamento va sul conto dello studio, mai sul nostro (fase 9).
+33. `concetti/rimborsi-e-contestazioni.md` — rimborsi e contestazioni come righe di storno, anche parziali (fase 9).
+34. Gli ADR, in ordine di numero.
+35. `../operations/runbook.md` — deploy, rollback, segreti, ripristino.
+36. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
+37. `glossario.md` — da consultare quando serve.
 
 Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA, quello sull'ExclusionConstraint e le domande da colloquio.
 
@@ -89,6 +91,9 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-034-registro-per-storno.md` — un pagamento incassato è definitivo e si corregge con uno storno collegato, mai riscrivendo l'originale.
 - `adr/ADR-035-ricevute-non-fiscali-e-numerazione.md` — ricevute numerate senza buchi con un lock sulla riga dello studio, PDF generato al volo.
 - `adr/ADR-036-istruzioni-di-pagamento.md` — come lo studio vuole essere pagato, IBAN cifrato, nessuna verifica bancaria.
+- `adr/ADR-037-conto-collegato-e-pagamenti-diretti.md` — il pagamento online va sul conto Stripe dello studio, funzione spenta di default.
+- `adr/ADR-038-storni-multipli-e-rimborsi-parziali.md` — un pagamento può avere più storni, la somma non supera mai l'importo.
+- `adr/ADR-039-endpoint-dei-conti-collegati-ed-eventi-ripuliti.md` — un secondo webhook per i conti collegati, eventi salvati senza dati personali.
 
 ### Concetti (fase 1)
 
@@ -147,6 +152,11 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/registro-di-cassa.md` — storno, totali per periodo in una query, date locali, esportazione CSV senza formule.
 - `concetti/ricevute-non-fiscali.md` — numerazione senza buchi, anno locale, PDF al volo, cosa non è una ricevuta.
 
+### Concetti (fase 9)
+
+- `concetti/stripe-connect-pagamenti-diretti.md` — conto collegato, pagamento diretto senza commissioni, interruttore spento.
+- `concetti/rimborsi-e-contestazioni.md` — storni multipli, regola della somma, eventi di Stripe attribuiti allo studio giusto.
+
 ### Bozze legali (da validare)
 
 - `../privacy/registro-trattamenti.md`, `../privacy/informativa-famiglie.md`, `../privacy/informativa-insegnanti.md`.
@@ -161,7 +171,7 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 ### Ripasso
 
 - `glossario.md` — ogni termine tecnico in italiano semplice.
-- `colloquio/domande-e-risposte.md` — 46 domande con risposta modello e punto debole.
+- `colloquio/domande-e-risposte.md` — 50 domande con risposta modello e punto debole.
 
 ## Formato dei documenti di concetto
 
@@ -246,4 +256,3 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Misure vere** (portatile, PostgreSQL 18, senza rete): riepilogo di un mese con 2.000 voci 22 ms; CSV di un anno con 5.000 righe 629 ms; venti ricevute una dopo l'altra 809 ms. Non dicono nulla su un server sotto carico.
 - **Qualità:** 999 test del backend (da 750), copertura 96,1%; 122 test del portale; ruff, mypy, migrazioni e contratto OpenAPI verdi. Il percorso completo del quickstart è stato eseguito via HTTP su un database usa-e-getta: 35 controlli su 35. Non c'era un browser, quindi l'interfaccia del portale è provata con i test e non a occhio.
 - **Aperto (serve il proprietario):** far controllare da un professionista la frase "non è un documento fiscale" e i termini d'uso; la regola "definitivo" sta nei service e un aggiornamento di massa la aggirerebbe (un test sorveglia); l'app mobile va controllata (conta gli storni come da incassare); il PDF e il CSV non sono stati provati con un Excel italiano vero; prova di carico su un server vero.
-

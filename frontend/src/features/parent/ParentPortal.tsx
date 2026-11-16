@@ -6,11 +6,13 @@ import { Link } from 'react-router-dom'
 import { useAuth } from '../../auth/useAuth'
 import { AppDownload } from '../../components/AppDownload'
 import { LanguageToggle, ThemeToggle } from '../../components/Preferences'
-import { QueryState } from '../../components/QueryState'
+import { ErrorText, QueryState } from '../../components/QueryState'
 import { Beats, Icon, Logo, StatusChip } from '../../components/ui'
 import { lessonTone, paymentTone } from '../../components/tones'
 import { formatDateTime, formatDay } from '../../lib/dates'
+import { goToExternal } from '../../lib/navigate'
 import { fullName } from '../../lib/names'
+import { useStartCheckout } from './api/checkout'
 import { useStudentLessons, useStudents } from '../teacher/api/students'
 import { useOpenInstructions } from '../teacher/api/instructions'
 import { useDownloadReceipt, usePayments, useReceipts } from '../teacher/api/payments'
@@ -30,6 +32,7 @@ export function ParentPortal() {
   // Receipts already issued for this child; a parent downloads them, never issues them.
   const receipts = useReceipts(activeId)
   const downloadReceipt = useDownloadReceipt()
+  const startCheckout = useStartCheckout()
   // How to pay: only the studios where THIS student has a package still to pay (the server
   // decides what is open; a paid package or a studio without instructions gives nothing).
   const openInstructions = useOpenInstructions()
@@ -197,6 +200,29 @@ export function ParentPortal() {
                     </button>
                   </div>
                 ))}
+              </section>
+            )}
+            {pkg?.can_pay_online && (
+              <section className="panel" style={{ gap: 6 }}>
+                <h2 className="section-title" style={{ marginBottom: 6 }}>
+                  {t('parent.payOnlineTitle')}
+                </h2>
+                <p style={{ margin: 0 }}>{t('parent.payOnlineIntro')}</p>
+                <p role="note" className="muted" style={{ margin: 0 }}>
+                  {t('parent.payOnlineTest')}
+                </p>
+                <button
+                  type="button"
+                  className="ms-btn ms-btn--primary ms-btn--l"
+                  disabled={startCheckout.isPending}
+                  onClick={() =>
+                    startCheckout.mutate(pkg.id, { onSuccess: (checkout) => goToExternal(checkout.url) })
+                  }
+                >
+                  {t('parent.payOnlineButton', { amount: money.format(Number(pkg.price)) })}
+                </button>
+                {/* The payment instructions below stay available when online payment fails. */}
+                <ErrorText error={startCheckout.error} />
               </section>
             )}
             {howToPay.map((studio) => (

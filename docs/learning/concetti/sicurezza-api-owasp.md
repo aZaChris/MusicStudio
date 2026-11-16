@@ -92,6 +92,26 @@ La fase 8 ha aggiunto una dozzina di endpoint su dati di denaro e un IBAN. Lo st
 
 **Ancora aperto.** La regola "definitivo" sta nei service: un aggiornamento di massa sul database la aggirerebbe. Un test lo sorveglia, ma non è una garanzia del database. La frase "non è un documento fiscale" e i termini d'uso vanno fatti controllare da un professionista. Il titolare, gli insegnanti e i genitori vedono l'IBAN in chiaro, perché è lo scopo. La prova di carico è su un portatile, non su un server.
 
+## Aggiornamento della fase 9: pagamenti sul conto dello studio
+
+La fase 9 ha aggiunto il conto Stripe dello studio, un secondo webhook e rimborsi e contestazioni nel registro. Tutto dietro un interruttore spento di default. Lo stato del giro.
+
+**API1 — BOLA. Coperto.** Le quattro rotte del conto (`/payment-account/`, `onboarding`, `refresh`, `restart`) non hanno un id: lo studio è sempre quello di chi chiama, e una prova con due studi mostra che ognuno vede e tocca solo il proprio. Sono nella suite IDOR. Per gli eventi di Stripe l'isolamento sta nell'attribuzione: l'evento porta l'id del conto, e il pagamento a cui si riferisce un rimborso si cerca per id del pagamento Stripe **e** per conto. Un test manda un evento del conto di uno studio con l'id di un pagamento di un altro: non cambia nulla.
+
+**API3 — Proprietà degli oggetti. Coperto.** `cause` è in sola lettura e le righe di storno non si creano dall'API: un test legge il codice e fallisce se una riga di `Payment` nasce fuori dai service.
+
+**API4 — Risorse. Coperto.** Onboarding e rilettura del conto hanno un limite di frequenza (`payment_account`), con la tariffa nei settings di test (un test lo controlla, per non ripetere il bug del throttle che "fail open" delle esportazioni). Il giro orario che rilegge i conti ha un tetto di 200 conti e un errore su uno non ferma gli altri.
+
+**API5 — Funzioni. Coperto.** Solo il titolare avvia, rilegge e riavvia il conto; gli insegnanti leggono; genitori e studenti non hanno accesso.
+
+**API8 — Configurazione. Coperto.** L'interruttore `ONLINE_PAYMENTS_ENABLED` è spento di default e, spento, le rotte rispondono 404. Una chiave `sk_live_` blocca ancora l'avvio. Un evento con `livemode` vero si conserva e si ignora.
+
+**API10 — Uso non sicuro di API di terzi. Coperto, con un limite.** I due webhook hanno ognuno il suo segreto e non accettano la firma dell'altro. L'indirizzo di provenienza è controllato per entrambi. Gli eventi si salvano una volta e si elaborano una volta, e un evento di un conto sconosciuto o diverso da quello del tentativo non chiude nulla. La versione salvata di un evento è ripulita da nomi, email, indirizzi e dati di carta, e si cancella dopo 90 giorni. Il limite: **non ho eventi veri di Stripe**, solo eventi con la forma della documentazione.
+
+**Dati sensibili. Coperto.** Del conto salviamo solo l'id e uno stato; nessun dato personale va a Stripe (nemmeno l'email del titolare, che la inserisce lì). Un test percorre il flusso del conto catturando i log e non trova né email né nome dello studio.
+
+**Ancora aperto.** Il pagamento diretto, un rimborso e una contestazione non sono stati provati su Stripe vero: servono un conto di prova attivato e la verifica della forma degli eventi. PayPal non è verificato. Che i parametri dell'API nuova corrispondano al modello "Stripe fattura le commissioni" va confermato nella Dashboard. I termini d'uso e la frase delle ricevute restano da far validare. Per andare con soldi veri servono un emendamento alla costituzione e una decisione del titolare.
+
 ## Alternative considerate
 
 **django-axes** per il login: blocca l'account dopo N errori. Ma chiunque conosca un'email potrebbe bloccare quell'account. Il limite per client non ha questo effetto.

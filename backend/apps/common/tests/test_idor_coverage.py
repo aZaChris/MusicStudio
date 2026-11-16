@@ -28,6 +28,9 @@ NO_TENANT_DATA = {
     "auth/mfa/recovery-codes/",
     "auth/mfa/verify/",
     "webhooks/stripe/",
+    # Fase 9: firmato da Stripe, nessun utente; attribuisce per id del conto, mai da un id nel URL
+    # (apps/payments/tests/test_connect_webhook.py).
+    "webhooks/stripe-connect/",
     "invitations/lookup/",  # anonymous, by secret token
     "invitations/accept/",  # signed by Stripe, no user (apps/payments/tests)
 }

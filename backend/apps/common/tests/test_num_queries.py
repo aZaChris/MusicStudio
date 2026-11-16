@@ -187,3 +187,49 @@ def test_receipts_list_and_payments_with_receipts_hold_a_constant_query_count():
 
     assert receipts_one == _count(teacher.user, "/api/v1/receipts/") == 3  # teacher, count, rows
     assert payments_one == _count(teacher.user, "/api/v1/payments/") == 3
+
+
+def test_payment_account_read_holds_a_constant_query_count(settings):
+    # Fase 9: la lettura dello stato è solo database; le voci "da controllare" (al massimo 20)
+    # si leggono in una query, qualunque sia il loro numero.
+    from apps.common.factories import StudioPaymentAccountFactory
+    from apps.payments.models import WebhookEvent
+
+    settings.ONLINE_PAYMENTS_ENABLED = True
+    owner = make_studio_owner()
+    account = StudioPaymentAccountFactory(studio=owner.studio)
+
+    def attention(n: int) -> None:
+        for i in range(n):
+            WebhookEvent.objects.create(
+                stripe_event_id=f"evt_{WebhookEvent.objects.count()}_{i}",
+                type="refund.updated",
+                payload={"data": {"object": {"amount": 1500}}},
+                stripe_account_id=account.stripe_account_id,
+                outcome=WebhookEvent.Outcome.NEEDS_ATTENTION,
+                attention_kind="refund_unmatched",
+            )
+
+    attention(1)
+    one = _count(owner.user, "/api/v1/payment-account/")
+    attention(24)
+
+    assert one == _count(owner.user, "/api/v1/payment-account/") == 3
+
+
+def test_packages_list_with_can_pay_online_holds_a_constant_query_count(settings):
+    # Fase 9: `can_pay_online` è un'annotazione della stessa query (due EXISTS), non una query per
+    # pacchetto: il costo non cresce con il numero dei pacchetti.
+    from apps.common.factories import PackageFactory, StudioPaymentAccountFactory
+
+    settings.ONLINE_PAYMENTS_ENABLED = True
+    owner = make_studio_owner()
+    StudioPaymentAccountFactory(studio=owner.studio)
+    student = StudentFactory(teacher=owner)
+
+    PackageFactory(student=student)
+    one = _count(owner.user, "/api/v1/packages/")
+    for _ in range(29):
+        PackageFactory(student=student)
+
+    assert one == _count(owner.user, "/api/v1/packages/") == 3

@@ -6,6 +6,7 @@ from apps.common.factories import (
     PackageFactory,
     PaymentFactory,
     StudentFactory,
+    connected_package,
     make_reversal,
 )
 from apps.common.tenancy import resolve_tenant
@@ -44,7 +45,7 @@ def test_pending_and_reversal_rows_never_count_as_paid():
 
 
 def test_checkout_is_allowed_again_after_a_reversal(fake_stripe):
-    package = PackageFactory()
+    package = connected_package()
     payment = PaymentFactory(student=package.student, package=package)
     owner = package.student.teacher.user
     assert client_for(owner).post(f"/api/v1/packages/{package.id}/checkout/").status_code == 409
@@ -80,3 +81,43 @@ def test_the_roster_status_falls_back_to_the_earlier_entry_or_none():
 
     older.delete()
     assert students_for(ctx).get(pk=student.pk).latest_payment_status is None
+
+
+# --- Fase 9: un pagamento è "stornato" solo quando gli storni coprono l'importo ------------
+
+
+def test_a_partial_refund_leaves_the_package_paid_and_the_roster_status_unchanged():
+    package = PackageFactory()
+    payment = PaymentFactory(student=package.student, package=package, amount="100.00")
+    make_reversal(payment, amount="30.00", cause="refund", provider_ref="re_1")
+
+    assert package_is_paid(package)
+    ctx = resolve_tenant(package.student.teacher.user)
+    assert students_for(ctx).get(pk=package.student.pk).latest_payment_status == "paid"
+
+
+def test_refunds_that_add_up_to_the_amount_reverse_the_payment():
+    package = PackageFactory()
+    payment = PaymentFactory(student=package.student, package=package, amount="100.00")
+    make_reversal(payment, amount="30.00", cause="refund", provider_ref="re_1")
+    make_reversal(payment, amount="70.00", cause="refund", provider_ref="re_2")
+
+    assert not package_is_paid(package)
+    annotated = selectors.with_reversals(Payment.objects.filter(pk=payment.pk)).get()
+    assert annotated.reversed_amount == 100
+    assert selectors.is_reversed(annotated)
+
+
+def test_reversed_amount_is_zero_without_reversals_and_is_a_column_not_a_query_per_row():
+    PaymentFactory.create_batch(3)
+    rows = list(selectors.with_reversals(Payment.objects.all()))
+    assert all(row.reversed_amount == 0 and row.first_reversal_id is None for row in rows)
+    assert not any(selectors.is_reversed(row) for row in rows)
+
+
+def test_a_zero_amount_entry_never_counts_as_reversed():
+    from decimal import Decimal
+
+    assert not selectors.is_fully_reversed(Decimal("0.00"), Decimal("0.00"))
+    assert selectors.is_fully_reversed(Decimal("10.00"), Decimal("10.00"))
+    assert not selectors.is_fully_reversed(Decimal("10.00"), Decimal("9.99"))
