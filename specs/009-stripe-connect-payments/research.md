@@ -8,6 +8,12 @@ spike in a Stripe sandbox that settles every item marked so (see R12).
 
 ## R1 - Which kind of connected account
 
+> **REVISED 2026-11-16 after the spike (see "Spike results" at the end).** Stripe rejects the creation
+> of v1 Standard accounts for a new platform, so the decision below is replaced by **Accounts v2**
+> (`dashboard: full`, `merchant` configuration, fees and losses collected by Stripe). The reasoning
+> about the studio being the merchant with a full Dashboard still holds. The text below is kept as
+> the original reasoning.
+
 - **Decision**: a **Standard** connected account (v1 API, `type=standard`), created by
   MusicStudio and onboarded on Stripe's hosted pages. All account calls live in `gateway.py`, so
   moving to the newer Accounts v2 API (`dashboard: full`, `merchant` configuration) later touches
@@ -155,6 +161,49 @@ spike in a Stripe sandbox that settles every item marked so (see R12).
 
 If item 1 fails, R1 falls back to Accounts v2 inside `gateway.py`; nothing else in the plan
 changes.
+
+## Spike results (2026-11-16, Stripe sandbox of the owner, SDK `stripe` 16.1.0)
+
+Run by Claude with the owner's sandbox key read from a file outside the repo; only identifiers'
+last characters and field names were printed. One test connected account (id ending `5Jb5`) was
+left in the sandbox.
+
+- **Key and platform**: a test key (`sk_test_`), the account is Italian, Connect is active with the
+  "Platform" business model ("merchants collect payments directly"), zero connected accounts at
+  the start. The sandbox already had RevenueCat connected, no webhook endpoint, and a restricted key
+  that is not ours.
+- **R12 item 1, v1 Standard: FAILS.** `accounts.create(type="standard", country="IT")` returns
+  `InvalidRequestError`: "Stripe no longer recommends Accounts v1 for new Connect integrations.
+  Create connected accounts with POST /v2/core/accounts instead." So the fallback of R1 applies.
+- **Accounts v2: WORKS.** `client.v2.core.accounts.create` with `identity.country=IT`,
+  `dashboard="full"`, `configuration.merchant.capabilities.card_payments.requested=true` and
+  `defaults.responsibilities.fees_collector="stripe"`, `losses_collector="stripe"` creates the
+  account (`applied_configurations=["merchant"]`, `dashboard="full"`). Before onboarding,
+  `configuration.merchant.capabilities.card_payments.status` is `restricted` and
+  `requirements.entries` holds 19 open items.
+- **Onboarding link (v2)**: `client.v2.core.account_links.create` with
+  `use_case={"type":"account_onboarding","account_onboarding":{"return_url":...,"refresh_url":...}}`
+  works and returns `url` (host `connect.stripe.com`) and `expires_at`. The field `configurations`
+  inside `account_onboarding` is rejected ("Unknown field").
+- **SDK**: 16.1.0 already carries `client.v2.core.accounts` and `account_links`; no upgrade needed.
+- **Platform cost (R1)**: Stripe's public Connect pricing page (Italian) says that a platform that
+  lets Stripe bill the connected accounts' fees has "no additional fees for the account, payout
+  volume, tax reporting or single payouts"; the model where the platform handles the fees costs
+  EUR 2 per active account per month, 0.25% + EUR 0.10 per payout and more. The page does not say
+  that `fees_collector="stripe"` is exactly the first model: **to confirm in the Dashboard**
+  (Connect settings / pricing) before live mode.
+- **Account state (R7), consequence**: the state comes from the v2 account: the merchant
+  capability status (`active`, `restricted`, ...) and `requirements`. `details_submitted` and
+  `charges_enabled` do not exist in v2.
+- **Webhooks (R4, R5), consequence**: v2 account events are "thin events" delivered to an event
+  destination, a different mechanism from v1 webhook endpoints. To keep this phase simple the
+  account state is refreshed **on demand** (when the owner returns from Stripe, when the settings
+  page opens while the account is not active, and by an hourly task for accounts not active yet),
+  not through v2 events. Payment, refund and dispute events stay v1 events on a connected-accounts
+  endpoint. Listening to the v2 account events is a FUTURO.
+- **Still open**: R12 item 2 (do the v1 events arrive with the `account` field), item 3 (PayPal) and
+  the direct charge itself: they need a connected account that finished onboarding with test data,
+  which the owner completes on Stripe's hosted page.
 
 ## R13 - Testing without Stripe
 

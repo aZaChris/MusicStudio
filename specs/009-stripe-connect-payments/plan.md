@@ -170,7 +170,8 @@ the register). One new backend module for the account views to keep `views.py` r
   in chat). Whether test mode needs the platform profile completed is part of the spike.
 - **PayPal is not guaranteed** (research R8). The owner's goal mentions it; the plan delivers cards
   and the wallets Stripe enables for the account, and records what the sandbox shows.
-- **Standard accounts are labelled legacy by Stripe** (R1). Mitigated by the gateway boundary and
+- **v1 Standard accounts are refused for new platforms (confirmed by the spike on 2026-11-16); the
+  plan uses Accounts v2 with the full Dashboard** (R1 revised, "Spike results" in research.md). Mitigated by the gateway boundary and
   the spike.
 - **Real money stays out** until T-owner-1 to T-owner-3 of the spec are done.
 - **Partial refunds touch phase 8 code** (R6): the biggest regression risk, covered by keeping the
