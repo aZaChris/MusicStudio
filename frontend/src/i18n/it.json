@@ -133,7 +133,12 @@
     "payBank": "Banca",
     "receipts": "Ricevute",
     "receiptDownload": "Scarica",
-    "receiptCancelled": "annullata"
+    "receiptCancelled": "annullata",
+    "payOnline": "Paga online",
+    "payOnlineTitle": "Paga questo pacchetto online",
+    "payOnlineIntro": "Paghi sulla pagina sicura di Stripe e i soldi vanno direttamente sul conto dello studio. MusicStudio non li riceve e non prende commissioni.",
+    "payOnlineButton": "Paga {{amount}} online",
+    "payOnlineTest": "Modalità di prova: non viene addebitato denaro vero."
   },
   "auth": {
     "login": "Accedi",
@@ -188,7 +193,10 @@
       "not_paid": "Solo un pagamento già incassato si può stornare o avere una ricevuta.",
       "already_reversed": "Questo pagamento è già stato stornato.",
       "is_reversal": "Uno storno non si può stornare.",
-      "period_too_long": "Il periodo è troppo lungo: scegline uno di al massimo un anno."
+      "period_too_long": "Il periodo è troppo lungo: scegline uno di al massimo un anno.",
+      "online_payments_not_available": "Questo studio al momento non accetta pagamenti online. Usa i dati di pagamento qui sotto, o scrivi allo studio.",
+      "package_already_paid": "Questo pacchetto è già pagato.",
+      "payments_unavailable": "Il pagamento online non è disponibile in questo momento. Riprova tra poco o usa i dati di pagamento qui sotto."
     }
   },
   "student": {
@@ -504,5 +512,12 @@
       "amount_differs": "Un pagamento di un importo diverso dal pacchetto",
       "duplicate_payment": "Un secondo pagamento per un pacchetto già pagato"
     }
+  },
+  "payReturn": {
+    "successTitle": "Grazie",
+    "successBody": "Stiamo confermando il pagamento con Stripe. Compare nell'elenco dei pagamenti entro un minuto o due. Non pagare di nuovo.",
+    "cancelTitle": "Pagamento annullato",
+    "cancelBody": "Non è stato addebitato nulla. Puoi riprovare quando vuoi.",
+    "back": "Torna alle tue lezioni"
   }
 }

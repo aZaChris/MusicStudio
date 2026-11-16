@@ -113,3 +113,24 @@ def test_the_account_of_one_studio_never_makes_another_studios_package_payable(f
     package = PackageFactory()  # uno studio senza conto
 
     assert _can_pay(package.student.teacher.user, package) is False
+
+
+def test_the_students_list_carries_can_pay_online_on_the_active_package(fake_stripe):
+    # Il portale del genitore legge il pacchetto attivo dallo studente: deve portare il flag.
+    package = connected_package()
+    parent = ParentAccountFactory()
+    link_parent_to_student(parent, package.student)
+
+    rows = client_for(parent.user).get("/api/v1/students/").data["results"]
+
+    assert rows[0]["active_package"]["can_pay_online"] is True
+
+
+def test_the_students_list_says_false_without_an_active_account(fake_stripe):
+    package = PackageFactory()
+    parent = ParentAccountFactory()
+    link_parent_to_student(parent, package.student)
+
+    rows = client_for(parent.user).get("/api/v1/students/").data["results"]
+
+    assert rows[0]["active_package"]["can_pay_online"] is False

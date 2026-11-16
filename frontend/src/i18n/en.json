@@ -133,7 +133,12 @@
     "payBank": "Bank",
     "receipts": "Receipts",
     "receiptDownload": "Download",
-    "receiptCancelled": "cancelled"
+    "receiptCancelled": "cancelled",
+    "payOnline": "Pay online",
+    "payOnlineTitle": "Pay this package online",
+    "payOnlineIntro": "You pay on Stripe's secure page and the money goes straight to the studio's own account. MusicStudio never receives it and takes no fee.",
+    "payOnlineButton": "Pay {{amount}} online",
+    "payOnlineTest": "Test mode: no real money is charged."
   },
   "auth": {
     "login": "Log in",
@@ -188,7 +193,10 @@
       "not_paid": "Only a paid entry can be reversed or have a receipt.",
       "already_reversed": "This entry was already reversed.",
       "is_reversal": "A reversal cannot be reversed.",
-      "period_too_long": "The period is too long: choose at most one year."
+      "period_too_long": "The period is too long: choose at most one year.",
+      "online_payments_not_available": "This studio does not take online payments at the moment. Use the payment details shown here, or write to the studio.",
+      "package_already_paid": "This package is already paid.",
+      "payments_unavailable": "Online payment is not available right now. Try again in a moment or use the payment details shown here."
     }
   },
   "student": {
@@ -504,5 +512,12 @@
       "amount_differs": "A payment for a different amount than the package",
       "duplicate_payment": "A second payment for a package that was already paid"
     }
+  },
+  "payReturn": {
+    "successTitle": "Thank you",
+    "successBody": "We are confirming your payment with Stripe. It appears in the list of payments within a minute or two. Please do not pay again.",
+    "cancelTitle": "Payment cancelled",
+    "cancelBody": "Nothing was charged. You can try again whenever you like.",
+    "back": "Back to your lessons"
   }
 }

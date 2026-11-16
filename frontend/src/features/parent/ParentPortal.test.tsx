@@ -1,9 +1,13 @@
 import { fireEvent, screen, waitFor } from '@testing-library/react'
-import { expect, test, vi } from 'vitest'
+import { beforeEach, expect, test, vi } from 'vitest'
 
+import { goToExternal } from '../../lib/navigate'
 import { page } from '../../test/fake-api'
 import { lesson, parentMe, payment, receipt, student } from '../../test/fixtures'
 import { renderApp, signedInAs } from '../../test/utils'
+
+vi.mock('../../lib/navigate', () => ({ goToExternal: vi.fn() }))
+beforeEach(() => vi.mocked(goToExternal).mockClear())
 
 const routes = {
   'GET /students/': {
@@ -144,4 +148,76 @@ test('a child with no issued receipts shows no receipts section', async () => {
 
   await screen.findByText('Bravissima')
   expect(screen.queryByText('Receipts')).not.toBeInTheDocument()
+})
+
+// --- Pay online, straight to the studio's own Stripe account (US2, phase 9) -----------------
+
+const payableStudent = (canPay: boolean) =>
+  student(7, {
+    full_name: 'Giulia Rossi',
+    active_package: { ...student(7).active_package!, price: '150.00', can_pay_online: canPay },
+  })
+const payRoutes = (canPay: boolean) => ({
+  ...routes,
+  'GET /students/': { status: 200, body: page([payableStudent(canPay)]) },
+})
+
+test('a parent sees how much they pay and is sent to Stripe, not charged by MusicStudio', async () => {
+  const api = signedInAs(parentMe, {
+    ...payRoutes(true),
+    'POST /packages/107/checkout/': {
+      status: 200,
+      body: {
+        checkout_id: 'c1',
+        url: 'https://checkout.stripe.com/c/pay/cs_1',
+        expires_at: '2026-11-16T12:00:00Z',
+      },
+    },
+  })
+  renderApp('/')
+
+  fireEvent.click(await screen.findByRole('button', { name: /Pay .*150.* online/ }))
+
+  await waitFor(() => expect(goToExternal).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/cs_1'))
+  expect(api.callsTo('POST /packages/107/checkout/')).toHaveLength(1)
+  expect(screen.getByText(/no real money is charged/)).toBeInTheDocument()
+})
+
+test('no pay button when the studio does not take online payments', async () => {
+  signedInAs(parentMe, payRoutes(false))
+  renderApp('/')
+  await screen.findByText('Bravissima')
+
+  expect(screen.queryByRole('button', { name: /online/ })).not.toBeInTheDocument()
+})
+
+test('when the server refuses, the message is shown and the payment details stay available', async () => {
+  signedInAs(parentMe, {
+    ...payRoutes(true),
+    'GET /payment-instructions/open/': { status: 200, body: [openFor([7])] },
+    'POST /packages/107/checkout/': {
+      status: 409,
+      body: { detail: 'This studio does not accept online payments.', code: 'online_payments_not_available' },
+    },
+  })
+  renderApp('/')
+
+  fireEvent.click(await screen.findByRole('button', { name: /Pay .*150.* online/ }))
+
+  expect(await screen.findByText(/does not take online payments at the moment/)).toBeInTheDocument()
+  expect(screen.getByText(/How to pay — Studio Armonia/)).toBeInTheDocument()
+  expect(goToExternal).not.toHaveBeenCalled()
+})
+
+test('an unreachable provider shows a message and nobody is redirected', async () => {
+  signedInAs(parentMe, {
+    ...payRoutes(true),
+    'POST /packages/107/checkout/': { status: 503, body: { detail: 'down', code: 'payments_unavailable' } },
+  })
+  renderApp('/')
+
+  fireEvent.click(await screen.findByRole('button', { name: /Pay .*150.* online/ }))
+
+  expect(await screen.findByRole('alert')).toBeInTheDocument()
+  expect(goToExternal).not.toHaveBeenCalled()
 })

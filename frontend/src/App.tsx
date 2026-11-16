@@ -14,6 +14,7 @@ import { Payments } from './features/teacher/Payments'
 import { Roster } from './features/teacher/Roster'
 import { StudentDetail } from './features/teacher/StudentDetail'
 import { ParentPortal } from './features/parent/ParentPortal'
+import { PaymentCancel, PaymentSuccess } from './features/payments/ReturnPages'
 import { AccountPage } from './features/account/AccountPage'
 import { AuditPage } from './features/audit/AuditPage'
 import { PrivacyPage } from './features/privacy/PrivacyPage'
@@ -99,6 +100,22 @@ function App() {
         element={
           <RequireRole roles={[...familyRoles]}>
             <PrivacyPage />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/payments/success"
+        element={
+          <RequireRole roles={[...familyRoles]}>
+            <PaymentSuccess />
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/payments/cancel"
+        element={
+          <RequireRole roles={[...familyRoles]}>
+            <PaymentCancel />
           </RequireRole>
         }
       />

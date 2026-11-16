@@ -70,6 +70,7 @@ export const student = (id: number, over: Partial<Student> = {}): Student => ({
     price: '150.00',
     status: 'active',
     is_low: true,
+    can_pay_online: false,
   },
   payment_status: 'pending',
   ...over,
