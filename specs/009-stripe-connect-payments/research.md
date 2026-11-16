@@ -201,6 +201,15 @@ left in the sandbox.
   page opens while the account is not active, and by an hourly task for accounts not active yet),
   not through v2 events. Payment, refund and dispute events stay v1 events on a connected-accounts
   endpoint. Listening to the v2 account events is a FUTURO.
+- **A connected account cannot be completed through the API (tried, refused).** With the Dashboard
+  full or none and the losses collected by Stripe (the only combination allowed for a new platform;
+  `losses_collector="application"` is refused, `dashboard="express"` is "not supported"), Stripe owns
+  the collection of requirements and answers "You cannot accept the Terms of Service on behalf of
+  accounts where requirement collection is owned by Stripe." So the studio's owner always accepts
+  the terms on Stripe's hosted page: good for privacy (we collect nothing), and it means the
+  sandbox run needs a human to finish hosted onboarding with test data (SMS code `000-000`, date of
+  birth `1901-01-01`, address line `address_full_match` with a real city and postcode, personal id
+  `000000000`, business URL `https://accessible.stripe.com`).
 - **Still open**: R12 item 2 (do the v1 events arrive with the `account` field), item 3 (PayPal) and
   the direct charge itself: they need a connected account that finished onboarding with test data,
   which the owner completes on Stripe's hosted page.
