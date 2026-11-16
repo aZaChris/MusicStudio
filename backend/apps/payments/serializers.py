@@ -1,5 +1,6 @@
 """Serializer dei pagamenti: cosa entra e cosa esce dall'API."""
 
+from decimal import Decimal
 from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist
@@ -9,6 +10,7 @@ from apps.common.serializers import ScopedRelatedFieldsMixin
 from apps.common.tenancy import get_tenant
 
 from .models import CheckoutSession, Payment, Receipt
+from .selectors import is_fully_reversed, is_reversed
 
 
 class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Payment]):
@@ -54,20 +56,22 @@ class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Pa
         # "online" a mano.
         read_only_fields = ["checkout", "reversal_of"]
 
-    def _reversal(self, obj: Payment) -> Payment | None:
-        # Il selector fa select_related("reversal"): niente query. Senza storno Django solleva
-        # RelatedObjectDoesNotExist, che è un ObjectDoesNotExist.
-        try:
-            return obj.reversal
-        except ObjectDoesNotExist:
-            return None
-
     def get_reversed(self, obj: Payment) -> bool:
-        return self._reversal(obj) is not None
+        # Stornato per intero. Dagli elenchi arriva dall'annotazione del selector (nessuna query
+        # per riga); per un oggetto appena creato `is_reversed` fa una query sola.
+        return is_reversed(obj)
 
     def get_reversal_id(self, obj: Payment) -> int | None:
-        reversal = self._reversal(obj)
-        return reversal.pk if reversal else None
+        # Il primo storno del pagamento (con più rimborsi parziali ce n'è più d'uno).
+        if hasattr(obj, "first_reversal_id"):
+            first: int | None = obj.first_reversal_id
+            return first
+        return (
+            Payment.objects.filter(reversal_of=obj.pk)
+            .order_by("id")
+            .values_list("id", flat=True)
+            .first()
+        )
 
     def get_receipt_number(self, obj: Payment) -> str | None:
         # Dal select_related del selector: nessuna query. Senza ricevuta Django solleva
@@ -223,11 +227,12 @@ class ReceiptSerializer(serializers.ModelSerializer[Receipt]):
         read_only_fields = fields
 
     def get_cancelled(self, obj: Receipt) -> bool:
-        # "Annullata" se il pagamento è stato stornato (dal select_related del selector).
-        try:
-            return obj.payment.reversal is not None
-        except ObjectDoesNotExist:
-            return False
+        # "Annullata" se il pagamento è stato stornato per intero. Dall'annotazione del selector
+        # (nessuna query per riga); per una ricevuta appena emessa si calcola con una query.
+        annotated = getattr(obj, "payment_reversed_amount", None)
+        if annotated is None:
+            return is_reversed(obj.payment)
+        return is_fully_reversed(obj.payment.amount, Decimal(annotated))
 
 
 class CheckoutSerializer(serializers.Serializer[CheckoutSession]):

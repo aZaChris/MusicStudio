@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from apps.common.tenancy import get_tenant
 from apps.packages.serializers import PackageSerializer
+from apps.payments.selectors import not_fully_reversed, with_reversals
 from apps.studios.models import Teacher
 from apps.studios.selectors import teachers_for_owner
 
@@ -60,7 +61,8 @@ class StudentSerializer(serializers.ModelSerializer[Student]):
             return status
         # Come nel selector: gli storni e i pagamenti stornati non contano per lo stato.
         latest = (
-            obj.payments.filter(reversal__isnull=True)
+            with_reversals(obj.payments.all())
+            .filter(not_fully_reversed())
             .exclude(status="reversal")
             .order_by("-date", "-id")
             .first()

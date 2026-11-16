@@ -14,6 +14,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 
 from apps.common.fields import EncryptedTextField
 from apps.packages.models import Package
@@ -48,6 +49,11 @@ class Payment(models.Model):
         # `reversal_of` e specs/008-cash-register-receipts/data-model.md.
         REVERSAL = "reversal", "Reversal"
 
+    class Cause(models.TextChoices):
+        MANUAL = "manual", "Manual correction"
+        REFUND = "refund", "Refund"
+        DISPUTE = "dispute", "Dispute"
+
     # Lo studente cancellato porta con sé i suoi pagamenti (CASCADE). La cancellazione GDPR
     # però è un'anonimizzazione, non un delete: vedi ADR-032 e apps/privacy.
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name="payments")
@@ -69,13 +75,21 @@ class Payment(models.Model):
         blank=True,
         related_name="payment",
     )
-    # Solo sulla riga di storno: punta al pagamento originale. OneToOne = al massimo uno storno
-    # per pagamento, garantito dal database anche con due richieste insieme (FR-004, FR-009).
+    # Solo sulla riga di storno: punta al pagamento originale. Dalla fase 9 è una chiave esterna:
+    # un pagamento può avere più righe di storno (rimborsi parziali di Stripe, ADR-038). Lo storno
+    # manuale resta uno solo e per l'importo intero, garantito dal vincolo parziale
+    # `payment_one_manual_reversal` anche con due richieste insieme (FR-004, FR-009).
     # CASCADE e non PROTECT: il job di conservazione cancella i pagamenti vecchi in blocco, e uno
     # storno recente di un pagamento molto vecchio non deve bloccarlo.
-    reversal_of = models.OneToOneField(
-        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="reversal"
+    reversal_of = models.ForeignKey(
+        "self", on_delete=models.CASCADE, null=True, blank=True, related_name="reversals"
     )
+    # Perché esiste la riga di storno: a mano dal registro (`manual`), rimborso o contestazione
+    # persa sul lato Stripe. Per le righe che non sono storni vale sempre `manual` (il default).
+    cause = models.CharField(max_length=10, choices=Cause.choices, default=Cause.MANUAL)
+    # Id del rimborso o della contestazione di Stripe sulla riga di storno: un duplicato dello
+    # stesso evento non può creare una seconda riga (idempotenza garantita dal database).
+    provider_ref = models.CharField(max_length=255, null=True, blank=True, unique=True)
     # Perché si è stornato: testo libero, quindi cifrato (constitution X). Al massimo 200 caratteri,
     # controllati dal serializer.
     reason = EncryptedTextField(blank=True)
@@ -106,10 +120,31 @@ class Payment(models.Model):
                 ),
                 name="payment_reversal_link_matches_status",
             ),
-            # Lo storno ripete l'importo dell'originale: il segno lo dà lo stato.
+            # L'importo di una riga di storno è positivo: il segno lo dà lo stato.
             models.CheckConstraint(
                 condition=~models.Q(status="reversal") | models.Q(amount__gt=0),
                 name="payment_reversal_amount_positive",
+            ),
+            # Lo storno manuale è al massimo uno per pagamento (fase 8, FR-004): è il vincolo che
+            # fa perdere con un 409 pulito chi arriva secondo. Gli storni del fornitore sono
+            # liberi di essere più d'uno; la loro somma la controlla il service sotto lock.
+            models.UniqueConstraint(
+                fields=["reversal_of"],
+                condition=models.Q(status="reversal", cause="manual"),
+                name="payment_one_manual_reversal",
+            ),
+            # `provider_ref` c'è se e solo se lo storno viene dal fornitore (rimborso o
+            # contestazione).
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        status="reversal",
+                        cause__in=["refund", "dispute"],
+                        provider_ref__isnull=False,
+                    )
+                    | models.Q(cause="manual", provider_ref__isnull=True)
+                ),
+                name="payment_provider_ref_matches_cause",
             ),
         ]
 
@@ -152,6 +187,11 @@ class CheckoutSession(models.Model):
     )
     # Unico: è il legame col lato Stripe e serve a ritrovare il tentativo dal webhook.
     stripe_session_id = models.CharField(max_length=255, unique=True, null=True, blank=True)
+    # Fase 9: il conto Stripe dello studio su cui è stata creata la sessione (pagamento diretto,
+    # ADR-037). Vuoto sui tentativi della fase 3, che non avevano un conto collegato.
+    stripe_account_id = models.CharField(max_length=64, blank=True)
+    # Compilato quando il pagamento si completa: lega i rimborsi e le contestazioni al pagamento.
+    stripe_payment_intent_id = models.CharField(max_length=255, blank=True, db_index=True)
     url = models.URLField(max_length=2000, blank=True)
     # Importo e valuta sono copiati qui al momento della creazione: se il prezzo del
     # pacchetto cambia dopo, il tentativo resta quello che il pagante ha visto.
@@ -186,9 +226,23 @@ class WebhookEvent(models.Model):
     Spiegazione completa: docs/learning/concetti/webhook-idempotenti.md.
     """
 
+    class Outcome(models.TextChoices):
+        # Esito dell'elaborazione (fase 9): `needs_attention` = un rimborso, una contestazione o
+        # un importo che non combacia col registro, da far vedere allo studio.
+        PENDING = "pending", "Pending"
+        APPLIED = "applied", "Applied"
+        IGNORED = "ignored", "Ignored"
+        NEEDS_ATTENTION = "needs_attention", "Needs attention"
+
     stripe_event_id = models.CharField(max_length=255, unique=True)
     type = models.CharField(max_length=100)
+    # Dalla fase 9 si salva una versione ripulita dei dati personali (ADR-039).
     payload = models.JSONField()
+    # Il conto collegato che ha generato l'evento (campo `account`); vuoto per gli eventi del
+    # conto della piattaforma. È così che un evento si attribuisce a uno studio.
+    stripe_account_id = models.CharField(max_length=64, blank=True, db_index=True)
+    livemode = models.BooleanField(default=False)
+    outcome = models.CharField(max_length=20, choices=Outcome.choices, default=Outcome.PENDING)
     received_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     # Quante volte l'elaborazione è partita: utile per capire eventi che si bloccano.
@@ -196,6 +250,67 @@ class WebhookEvent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.type} {self.stripe_event_id}"
+
+
+class StudioPaymentAccount(models.Model):
+    """Il conto Stripe dello studio, su cui arrivano i pagamenti online (fase 9, ADR-037).
+
+    Uno per studio al massimo. Salviamo solo l'id del conto e uno stato ricavato da ciò che
+    Stripe riferisce: documenti, dati bancari e requisiti restano sulla pagina di Stripe e non
+    passano da MusicStudio (constitution X). La piattaforma non incassa nulla.
+    """
+
+    class State(models.TextChoices):
+        IN_PROGRESS = "in_progress", "In progress"
+        INFORMATION_NEEDED = "information_needed", "Information needed"
+        ACTIVE = "active", "Active"
+        RESTRICTED = "restricted", "Restricted"
+        DISCONNECTED = "disconnected", "Disconnected"
+
+    # CASCADE: cancellando lo studio sparisce il collegamento, mai il denaro (sta sul conto
+    # dello studio).
+    studio = models.OneToOneField(
+        "studios.Studio", on_delete=models.CASCADE, related_name="payment_account"
+    )
+    stripe_account_id = models.CharField(max_length=64, unique=True)
+    state = models.CharField(max_length=20, choices=State.choices, default=State.IN_PROGRESS)
+    state_changed_at = models.DateTimeField(default=timezone.now)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        # Nessun dato di Stripe oltre allo studio: la stringa finisce nell'admin e nei log.
+        return f"Payment account of studio #{self.studio_id}"
+
+    @property
+    def can_accept_online(self) -> bool:
+        return self.state == self.State.ACTIVE
+
+
+class PaymentDispute(models.Model):
+    """Una contestazione (chargeback) su un pagamento online (fase 9, ADR-038).
+
+    Il pagamento non si tocca (è definitivo): "in contestazione" si legge da qui. Se la
+    contestazione è persa nasce una riga di storno con causa `dispute`.
+    """
+
+    class Status(models.TextChoices):
+        OPEN = "open", "Open"
+        WON = "won", "Won"
+        LOST = "lost", "Lost"
+
+    payment = models.ForeignKey(Payment, on_delete=models.CASCADE, related_name="disputes")
+    stripe_dispute_id = models.CharField(max_length=255, unique=True)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    amount = models.DecimalField(max_digits=8, decimal_places=2)
+    opened_at = models.DateTimeField(default=timezone.now)
+    closed_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self) -> str:
+        return f"Dispute {self.stripe_dispute_id} ({self.status})"
 
 
 class PaymentInstructions(models.Model):

@@ -19,7 +19,7 @@ from urllib.parse import urlsplit
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
-from django.db.models import Max
+from django.db.models import Max, Sum
 from django.utils import timezone
 
 from apps.audit import services as audit
@@ -173,6 +173,69 @@ def reverse_payment(payment: Payment, *, reason: str, actor: Any) -> Payment:
             metadata={"method": original.method, "amount": str(original.amount)},
         )
     return reversal
+
+
+class ProviderReversalResult:
+    """Esito di `add_provider_reversal`: cosa è successo alla notifica del fornitore."""
+
+    CREATED = "created"  # nuova riga di storno
+    DUPLICATE = "duplicate"  # lo stesso rimborso o la stessa contestazione era già registrato
+    EXCEEDS = "exceeds"  # la somma degli storni supererebbe l'importo: niente scritto
+    NOT_APPLICABLE = "not_applicable"  # non è un pagamento incassato: niente scritto
+
+
+def add_provider_reversal(
+    original: Payment, *, amount: Decimal, cause: str, provider_ref: str
+) -> tuple[Payment | None, str]:
+    """Aggiunge uno storno dovuto a un rimborso o a una contestazione persa (fase 9, ADR-038).
+
+    Come per lo storno manuale l'originale non si tocca mai: nasce una riga nuova, datata a oggi
+    (un mese già consegnato al commercialista non cambia). A differenza dello storno manuale può
+    essere parziale e un pagamento può averne più d'uno; la regola è che la somma degli storni non
+    supera mai l'importo. Non si può esprimere come vincolo del database, quindi si controlla qui
+    sotto il lock di riga dell'originale (lo stesso schema dei numeri di ricevuta); un secondo
+    storno contemporaneo aspetta e poi vede la somma aggiornata. `provider_ref` (id Stripe) è unico:
+    una notifica ripetuta non crea una seconda riga. Ritorna la riga creata (o None) e l'esito.
+    """
+    if cause not in (Payment.Cause.REFUND, Payment.Cause.DISPUTE) or amount <= 0:
+        raise ValueError(
+            "A provider reversal needs a refund or dispute cause and a positive amount."
+        )
+    with transaction.atomic():
+        locked = Payment.objects.select_for_update().select_related("student").get(pk=original.pk)
+        if locked.status != Payment.Status.PAID:
+            return None, ProviderReversalResult.NOT_APPLICABLE
+        if Payment.objects.filter(provider_ref=provider_ref).exists():
+            return None, ProviderReversalResult.DUPLICATE
+        already = Payment.objects.filter(reversal_of=locked).aggregate(total=Sum("amount"))["total"]
+        if (already or Decimal("0.00")) + amount > locked.amount:
+            return None, ProviderReversalResult.EXCEEDS
+        try:
+            with transaction.atomic():
+                reversal = Payment.objects.create(
+                    student=locked.student,
+                    package=locked.package,
+                    amount=amount,
+                    date=timezone.localdate(),
+                    method=locked.method,
+                    status=Payment.Status.REVERSAL,
+                    reversal_of=locked,
+                    cause=cause,
+                    provider_ref=provider_ref,
+                )
+        except IntegrityError:
+            # Un'altra notifica con lo stesso id è passata tra il controllo e l'insert.
+            return None, ProviderReversalResult.DUPLICATE
+        audit.record(
+            audit.Action.PAYMENT_REFUND
+            if cause == Payment.Cause.REFUND
+            else audit.Action.PAYMENT_DISPUTE,
+            actor=None,  # lo fa il fornitore, non una persona
+            target=reversal,
+            studio_id=locked.student.studio_id,
+            metadata={"cause": cause, "amount": str(amount), "ref": provider_ref},
+        )
+    return reversal, ProviderReversalResult.CREATED
 
 
 # --- Pagamenti online (fase 3, ADR-013/014) ----------------------------------------------

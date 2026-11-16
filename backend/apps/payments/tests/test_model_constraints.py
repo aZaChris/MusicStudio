@@ -26,7 +26,7 @@ def test_a_well_formed_reversal_is_accepted():
     reversal = _reversal_of(original, reason="wrong student")
     reversal.save()
     original.refresh_from_db()
-    assert original.reversal == reversal
+    assert list(original.reversals.all()) == [reversal]
     assert Payment.objects.get(pk=reversal.pk).reason == "wrong student"
 
 
@@ -66,3 +66,56 @@ def test_old_style_entries_still_save_and_reason_is_stored_encrypted():
     with connection.cursor() as cursor:
         cursor.execute("select reason from payments_payment where id = %s", [reversal.pk])
         assert "secret reason" not in cursor.fetchone()[0]
+
+
+# --- Fase 9: più storni dal fornitore, id del fornitore unico (ADR-038) -------------------
+
+
+def _provider_reversal(original: Payment, ref: str | None, amount: str, **overrides) -> Payment:
+    return _reversal_of(
+        original,
+        amount=amount,
+        cause=Payment.Cause.REFUND,
+        provider_ref=ref,
+        **overrides,
+    )
+
+
+def test_an_original_can_have_several_provider_reversals():
+    original = PaymentFactory(amount="100.00")
+    _provider_reversal(original, "re_1", "30.00").save()
+    _provider_reversal(original, "re_2", "20.00").save()
+
+    assert original.reversals.count() == 2
+
+
+def test_the_same_provider_ref_cannot_be_stored_twice():
+    original = PaymentFactory(amount="100.00")
+    _provider_reversal(original, "re_1", "30.00").save()
+    with pytest.raises(IntegrityError), transaction.atomic():
+        _provider_reversal(original, "re_1", "30.00").save()
+
+
+def test_a_provider_reversal_needs_its_provider_ref():
+    original = PaymentFactory()
+    with pytest.raises(IntegrityError), transaction.atomic():
+        _provider_reversal(original, None, "10.00").save()
+
+
+def test_a_manual_reversal_cannot_carry_a_provider_ref():
+    original = PaymentFactory()
+    with pytest.raises(IntegrityError), transaction.atomic():
+        _reversal_of(original, provider_ref="re_x").save()
+
+
+def test_a_manual_reversal_is_still_unique_even_next_to_provider_ones():
+    original = PaymentFactory(amount="100.00")
+    _provider_reversal(original, "re_1", "30.00").save()
+    _reversal_of(original).save()
+    with pytest.raises(IntegrityError), transaction.atomic():
+        _reversal_of(original).save()
+
+
+def test_existing_style_rows_default_to_a_manual_cause_without_ref():
+    entry = PaymentFactory()
+    assert entry.cause == Payment.Cause.MANUAL and entry.provider_ref is None
