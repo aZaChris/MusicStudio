@@ -12,6 +12,7 @@ prossimo numero libero: ADR-034).
 
 import datetime
 import logging
+from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
 from urllib.parse import urlsplit
@@ -29,7 +30,14 @@ from apps.students.models import Student
 from apps.studios.models import Studio
 
 from . import gateway, iban, selectors
-from .models import CheckoutSession, Payment, PaymentInstructions, Receipt, WebhookEvent
+from .models import (
+    CheckoutSession,
+    Payment,
+    PaymentInstructions,
+    Receipt,
+    StudioPaymentAccount,
+    WebhookEvent,
+)
 
 
 def ensure_package_matches_student(student: Student, package: Package | None) -> None:
@@ -335,14 +343,55 @@ def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
         return checkout
 
 
+# Cosa si conserva di un evento (ADR-039): identificativi, stati e importi. Niente nomi, email,
+# indirizzi o dati di carta: una copia grezza dell'evento sarebbe una copia di dati personali che
+# nessuno potrebbe esportare né cancellare (constitution X).
+_EVENT_KEYS = ("id", "object", "type", "livemode", "account", "created")
+_OBJECT_KEYS = (
+    "id",
+    "object",
+    "status",
+    "payment_status",
+    "amount",
+    "amount_total",
+    "amount_refunded",
+    "currency",
+    "payment_intent",
+    "charge",
+    "client_reference_id",
+    "expires_at",
+    "reason",
+)
+_REFERENCE_KEYS = ("payment_intent", "charge")  # a volte arrivano espansi: si tiene solo l'id
+_METADATA_KEYS = ("checkout_id", "studio_id")
+
+
+def scrub_event(event: dict[str, Any]) -> dict[str, Any]:
+    """Una copia dell'evento con i soli campi che servono a elaborarlo (lista bianca)."""
+    obj = (event.get("data") or {}).get("object") or {}
+    kept: dict[str, Any] = {k: obj[k] for k in _OBJECT_KEYS if k in obj}
+    for key in _REFERENCE_KEYS:
+        if isinstance(kept.get(key), dict):
+            kept[key] = kept[key].get("id")
+    kept["metadata"] = {k: v for k, v in (obj.get("metadata") or {}).items() if k in _METADATA_KEYS}
+    top = {k: event[k] for k in _EVENT_KEYS if k in event}
+    return {**top, "data": {"object": kept}}
+
+
 def record_webhook_event(event: dict[str, Any]) -> tuple[WebhookEvent, bool]:
-    """Salva un evento verificato una volta sola; in coda solo alla prima consegna."""
+    """Salva un evento verificato (ripulito) una volta sola; in coda solo alla prima consegna."""
     from .tasks import process_webhook_event  # tasks importa services: evita un ciclo
 
     with transaction.atomic():
         stored, created = WebhookEvent.objects.get_or_create(
             stripe_event_id=event["id"],
-            defaults={"type": event.get("type", ""), "payload": event},
+            defaults={
+                "type": event.get("type", ""),
+                "payload": scrub_event(event),
+                # Il conto collegato che ha generato l'evento: così lo si attribuisce a uno studio.
+                "stripe_account_id": event.get("account") or "",
+                "livemode": bool(event.get("livemode")),
+            },
         )
         if created:
             # Dopo il commit: il worker deve poter leggere la riga che deve elaborare.
@@ -350,13 +399,45 @@ def record_webhook_event(event: dict[str, Any]) -> tuple[WebhookEvent, bool]:
     return stored, created
 
 
+# Un gestore riceve l'evento (già bloccato, dentro la transazione) e ritorna l'esito.
+EventHandler = Callable[[WebhookEvent], str]
+EVENT_HANDLERS: dict[str, EventHandler] = {}
+
+
+def handles(*event_types: str) -> Callable[[EventHandler], EventHandler]:
+    """Registra un gestore per uno o più tipi di evento (ogni storia ne aggiunge)."""
+
+    def register(handler: EventHandler) -> EventHandler:
+        for event_type in event_types:
+            EVENT_HANDLERS[event_type] = handler
+        return handler
+
+    return register
+
+
 # Eventi che chiudono il pagamento come riuscito.
 FULFIL_EVENTS = {"checkout.session.completed", "checkout.session.async_payment_succeeded"}
-# Tutti gli eventi di cui ci occupiamo; gli altri si salvano e si ignorano.
+# Eventi di Checkout di cui ci occupiamo; gli altri si salvano e si ignorano.
 HANDLED_EVENTS = FULFIL_EVENTS | {
     "checkout.session.async_payment_failed",
     "checkout.session.expired",
 }
+
+
+def _dispatch(event: WebhookEvent) -> str:
+    # Si lavora solo in modalità test (constitution IV): un evento "live" si conserva e si ignora.
+    if event.livemode:
+        return WebhookEvent.Outcome.IGNORED
+    # Un evento di un conto che nessuno studio ha collegato non si attribuisce a nessuno.
+    if (
+        event.stripe_account_id
+        and not StudioPaymentAccount.objects.filter(
+            stripe_account_id=event.stripe_account_id
+        ).exists()
+    ):
+        return WebhookEvent.Outcome.IGNORED
+    handler = EVENT_HANDLERS.get(event.type)
+    return handler(event) if handler else WebhookEvent.Outcome.IGNORED
 
 
 def process_webhook_event(event_pk: int) -> bool:
@@ -367,16 +448,21 @@ def process_webhook_event(event_pk: int) -> bool:
         if event.processed_at is not None:
             return False  # già elaborato: nessun effetto
         event.attempts += 1
-        if event.type in HANDLED_EVENTS:
-            session = gateway.SessionInfo.from_dict(event.payload["data"]["object"])
-            _apply_to_checkout(session, failed=event.type.endswith("async_payment_failed"))
+        event.outcome = _dispatch(event)
         event.processed_at = timezone.now()
-        event.save(update_fields=["processed_at", "attempts"])
+        event.save(update_fields=["processed_at", "attempts", "outcome"])
         return True
 
 
-def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) -> None:
-    # Ritrova il tentativo dalla sessione di Stripe e ne aggiorna lo stato.
+@handles(*HANDLED_EVENTS)
+def _handle_checkout_event(event: WebhookEvent) -> str:
+    session = gateway.SessionInfo.from_dict(event.payload["data"]["object"])
+    matched = _apply_to_checkout(session, failed=event.type.endswith("async_payment_failed"))
+    return WebhookEvent.Outcome.APPLIED if matched else WebhookEvent.Outcome.IGNORED
+
+
+def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) -> bool:
+    # Ritrova il tentativo dalla sessione di Stripe e ne aggiorna lo stato. Falso se non c'è.
     checkout = (
         CheckoutSession.objects.select_for_update()
         .select_related("package__student")
@@ -386,8 +472,9 @@ def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) ->
     if checkout is None:
         # Non è un errore: può essere un evento di un altro ambiente o di un test.
         logger.warning("Stripe session %s matches no checkout attempt; ignored", session.id)
-        return
+        return False
     apply_session_state(checkout, session, failed=failed)
+    return True
 
 
 def apply_session_state(

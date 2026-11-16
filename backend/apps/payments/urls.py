@@ -7,7 +7,7 @@ from .instruction_views import OpenInstructionsView, PaymentInstructionsView
 from .receipt_views import IssueReceiptView, ReceiptListView, ReceiptPdfView
 from .register_views import RegisterCsvExportView, RegisterPdfExportView, RegisterSummaryView
 from .views import PaymentViewSet
-from .webhooks import StripeWebhookView
+from .webhooks import StripeConnectWebhookView, StripeWebhookView
 
 router = DefaultRouter()
 router.register("payments", PaymentViewSet, basename="payment")
@@ -35,5 +35,11 @@ urlpatterns = [
     ),
     # Chiamato da Stripe, non dal portale: ha un'autenticazione sua (la firma), vedi webhooks.py.
     path("webhooks/stripe/", StripeWebhookView.as_view(), name="stripe-webhook"),
+    # Eventi dei conti collegati degli studi (fase 9): stessa logica, segreto di firma diverso.
+    path(
+        "webhooks/stripe-connect/",
+        StripeConnectWebhookView.as_view(),
+        name="stripe-connect-webhook",
+    ),
     *router.urls,
 ]

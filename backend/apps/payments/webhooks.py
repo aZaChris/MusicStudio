@@ -42,9 +42,12 @@ def is_allowed_source(ip: str) -> bool:
     return any(address in ipaddress.ip_network(entry, strict=False) for entry in allowed)
 
 
-class StripeWebhookView(APIView):
+class _BaseStripeWebhookView(APIView):
     # Riceve gli eventi di Stripe. Niente utente: l'autenticazione è la firma.
     # Commento e non docstring: i docstring delle view finiscono in openapi.yaml.
+    # Due endpoint, due segreti di firma (ADR-039): questa classe fa tutto il lavoro, le due
+    # sottoclassi dicono solo quale impostazione contiene il segreto del proprio endpoint.
+    signature_setting = "STRIPE_WEBHOOK_SECRET"
 
     # Stripe si autentica con la firma, non con un utente; e non va mai limitato (riprova
     # in caso di errore, quindi un 429 creerebbe solo altre consegne).
@@ -69,9 +72,24 @@ class StripeWebhookView(APIView):
             return Response({"detail": "Forbidden."}, status=status.HTTP_403_FORBIDDEN)
         try:
             # request.body = byte grezzi; mai request.data (ri-serializzare rompe l'HMAC).
-            event = gateway.verify_event(request.body, request.headers.get("Stripe-Signature"))
+            event = gateway.verify_event(
+                request.body,
+                request.headers.get("Stripe-Signature"),
+                getattr(settings, self.signature_setting),
+            )
         except gateway.InvalidWebhook:
             return Response({"detail": "Invalid signature."}, status=status.HTTP_400_BAD_REQUEST)
         # Un doppione non fa danni: record_webhook_event lo riconosce e non rimette in coda.
         record_webhook_event(event)
         return Response({"received": True})
+
+
+class StripeWebhookView(_BaseStripeWebhookView):
+    # Eventi del conto della piattaforma (fase 3).
+    signature_setting = "STRIPE_WEBHOOK_SECRET"
+
+
+class StripeConnectWebhookView(_BaseStripeWebhookView):
+    # Eventi dei conti collegati degli studi: pagamenti, rimborsi, contestazioni (fase 9).
+    # Stripe li consegna solo a un endpoint di tipo "Connected accounts", con un segreto suo.
+    signature_setting = "STRIPE_CONNECT_WEBHOOK_SECRET"
