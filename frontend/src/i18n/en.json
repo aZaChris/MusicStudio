@@ -100,7 +100,7 @@
       "subtitle": "{{student}} · {{amount}} · {{date}}",
       "reason": "Reason (shown in the register)",
       "hint": "The original entry stays in the register, marked as reversed. Then record the payment again if needed.",
-      "cardNotice": "This was an online card payment. No money is returned: the register is corrected, nothing is refunded.",
+      "cardNotice": "This was an online card payment. No money is returned: the register is corrected, nothing is refunded. To refund, use your Stripe page; the refund then appears here by itself.",
       "confirm": "Reverse payment",
       "done": "Payment reversed.",
       "of": "Reversal of payment #{{id}}",
@@ -109,7 +109,13 @@
     "receipt": {
       "action": "Receipt",
       "download": "Receipt {{number}}"
-    }
+    },
+    "cause": {
+      "refund": "Refund from Stripe",
+      "dispute": "Dispute lost on Stripe"
+    },
+    "underDispute": "Under dispute",
+    "partlyRefunded": "Partly refunded: {{amount}}"
   },
   "parent": {
     "portalTitle": "Your lessons",
@@ -510,7 +516,9 @@
       "dispute_unmatched": "A dispute that matches no payment in the register",
       "refund_exceeds": "A refund larger than what is left of the payment",
       "amount_differs": "A payment for a different amount than the package",
-      "duplicate_payment": "A second payment for a package that was already paid"
+      "duplicate_payment": "A second payment for a package that was already paid",
+      "currency_differs": "A payment in a currency other than euro, not recorded in the register",
+      "dispute_exceeds": "A lost dispute larger than what is left of the payment"
     }
   },
   "payReturn": {

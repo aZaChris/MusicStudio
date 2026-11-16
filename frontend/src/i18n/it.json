@@ -100,7 +100,7 @@
       "subtitle": "{{student}} · {{amount}} · {{date}}",
       "reason": "Motivo (visibile nel registro)",
       "hint": "La registrazione originale resta nel registro, segnata come stornata. Poi registra di nuovo il pagamento, se serve.",
-      "cardNotice": "Era un pagamento online con carta. Nessun denaro viene restituito: il registro viene corretto, non c'è nessun rimborso.",
+      "cardNotice": "Era un pagamento online con carta. Nessun denaro viene restituito: il registro viene corretto, non c'è nessun rimborso. Per rimborsare usa la tua pagina Stripe: il rimborso compare poi qui da solo.",
       "confirm": "Storna il pagamento",
       "done": "Pagamento stornato.",
       "of": "Storno del pagamento n. {{id}}",
@@ -109,7 +109,13 @@
     "receipt": {
       "action": "Ricevuta",
       "download": "Ricevuta {{number}}"
-    }
+    },
+    "cause": {
+      "refund": "Rimborso da Stripe",
+      "dispute": "Contestazione persa su Stripe"
+    },
+    "underDispute": "In contestazione",
+    "partlyRefunded": "Rimborsato in parte: {{amount}}"
   },
   "parent": {
     "portalTitle": "Le tue lezioni",
@@ -510,7 +516,9 @@
       "dispute_unmatched": "Una contestazione che non corrisponde a nessun pagamento del registro",
       "refund_exceeds": "Un rimborso più grande di ciò che resta del pagamento",
       "amount_differs": "Un pagamento di un importo diverso dal pacchetto",
-      "duplicate_payment": "Un secondo pagamento per un pacchetto già pagato"
+      "duplicate_payment": "Un secondo pagamento per un pacchetto già pagato",
+      "currency_differs": "Un pagamento in una valuta diversa dall'euro, non registrato",
+      "dispute_exceeds": "Una contestazione persa più grande di ciò che resta del pagamento"
     }
   },
   "payReturn": {

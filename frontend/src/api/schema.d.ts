@@ -1019,6 +1019,13 @@ export interface components {
             target_id?: number | null;
             metadata?: unknown;
         };
+        /**
+         * @description * `manual` - Manual correction
+         *     * `refund` - Refund
+         *     * `dispute` - Dispute
+         * @enum {string}
+         */
+        CauseEnum: "manual" | "refund" | "dispute";
         /** @description Response of POST /packages/{id}/checkout/: where to send the payer. */
         Checkout: {
             /** Format: uuid */
@@ -1476,7 +1483,8 @@ export interface components {
             /** Format: date */
             date?: string;
             method?: components["schemas"]["MethodEnum"];
-            status?: components["schemas"]["PaymentStatusEnum"];
+            /** @default pending */
+            status: components["schemas"]["PaymentStatusEnum"];
         };
         PatchedStudentRequest: {
             first_name?: string;
@@ -1504,12 +1512,18 @@ export interface components {
             /** Format: date */
             date: string;
             method: components["schemas"]["MethodEnum"];
-            status?: components["schemas"]["PaymentStatusEnum"];
+            /** @default pending */
+            status: components["schemas"]["PaymentStatusEnum"];
             /** Format: uuid */
             readonly checkout: string | null;
             readonly reversal_of: number | null;
             readonly reversed: boolean;
             readonly reversal_id: number | null;
+            /** Format: decimal */
+            readonly reversed_amount: string;
+            readonly under_dispute: boolean;
+            /** @default manual */
+            readonly cause: components["schemas"]["CauseEnum"];
             readonly receipt_number: string | null;
             readonly recorded_by: number | null;
             readonly reason: string;
@@ -1564,7 +1578,8 @@ export interface components {
             /** Format: date */
             date: string;
             method: components["schemas"]["MethodEnum"];
-            status?: components["schemas"]["PaymentStatusEnum"];
+            /** @default pending */
+            status: components["schemas"]["PaymentStatusEnum"];
         };
         /**
          * @description * `paid` - Paid
@@ -1667,12 +1682,18 @@ export interface components {
             /** Format: date */
             date: string;
             method: components["schemas"]["MethodEnum"];
-            status?: components["schemas"]["PaymentStatusEnum"];
+            /** @default pending */
+            status: components["schemas"]["PaymentStatusEnum"];
             /** Format: uuid */
             readonly checkout: string | null;
             readonly reversal_of: number | null;
             readonly reversed: boolean;
             readonly reversal_id: number | null;
+            /** Format: decimal */
+            readonly reversed_amount: string;
+            readonly under_dispute: boolean;
+            /** @default manual */
+            readonly cause: components["schemas"]["CauseEnum"];
             readonly receipt_number: string | null;
             readonly recorded_by: number | null;
             readonly reason: string;

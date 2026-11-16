@@ -32,7 +32,14 @@ from apps.common.scoping import RECEIPT_PATHS, STUDENT_CHILD_PATHS, packages_vis
 from apps.common.tenancy import TenantContext
 from apps.packages.models import Package
 
-from .models import Payment, PaymentInstructions, Receipt, StudioPaymentAccount, WebhookEvent
+from .models import (
+    Payment,
+    PaymentDispute,
+    PaymentInstructions,
+    Receipt,
+    StudioPaymentAccount,
+    WebhookEvent,
+)
 
 
 def payments_for(ctx: TenantContext) -> QuerySet[Payment]:
@@ -47,6 +54,11 @@ def payments_for(ctx: TenantContext) -> QuerySet[Payment]:
     # `reversed`, `reversal_id` e `receipt_number` del serializer non costano una query per riga.
     return with_reversals(
         scope(Payment.objects.select_related("student", "receipt"), ctx, STUDENT_CHILD_PATHS)
+    ).annotate(
+        # Fase 9: una contestazione aperta si legge come colonna della stessa query.
+        under_dispute=Exists(
+            PaymentDispute.objects.filter(payment=OuterRef("pk"), status=PaymentDispute.Status.OPEN)
+        )
     )
 
 
@@ -233,6 +245,8 @@ def register_rows(
                 "amount": -payment.amount if is_reversal else payment.amount,
                 "status": "reversed" if reversed_ else payment.status,
                 "reason": payment.reason,
+                "cause": payment.cause if is_reversal else "",
+                "provider_ref": payment.provider_ref or "",
                 "reversal_of": payment.reversal_of_id or "",
                 "package": payment.package_id or "",
             }

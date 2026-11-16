@@ -19,7 +19,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from django.conf import settings
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Max, Sum
 from django.utils import timezone
@@ -34,6 +34,7 @@ from . import gateway, iban, selectors
 from .models import (
     CheckoutSession,
     Payment,
+    PaymentDispute,
     PaymentInstructions,
     Receipt,
     StudioPaymentAccount,
@@ -917,3 +918,133 @@ def _handle_account_deauthorized(event: WebhookEvent) -> str:
         return WebhookEvent.Outcome.IGNORED
     _set_state(account, StudioPaymentAccount.State.DISCONNECTED)
     return WebhookEvent.Outcome.APPLIED
+
+
+# --- Rimborsi e contestazioni dal lato Stripe (fase 9, ADR-038) -----------------------------
+
+
+def _payment_of_intent(payment_intent: str, account_id: str) -> Payment | None:
+    """Il pagamento del registro a cui si riferisce un rimborso o una contestazione.
+
+    Si cerca per id del pagamento Stripe E per conto: un evento del conto di uno studio non può
+    mai toccare il pagamento di un altro studio, nemmeno con un id che esiste altrove.
+    """
+    if not payment_intent or not account_id:
+        return None
+    checkout = (
+        CheckoutSession.objects.filter(
+            stripe_payment_intent_id=payment_intent, stripe_account_id=account_id
+        )
+        .select_related("payment")
+        .first()
+    )
+    if checkout is None:
+        return None
+    try:
+        return checkout.payment
+    except ObjectDoesNotExist:
+        return None
+
+
+def _euros(cents: Any) -> Decimal:
+    return (Decimal(cents or 0) / 100).quantize(Decimal("0.01"))
+
+
+def _needs_attention(event: WebhookEvent, kind: str) -> str:
+    event.attention_kind = kind
+    return WebhookEvent.Outcome.NEEDS_ATTENTION
+
+
+def _apply_reversal(
+    event: WebhookEvent, payment: Payment, *, amount: Decimal, cause: str, ref: str, exceeds: str
+) -> str:
+    _, result = add_provider_reversal(payment, amount=amount, cause=cause, provider_ref=ref)
+    if result == ProviderReversalResult.CREATED:
+        return WebhookEvent.Outcome.APPLIED
+    if result == ProviderReversalResult.DUPLICATE:
+        return WebhookEvent.Outcome.IGNORED  # lo stesso rimborso notificato di nuovo
+    if result == ProviderReversalResult.EXCEEDS:
+        return _needs_attention(event, exceeds)
+    return _needs_attention(event, "refund_unmatched")
+
+
+@handles("refund.created", "refund.updated")
+def _handle_refund(event: WebhookEvent) -> str:
+    """Un rimborso riuscito diventa una riga di storno con causa `refund`.
+
+    Conta solo con stato `succeeded` (un rimborso in attesa o fallito non ha mosso denaro).
+    Un rimborso senza pagamento nel registro (fatto a mano, o di un altro conto) non cambia nulla e
+    resta visibile allo studio.
+    """
+    obj = event.payload["data"]["object"]
+    if obj.get("status") != "succeeded":
+        return WebhookEvent.Outcome.IGNORED
+    payment = _payment_of_intent(obj.get("payment_intent") or "", event.stripe_account_id)
+    if payment is None:
+        return _needs_attention(event, "refund_unmatched")
+    return _apply_reversal(
+        event,
+        payment,
+        amount=_euros(obj.get("amount")),
+        cause=Payment.Cause.REFUND,
+        ref=obj["id"],
+        exceeds="refund_exceeds",
+    )
+
+
+@handles("charge.dispute.created")
+def _handle_dispute_opened(event: WebhookEvent) -> str:
+    """Una contestazione aperta si segna sul pagamento (non lo si tocca: è definitivo)."""
+    obj = event.payload["data"]["object"]
+    payment = _payment_of_intent(obj.get("payment_intent") or "", event.stripe_account_id)
+    if payment is None:
+        return _needs_attention(event, "dispute_unmatched")
+    dispute, created = PaymentDispute.objects.get_or_create(
+        stripe_dispute_id=obj["id"],
+        defaults={"payment": payment, "amount": _euros(obj.get("amount"))},
+    )
+    if created:
+        audit.record(
+            audit.Action.PAYMENT_DISPUTE,
+            actor=None,
+            target=dispute,
+            studio_id=payment.student.studio_id,
+            metadata={"event": "opened", "ref": dispute.stripe_dispute_id},
+        )
+    return WebhookEvent.Outcome.APPLIED
+
+
+@handles("charge.dispute.closed")
+def _handle_dispute_closed(event: WebhookEvent) -> str:
+    """Contestazione chiusa: persa = storno con causa `dispute`; vinta = il pagamento non cambia."""
+    obj = event.payload["data"]["object"]
+    payment = _payment_of_intent(obj.get("payment_intent") or "", event.stripe_account_id)
+    if payment is None:
+        return _needs_attention(event, "dispute_unmatched")
+    amount = _euros(obj.get("amount"))
+    dispute, _ = PaymentDispute.objects.get_or_create(
+        stripe_dispute_id=obj["id"], defaults={"payment": payment, "amount": amount}
+    )
+    if dispute.status != PaymentDispute.Status.OPEN:
+        return WebhookEvent.Outcome.IGNORED  # già chiusa: una notifica ripetuta
+    lost = obj.get("status") == "lost"
+    dispute.status = PaymentDispute.Status.LOST if lost else PaymentDispute.Status.WON
+    dispute.closed_at = timezone.now()
+    dispute.save(update_fields=["status", "closed_at"])
+    audit.record(
+        audit.Action.PAYMENT_DISPUTE,
+        actor=None,
+        target=dispute,
+        studio_id=payment.student.studio_id,
+        metadata={"event": "lost" if lost else "won", "ref": dispute.stripe_dispute_id},
+    )
+    if not lost:
+        return WebhookEvent.Outcome.APPLIED
+    return _apply_reversal(
+        event,
+        payment,
+        amount=amount,
+        cause=Payment.Cause.DISPUTE,
+        ref=dispute.stripe_dispute_id,
+        exceeds="dispute_exceeds",
+    )

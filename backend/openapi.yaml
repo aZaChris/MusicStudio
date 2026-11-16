@@ -3690,6 +3690,16 @@ components:
       - actor_email
       - created_at
       - id
+    CauseEnum:
+      enum:
+      - manual
+      - refund
+      - dispute
+      type: string
+      description: |-
+        * `manual` - Manual correction
+        * `refund` - Refund
+        * `dispute` - Dispute
     Checkout:
       type: object
       description: 'Response of POST /packages/{id}/checkout/: where to send the payer.'
@@ -4613,7 +4623,9 @@ components:
         method:
           $ref: '#/components/schemas/MethodEnum'
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          default: pending
     PatchedStudentRequest:
       type: object
       properties:
@@ -4665,7 +4677,9 @@ components:
         method:
           $ref: '#/components/schemas/MethodEnum'
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          default: pending
         checkout:
           type: string
           format: uuid
@@ -4682,6 +4696,19 @@ components:
           type: integer
           nullable: true
           readOnly: true
+        reversed_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        under_dispute:
+          type: boolean
+          readOnly: true
+        cause:
+          allOf:
+          - $ref: '#/components/schemas/CauseEnum'
+          readOnly: true
+          default: manual
         receipt_number:
           type: string
           nullable: true
@@ -4695,6 +4722,7 @@ components:
           readOnly: true
       required:
       - amount
+      - cause
       - checkout
       - date
       - id
@@ -4705,8 +4733,10 @@ components:
       - reversal_id
       - reversal_of
       - reversed
+      - reversed_amount
       - student
       - student_name
+      - under_dispute
     PaymentAccount:
       type: object
       properties:
@@ -4833,7 +4863,9 @@ components:
         method:
           $ref: '#/components/schemas/MethodEnum'
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          default: pending
       required:
       - amount
       - date
@@ -5077,7 +5109,9 @@ components:
         method:
           $ref: '#/components/schemas/MethodEnum'
         status:
-          $ref: '#/components/schemas/PaymentStatusEnum'
+          allOf:
+          - $ref: '#/components/schemas/PaymentStatusEnum'
+          default: pending
         checkout:
           type: string
           format: uuid
@@ -5094,6 +5128,19 @@ components:
           type: integer
           nullable: true
           readOnly: true
+        reversed_amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        under_dispute:
+          type: boolean
+          readOnly: true
+        cause:
+          allOf:
+          - $ref: '#/components/schemas/CauseEnum'
+          readOnly: true
+          default: manual
         receipt_number:
           type: string
           nullable: true
@@ -5110,6 +5157,7 @@ components:
           readOnly: true
       required:
       - amount
+      - cause
       - checkout
       - date
       - id
@@ -5121,8 +5169,10 @@ components:
       - reversal_id
       - reversal_of
       - reversed
+      - reversed_amount
       - student
       - student_name
+      - under_dispute
     ReverseRequestRequest:
       type: object
       properties:

@@ -4,13 +4,14 @@ from decimal import Decimal
 from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from apps.common.serializers import ScopedRelatedFieldsMixin
 from apps.common.tenancy import get_tenant
 
 from .models import CheckoutSession, Payment, Receipt, StudioPaymentAccount
-from .selectors import is_fully_reversed, is_reversed
+from .selectors import is_fully_reversed, is_reversed, reversed_amount_of
 
 
 class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Payment]):
@@ -25,6 +26,11 @@ class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Pa
     reversed = serializers.SerializerMethodField()
     reversal_id = serializers.SerializerMethodField()
     receipt_number = serializers.SerializerMethodField()
+    # Fase 9: quanto è stato stornato (anche in parte, per i rimborsi parziali) e se c'è una
+    # contestazione aperta. `cause` (sulle righe di storno) dice se è una correzione a mano, un
+    # rimborso o una contestazione persa.
+    reversed_amount = serializers.SerializerMethodField()
+    under_dispute = serializers.SerializerMethodField()
     # Chi ha creato la riga e perché è stata stornata: li vede solo il personale dello studio.
     # required=False: per genitori e studenti adulti i due campi mancano del tutto (vedi
     # to_representation), quindi nel contratto sono opzionali.
@@ -48,13 +54,16 @@ class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Pa
             "reversal_of",
             "reversed",
             "reversal_id",
+            "reversed_amount",
+            "under_dispute",
+            "cause",
             "receipt_number",
             "recorded_by",
             "reason",
         ]
         # `checkout` lo imposta solo il webhook: dall'API non si può forgiare un pagamento
         # "online" a mano.
-        read_only_fields = ["checkout", "reversal_of"]
+        read_only_fields = ["checkout", "reversal_of", "cause"]
 
     def get_reversed(self, obj: Payment) -> bool:
         # Stornato per intero. Dagli elenchi arriva dall'annotazione del selector (nessuna query
@@ -72,6 +81,17 @@ class PaymentSerializer(ScopedRelatedFieldsMixin, serializers.ModelSerializer[Pa
             .values_list("id", flat=True)
             .first()
         )
+
+    @extend_schema_field(serializers.DecimalField(max_digits=12, decimal_places=2))
+    def get_reversed_amount(self, obj: Payment) -> str:
+        return f"{reversed_amount_of(obj):.2f}"
+
+    @extend_schema_field(serializers.BooleanField())
+    def get_under_dispute(self, obj: Payment) -> bool:
+        annotated = getattr(obj, "under_dispute", None)
+        if annotated is not None:
+            return bool(annotated)
+        return obj.disputes.filter(status="open").exists()
 
     def get_receipt_number(self, obj: Payment) -> str | None:
         # Dal select_related del selector: nessuna query. Senza ricevuta Django solleva
