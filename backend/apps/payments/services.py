@@ -1048,3 +1048,22 @@ def _handle_dispute_closed(event: WebhookEvent) -> str:
         ref=dispute.stripe_dispute_id,
         exceeds="dispute_exceeds",
     )
+
+
+# --- Pulizia degli eventi di Stripe (fase 9, ADR-039) ---------------------------------------
+
+EVENT_RETENTION_DAYS = 90
+
+
+def purge_old_webhook_events(days: int = EVENT_RETENTION_DAYS) -> int:
+    """Cancella gli eventi già elaborati più vecchi di `days` giorni; ritorna quanti.
+
+    Un evento serve per elaborarlo una volta e per capire cosa è successo nei giorni dopo (anche
+    se già ripulito dei dati personali). Passati 90 giorni è solo spazio e superficie in più. Quelli
+    non ancora elaborati restano: li cerca ancora qualcuno.
+    """
+    cutoff = timezone.now() - datetime.timedelta(days=days)
+    deleted, _ = WebhookEvent.objects.filter(
+        processed_at__isnull=False, processed_at__lt=cutoff
+    ).delete()
+    return deleted

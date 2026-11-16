@@ -25,6 +25,11 @@ app.conf.beat_schedule = {
         "task": "apps.payments.tasks.refresh_payment_accounts",
         "schedule": crontab(minute=37),
     },
+    # Processed Stripe events older than 90 days are only extra data to keep (ADR-039).
+    "purge-old-webhook-events": {
+        "task": "apps.payments.tasks.purge_old_webhook_events",
+        "schedule": crontab(hour=3, minute=27),
+    },
     # Revocation tables only need rows until the refresh token would expire (ADR-018).
     "purge-expired-tokens": {
         "task": "apps.accounts.tasks.purge_expired_tokens",

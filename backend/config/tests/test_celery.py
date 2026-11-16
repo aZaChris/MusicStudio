@@ -27,6 +27,7 @@ def test_beat_schedules_reminders_reconciliation_accounts_token_purge_and_retent
         "apps.notifications.tasks.send_lesson_reminders",
         "apps.payments.tasks.reconcile_open_checkouts",
         "apps.payments.tasks.refresh_payment_accounts",  # fase 9
+        "apps.payments.tasks.purge_old_webhook_events",  # fase 9
         "apps.accounts.tasks.purge_expired_tokens",
         "apps.privacy.tasks.run_retention",
     }

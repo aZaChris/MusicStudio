@@ -42,3 +42,9 @@ def refresh_payment_accounts() -> int:
     (lo gestisce il service), quindi non serve riprovare l'intero giro.
     """
     return services.refresh_accounts()
+
+
+@shared_task
+def purge_old_webhook_events() -> int:
+    """Ogni notte: toglie gli eventi di Stripe già elaborati da più di 90 giorni (ADR-039)."""
+    return services.purge_old_webhook_events()
