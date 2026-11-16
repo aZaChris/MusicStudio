@@ -8,6 +8,7 @@ from .fakes import CONNECT_WEBHOOK_SECRET, WEBHOOK_SECRET, FakeStripe
 @pytest.fixture
 def fake_stripe(monkeypatch, settings) -> FakeStripe:
     settings.STRIPE_API_KEY = "rk_test_fake"
+    settings.ONLINE_PAYMENTS_ENABLED = True  # fase 9: i test partono dalla funzione accesa
     settings.STRIPE_WEBHOOK_SECRET = WEBHOOK_SECRET
     settings.STRIPE_CONNECT_WEBHOOK_SECRET = CONNECT_WEBHOOK_SECRET
     fake = FakeStripe()

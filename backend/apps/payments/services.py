@@ -12,6 +12,7 @@ prossimo numero libero: ADR-034).
 
 import datetime
 import logging
+import uuid
 from collections.abc import Callable
 from decimal import Decimal
 from typing import Any
@@ -24,7 +25,7 @@ from django.db.models import Max, Sum
 from django.utils import timezone
 
 from apps.audit import services as audit
-from apps.common.exceptions import DomainConflict
+from apps.common.exceptions import DomainConflict, DomainError
 from apps.packages.models import Package
 from apps.students.models import Student
 from apps.studios.models import Studio
@@ -450,7 +451,7 @@ def process_webhook_event(event_pk: int) -> bool:
         event.attempts += 1
         event.outcome = _dispatch(event)
         event.processed_at = timezone.now()
-        event.save(update_fields=["processed_at", "attempts", "outcome"])
+        event.save(update_fields=["processed_at", "attempts", "outcome", "attention_kind"])
         return True
 
 
@@ -670,3 +671,199 @@ def issue_receipt(payment: Payment, *, language: str, actor: Any) -> tuple[Recei
             metadata={"number": receipt.number},
         )
     return receipt, True
+
+
+# --- Conto di pagamento dello studio (fase 9, ADR-037) -------------------------------------
+
+
+class OnlinePaymentsOff(DomainError):
+    """L'interruttore dei pagamenti online è spento: per chi chiama la funzione non esiste (404)."""
+
+    status_code = 404
+    code = "online_payments_off"
+
+
+class NoPaymentAccount(DomainError):
+    """Lo studio non ha ancora un conto di pagamento (404)."""
+
+    status_code = 404
+    code = "no_payment_account"
+
+
+class AccountDisconnected(DomainConflict):
+    """Il conto è stato scollegato da Stripe: per ripartire serve prima `restart_account`."""
+
+    code = "account_disconnected"
+
+
+class NotDisconnected(DomainConflict):
+    """`restart_account` vale solo per un conto scollegato."""
+
+    code = "not_disconnected"
+
+
+class OnlinePaymentsNotAvailable(DomainConflict):
+    """Lo studio non ha un conto attivo (o la funzione è spenta): non si può pagare online."""
+
+    code = "online_payments_not_available"
+
+
+def online_payments_enabled() -> bool:
+    return bool(settings.ONLINE_PAYMENTS_ENABLED)
+
+
+def require_online_payments() -> None:
+    """Chiamata da ogni rotta del conto: con l'interruttore spento la funzione "non esiste"."""
+    if not online_payments_enabled():
+        raise OnlinePaymentsOff("Online payments are not available.")
+
+
+def state_from_account(info: gateway.AccountInfo) -> str:
+    """Lo stato dello studio, ricavato da ciò che Stripe riferisce (mai da ciò che supponiamo).
+
+    Solo "attivo" permette di incassare. Un conto con requisiti aperti è "servono informazioni"
+    (un conto appena creato lo è: Stripe aspetta i dati del titolare); "limitato" è un conto che
+    Stripe ha bloccato senza chiedere altro; "in corso" è la verifica ancora in revisione.
+    """
+    state = StudioPaymentAccount.State
+    if info.closed:
+        return state.DISCONNECTED
+    if info.card_payments == "active":
+        return state.ACTIVE
+    if info.card_payments == "pending":
+        return state.IN_PROGRESS
+    if info.open_requirements > 0:
+        return state.INFORMATION_NEEDED
+    if info.card_payments == "restricted":
+        return state.RESTRICTED
+    return state.IN_PROGRESS
+
+
+def _portal_url(path: str) -> str:
+    return f"{settings.FRONTEND_URL.rstrip('/')}{path}"
+
+
+def _set_state(account: StudioPaymentAccount, new_state: str) -> bool:
+    """Aggiorna lo stato se è cambiato e lo registra (l'autore è il fornitore, non una persona)."""
+    if account.state == new_state:
+        return False
+    previous = account.state
+    account.state = new_state
+    account.state_changed_at = timezone.now()
+    account.save(update_fields=["state", "state_changed_at", "updated_at"])
+    audit.record(
+        audit.Action.PAYMENT_ACCOUNT_STATE,
+        actor=None,
+        target=account,
+        studio_id=account.studio_id,
+        metadata={"from": previous, "to": new_state},
+    )
+    return True
+
+
+def start_onboarding(studio: Studio, *, actor: Any) -> gateway.AccountLink:
+    """Crea (una volta sola) il conto dello studio e ritorna dove mandare il titolare.
+
+    La riga dello studio resta bloccata per tutta l'operazione, chiamata a Stripe compresa: un
+    doppio clic aspetta il primo e poi vede il conto già creato, quindi ne esiste uno solo. Se
+    Stripe non risponde la transazione torna indietro e non resta nulla. Non mandiamo a Stripe né
+    email né nome: il titolare li scrive sulla pagina di Stripe (constitution X).
+    """
+    require_online_payments()
+    with transaction.atomic():
+        locked = Studio.objects.select_for_update().get(pk=studio.pk)
+        account = StudioPaymentAccount.objects.filter(studio=locked).first()
+        if account is not None and account.state == StudioPaymentAccount.State.DISCONNECTED:
+            raise AccountDisconnected("The account was disconnected; start again first.")
+        if account is None:
+            info = gateway.create_account(
+                studio_id=locked.pk, idempotency_key=f"account-studio-{locked.pk}-{uuid.uuid4()}"
+            )
+            account = StudioPaymentAccount.objects.create(
+                studio=locked,
+                stripe_account_id=info.id,
+                state=state_from_account(info),
+                created_by=actor if getattr(actor, "pk", None) else None,
+            )
+            audit.record(
+                audit.Action.PAYMENT_ACCOUNT_START,
+                actor=actor,
+                target=account,
+                studio_id=locked.pk,
+                metadata={"state": account.state},
+            )
+        return gateway.create_account_link(
+            account_id=account.stripe_account_id,
+            return_url=_portal_url("/settings/payments?return=1"),
+            refresh_url=_portal_url("/settings/payments?refresh=1"),
+        )
+
+
+def refresh_account(studio: Studio) -> StudioPaymentAccount:
+    """Rilegge il conto da Stripe e aggiorna lo stato (alla fine dell'onboarding e a richiesta)."""
+    require_online_payments()
+    with transaction.atomic():
+        account = StudioPaymentAccount.objects.select_for_update().filter(studio=studio).first()
+        if account is None:
+            raise NoPaymentAccount("This studio has no payment account yet.")
+        info = gateway.retrieve_account(account.stripe_account_id)
+        _set_state(account, state_from_account(info))
+        return account
+
+
+def restart_account(studio: Studio, *, actor: Any) -> None:
+    """Toglie il collegamento morto di un conto scollegato, così si può ricominciare."""
+    require_online_payments()
+    with transaction.atomic():
+        account = StudioPaymentAccount.objects.select_for_update().filter(studio=studio).first()
+        if account is None:
+            raise NoPaymentAccount("This studio has no payment account yet.")
+        if account.state != StudioPaymentAccount.State.DISCONNECTED:
+            raise NotDisconnected("Only a disconnected account can be started again.")
+        audit.record(
+            audit.Action.PAYMENT_ACCOUNT_STATE,
+            actor=actor,
+            target=account,
+            studio_id=studio.pk,
+            metadata={"from": account.state, "to": "removed"},
+        )
+        account.delete()
+
+
+def refresh_accounts(limit: int = 200) -> int:
+    """Rete di sicurezza oraria: rilegge i conti non scollegati e ritorna quanti sono cambiati.
+
+    L'API v2 non ci manda eventi sullo stato del conto (spike, research R1): senza questo giro un
+    conto bloccato da Stripe resterebbe "attivo" da noi, e un genitore proverebbe a pagare per
+    nulla. Un errore su un conto non ferma gli altri.
+    """
+    if not online_payments_enabled():
+        return 0
+    changed = 0
+    for account_id in (
+        StudioPaymentAccount.objects.exclude(state=StudioPaymentAccount.State.DISCONNECTED)
+        .order_by("id")
+        .values_list("pk", flat=True)[:limit]
+    ):
+        try:
+            with transaction.atomic():
+                account = StudioPaymentAccount.objects.select_for_update().get(pk=account_id)
+                info = gateway.retrieve_account(account.stripe_account_id)
+                changed += _set_state(account, state_from_account(info))
+        except (gateway.PaymentsUnavailable, StudioPaymentAccount.DoesNotExist):
+            logger.warning("Could not refresh payment account #%s", account_id)
+    return changed
+
+
+@handles("account.application.deauthorized")
+def _handle_account_deauthorized(event: WebhookEvent) -> str:
+    # Lo studio ha scollegato MusicStudio dal suo Stripe: da qui in poi niente più pagamenti.
+    account = (
+        StudioPaymentAccount.objects.select_for_update()
+        .filter(stripe_account_id=event.stripe_account_id)
+        .first()
+    )
+    if account is None:
+        return WebhookEvent.Outcome.IGNORED
+    _set_state(account, StudioPaymentAccount.State.DISCONNECTED)
+    return WebhookEvent.Outcome.APPLIED

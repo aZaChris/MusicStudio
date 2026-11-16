@@ -12,7 +12,7 @@ from django.db.models import Prefetch, QuerySet
 from apps.accounts.models import User
 from apps.lessons.models import Lesson
 from apps.packages.models import Package
-from apps.payments.models import Payment, PaymentInstructions
+from apps.payments.models import Payment, PaymentInstructions, StudioPaymentAccount
 from apps.students.models import Student
 
 from .models import ConsentRecord
@@ -36,8 +36,13 @@ def _studio_block(user: User) -> dict[str, Any]:
     if teacher is None:
         return {}
     instructions = PaymentInstructions.objects.filter(studio=teacher.studio).first()
+    account = StudioPaymentAccount.objects.filter(studio=teacher.studio).first()
     return {
         "name": teacher.studio.name,
+        # Fase 9: solo l'id del conto Stripe e il suo stato; il resto sta su Stripe, non da noi.
+        "payment_account": None
+        if account is None
+        else {"stripe_account_id": account.stripe_account_id, "state": account.state},
         "payment_instructions": None
         if instructions is None
         else {

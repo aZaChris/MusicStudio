@@ -30,7 +30,7 @@ from apps.common.scoping import RECEIPT_PATHS, STUDENT_CHILD_PATHS, packages_vis
 from apps.common.tenancy import TenantContext
 from apps.packages.models import Package
 
-from .models import Payment, PaymentInstructions, Receipt
+from .models import Payment, PaymentInstructions, Receipt, StudioPaymentAccount, WebhookEvent
 
 
 def payments_for(ctx: TenantContext) -> QuerySet[Payment]:
@@ -293,3 +293,40 @@ def receipts_for(ctx: TenantContext) -> QuerySet[Receipt]:
         ctx,
         RECEIPT_PATHS,
     )
+
+
+# --- Conto di pagamento dello studio (fase 9) -----------------------------------------------
+
+
+def payment_account_for(ctx: TenantContext) -> StudioPaymentAccount | None:
+    """Il conto del proprio studio, per titolare e insegnanti. Mai da un id nella richiesta."""
+    if ctx.studio_id is None or not (ctx.is_owner or ctx.is_teacher):
+        return None
+    return StudioPaymentAccount.objects.filter(studio_id=ctx.studio_id).first()
+
+
+def attention_items(account: StudioPaymentAccount, limit: int = 20) -> list[dict[str, Any]]:
+    """Gli ultimi eventi del conto che non combaciano col registro (solo id, tipo, importo).
+
+    Mai il contenuto dell'evento: lo studio vede che c'è qualcosa da controllare su Stripe, non i
+    dati di chi ha pagato.
+    """
+    rows = WebhookEvent.objects.filter(
+        stripe_account_id=account.stripe_account_id,
+        outcome=WebhookEvent.Outcome.NEEDS_ATTENTION,
+    ).order_by("-received_at", "-id")[:limit]
+    items = []
+    for row in rows:
+        obj = (row.payload.get("data") or {}).get("object") or {}
+        cents = obj.get("amount_total", obj.get("amount"))
+        items.append(
+            {
+                "id": row.pk,
+                "kind": row.attention_kind,
+                "received_at": row.received_at,
+                "amount": (Decimal(cents) / 100).quantize(Decimal("0.01"))
+                if cents is not None
+                else None,
+            }
+        )
+    return items

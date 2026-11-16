@@ -9,7 +9,7 @@ from rest_framework import serializers
 from apps.common.serializers import ScopedRelatedFieldsMixin
 from apps.common.tenancy import get_tenant
 
-from .models import CheckoutSession, Payment, Receipt
+from .models import CheckoutSession, Payment, Receipt, StudioPaymentAccount
 from .selectors import is_fully_reversed, is_reversed
 
 
@@ -244,3 +244,29 @@ class CheckoutSerializer(serializers.Serializer[CheckoutSession]):
     checkout_id = serializers.UUIDField(source="id")
     url = serializers.URLField()
     expires_at = serializers.DateTimeField()
+
+
+class AttentionItemSerializer(serializers.Serializer[dict[str, Any]]):
+    # Un evento di Stripe che non combacia col registro: solo identificativo, tipo e importo.
+    id = serializers.IntegerField()
+    kind = serializers.CharField()
+    received_at = serializers.DateTimeField()
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, allow_null=True)
+
+
+class PaymentAccountSerializer(serializers.Serializer[dict[str, Any]]):
+    # Stato del conto di pagamento dello studio (fase 9). `not_started` = nessun conto.
+    state = serializers.ChoiceField(
+        choices=["not_started", *StudioPaymentAccount.State.values], read_only=True
+    )
+    can_accept_online = serializers.BooleanField()
+    test_mode = serializers.BooleanField()
+    dashboard_url = serializers.CharField(allow_null=True)
+    state_changed_at = serializers.DateTimeField(allow_null=True)
+    needs_attention = AttentionItemSerializer(many=True)
+
+
+class OnboardingLinkSerializer(serializers.Serializer[dict[str, Any]]):
+    # Risposta di POST /payment-account/onboarding/: dove mandare il titolare (pagina di Stripe).
+    url = serializers.CharField()
+    expires_at = serializers.DateTimeField(allow_null=True)

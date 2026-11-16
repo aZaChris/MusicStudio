@@ -243,6 +243,9 @@ class WebhookEvent(models.Model):
     stripe_account_id = models.CharField(max_length=64, blank=True, db_index=True)
     livemode = models.BooleanField(default=False)
     outcome = models.CharField(max_length=20, choices=Outcome.choices, default=Outcome.PENDING)
+    # Solo con outcome `needs_attention`: che cosa non combacia (rimborso senza pagamento, importo
+    # diverso...). Lo studio lo vede nella pagina del conto, senza i dati dell'evento.
+    attention_kind = models.CharField(max_length=30, blank=True)
     received_at = models.DateTimeField(auto_now_add=True)
     processed_at = models.DateTimeField(null=True, blank=True)
     # Quante volte l'elaborazione è partita: utile per capire eventi che si bloccano.

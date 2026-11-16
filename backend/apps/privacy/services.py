@@ -22,7 +22,12 @@ from apps.accounts.models import Invitation, MfaDevice, User
 from apps.audit import services as audit
 from apps.common.exceptions import DomainConflict
 from apps.lessons.models import Lesson
-from apps.payments.models import CheckoutSession, Payment, PaymentInstructions
+from apps.payments.models import (
+    CheckoutSession,
+    Payment,
+    PaymentInstructions,
+    StudioPaymentAccount,
+)
 from apps.students.models import ParentAccount, ParentStudentLink, Student
 
 from . import selectors
@@ -129,6 +134,11 @@ def erase_account(user: User, password: str) -> None:
             raise StudioNotEmpty("The studio still has students.")
         # Le istruzioni di pagamento (IBAN) sono dati del titolare: se ne vanno con l'account.
         PaymentInstructions.objects.filter(
+            studio__teachers__user=user, studio__teachers__is_owner=True
+        ).delete()
+        # Il legame col conto Stripe (fase 9) va via con l'account; il conto resta di chi lo ha
+        # aperto su Stripe, che è un altro rapporto: MusicStudio non lo chiude né lo tocca.
+        StudioPaymentAccount.objects.filter(
             studio__teachers__user=user, studio__teachers__is_owner=True
         ).delete()
     children = list(selectors.students_of(user))

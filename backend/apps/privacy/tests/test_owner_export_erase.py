@@ -57,7 +57,11 @@ def test_an_owner_without_instructions_exports_a_null_block():
 
     data = client_for(owner.user).get(EXPORT).json()
 
-    assert data["studio"] == {"name": owner.studio.name, "payment_instructions": None}
+    assert data["studio"] == {
+        "name": owner.studio.name,
+        "payment_account": None,
+        "payment_instructions": None,
+    }
 
 
 def test_the_export_of_a_family_has_no_studio_block_and_teachers_still_cannot_export():
@@ -94,3 +98,42 @@ def test_a_wrong_password_deletes_nothing():
 
     assert res.status_code == 400
     assert PaymentInstructions.objects.filter(studio=owner.studio).exists()
+
+
+def test_the_owner_export_includes_the_payment_account_id_and_state_only():
+    from apps.common.factories import StudioPaymentAccountFactory
+
+    owner = make_studio_owner()
+    StudioPaymentAccountFactory(studio=owner.studio, stripe_account_id="acct_test_77")
+
+    data = client_for(owner.user).get(EXPORT).json()
+
+    assert data["studio"]["payment_account"] == {
+        "stripe_account_id": "acct_test_77",
+        "state": "active",
+    }
+
+
+def test_erasing_an_owner_removes_the_link_to_the_stripe_account():
+    from apps.common.factories import StudioPaymentAccountFactory
+    from apps.payments.models import StudioPaymentAccount
+
+    owner = make_studio_owner()
+    StudioPaymentAccountFactory(studio=owner.studio)
+
+    res = client_for(owner.user).post(ERASE, {"password": "password123"}, format="json")
+
+    assert res.status_code == 202
+    assert not StudioPaymentAccount.objects.exists()
+
+
+def test_deleting_a_studio_removes_its_payment_account():
+    from apps.common.factories import StudioFactory, StudioPaymentAccountFactory
+    from apps.payments.models import StudioPaymentAccount
+
+    studio = StudioFactory()
+    StudioPaymentAccountFactory(studio=studio)
+
+    studio.delete()
+
+    assert not StudioPaymentAccount.objects.exists()

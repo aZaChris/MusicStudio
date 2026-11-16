@@ -20,6 +20,11 @@ app.conf.beat_schedule = {
         "task": "apps.payments.tasks.reconcile_open_checkouts",
         "schedule": crontab(minute=7),
     },
+    # Studio payment accounts (phase 9): no Stripe events for v2 account state, so re-read them.
+    "refresh-payment-accounts": {
+        "task": "apps.payments.tasks.refresh_payment_accounts",
+        "schedule": crontab(minute=37),
+    },
     # Revocation tables only need rows until the refresh token would expire (ADR-018).
     "purge-expired-tokens": {
         "task": "apps.accounts.tasks.purge_expired_tokens",

@@ -262,6 +262,10 @@ CHECKOUT_CANCEL_URL: str = env(
     "CHECKOUT_CANCEL_URL", default="http://localhost:5173/payments/cancel"
 )
 CHECKOUT_TTL_MINUTES: int = env.int("CHECKOUT_TTL_MINUTES", default=30)
+# Interruttore dei pagamenti online sul conto dello studio (fase 9, ADR-037). SPENTO di default:
+# finché non si accende le rotte del conto rispondono 404, nessun pacchetto risulta pagabile
+# online e il checkout rifiuta. Si accende solo dopo la decisione del titolare (specs/009, T059).
+ONLINE_PAYMENTS_ENABLED: bool = env.bool("ONLINE_PAYMENTS_ENABLED", default=False)
 
 if STRIPE_API_KEY and not STRIPE_API_KEY.startswith(("sk_test_", "rk_test_")):
     # Fail fast: this project must never move real money (live keys are sk_live_/rk_live_).

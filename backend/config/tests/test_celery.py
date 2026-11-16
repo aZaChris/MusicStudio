@@ -21,11 +21,12 @@ def test_visibility_timeout_exceeds_the_longest_task():
     assert timeout > settings.CELERY_TASK_TIME_LIMIT
 
 
-def test_beat_schedules_reminders_reconciliation_token_purge_and_retention():
+def test_beat_schedules_reminders_reconciliation_accounts_token_purge_and_retention():
     tasks = {entry["task"] for entry in app.conf.beat_schedule.values()}
     assert tasks == {
         "apps.notifications.tasks.send_lesson_reminders",
         "apps.payments.tasks.reconcile_open_checkouts",
+        "apps.payments.tasks.refresh_payment_accounts",  # fase 9
         "apps.accounts.tasks.purge_expired_tokens",
         "apps.privacy.tasks.run_retention",
     }

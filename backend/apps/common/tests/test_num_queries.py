@@ -187,3 +187,31 @@ def test_receipts_list_and_payments_with_receipts_hold_a_constant_query_count():
 
     assert receipts_one == _count(teacher.user, "/api/v1/receipts/") == 3  # teacher, count, rows
     assert payments_one == _count(teacher.user, "/api/v1/payments/") == 3
+
+
+def test_payment_account_read_holds_a_constant_query_count(settings):
+    # Fase 9: la lettura dello stato è solo database; le voci "da controllare" (al massimo 20)
+    # si leggono in una query, qualunque sia il loro numero.
+    from apps.common.factories import StudioPaymentAccountFactory
+    from apps.payments.models import WebhookEvent
+
+    settings.ONLINE_PAYMENTS_ENABLED = True
+    owner = make_studio_owner()
+    account = StudioPaymentAccountFactory(studio=owner.studio)
+
+    def attention(n: int) -> None:
+        for i in range(n):
+            WebhookEvent.objects.create(
+                stripe_event_id=f"evt_{WebhookEvent.objects.count()}_{i}",
+                type="refund.updated",
+                payload={"data": {"object": {"amount": 1500}}},
+                stripe_account_id=account.stripe_account_id,
+                outcome=WebhookEvent.Outcome.NEEDS_ATTENTION,
+                attention_kind="refund_unmatched",
+            )
+
+    attention(1)
+    one = _count(owner.user, "/api/v1/payment-account/")
+    attention(24)
+
+    assert one == _count(owner.user, "/api/v1/payment-account/") == 3
