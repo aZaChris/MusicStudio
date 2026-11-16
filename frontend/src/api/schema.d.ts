@@ -496,7 +496,8 @@ export interface paths {
         /**
          * @description Online payment link (Stripe Checkout, test mode) for this package.
          *
-         *     Anyone who can see the package may ask — typically the parent who pays.
+         *     Anyone who can see the package may ask — typically the parent who pays. The payment goes
+         *     to the studio's own Stripe account; 409 when the studio has no active account.
          *     Repeated calls return the same open attempt.
          */
         post: operations["v1_packages_checkout_create"];
@@ -1264,6 +1265,8 @@ export interface components {
             price: string;
             readonly status: string;
             readonly is_low: boolean;
+            /** @default false */
+            readonly can_pay_online: boolean;
         };
         /**
          * @description Restrict writable related fields to objects the requesting user may see.

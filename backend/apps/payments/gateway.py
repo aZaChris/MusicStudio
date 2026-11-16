@@ -40,6 +40,13 @@ class InvalidWebhook(Exception):
     """Firma mancante o non valida, oppure contenuto malformato."""
 
 
+def _reference_id(value: Any) -> str:
+    # Un riferimento di Stripe è l'id oppure, se espanso, un oggetto con l'id.
+    if isinstance(value, dict):
+        value = value.get("id")
+    return value if isinstance(value, str) else ""
+
+
 @dataclass(frozen=True)
 class SessionInfo:
     """Ciò che ci serve di una Checkout Session di Stripe, indipendente dall'SDK.
@@ -54,6 +61,9 @@ class SessionInfo:
     amount_total: int | None = None  # in centesimi
     expires_at: datetime.datetime | None = None
     metadata: dict[str, str] = field(default_factory=dict)
+    currency: str = ""
+    # Id del pagamento di Stripe: lega rimborsi e contestazioni al pagamento (fase 9).
+    payment_intent: str = ""
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "SessionInfo":
@@ -67,6 +77,8 @@ class SessionInfo:
             amount_total=data.get("amount_total"),
             expires_at=datetime.datetime.fromtimestamp(expires, datetime.UTC) if expires else None,
             metadata=dict(data.get("metadata") or {}),
+            currency=(data.get("currency") or "").lower(),
+            payment_intent=_reference_id(data.get("payment_intent")),
         )
 
 

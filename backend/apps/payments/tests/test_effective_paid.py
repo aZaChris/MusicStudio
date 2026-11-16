@@ -6,6 +6,7 @@ from apps.common.factories import (
     PackageFactory,
     PaymentFactory,
     StudentFactory,
+    connected_package,
     make_reversal,
 )
 from apps.common.tenancy import resolve_tenant
@@ -44,7 +45,7 @@ def test_pending_and_reversal_rows_never_count_as_paid():
 
 
 def test_checkout_is_allowed_again_after_a_reversal(fake_stripe):
-    package = PackageFactory()
+    package = connected_package()
     payment = PaymentFactory(student=package.student, package=package)
     owner = package.student.teacher.user
     assert client_for(owner).post(f"/api/v1/packages/{package.id}/checkout/").status_code == 409

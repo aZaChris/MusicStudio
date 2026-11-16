@@ -105,7 +105,13 @@ class FakeStripe:
 
 
 def session_payload(
-    session_id: str, *, status: str = "complete", payment_status: str = "paid", amount: int = 12000
+    session_id: str,
+    *,
+    status: str = "complete",
+    payment_status: str = "paid",
+    amount: int = 12000,
+    currency: str = "eur",
+    payment_intent: str = "pi_test_1",
 ) -> dict[str, Any]:
     return {
         "id": session_id,
@@ -113,6 +119,8 @@ def session_payload(
         "status": status,
         "payment_status": payment_status,
         "amount_total": amount,
+        "currency": currency,
+        "payment_intent": payment_intent,
         "url": None,
         "expires_at": int(time.time()) + 600,
         "metadata": {},

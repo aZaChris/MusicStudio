@@ -3,11 +3,15 @@
 Per studiare: docs/learning/concetti/pagamenti-online-stripe.md (visione d'insieme),
 ADR-013 (perché Stripe Checkout) e ADR-014 (perché i webhook si salvano prima di elaborarli).
 
-FUTURO (pagamenti dentro l'app): oggi l'app non muove soldi veri, registra e basta. Se un
-giorno si vorrà far pagare dall'app (PostePay, PayPal, carte) serviranno: un nuovo ADR che
-sostituisca ADR-013 (oggi una chiave `sk_live_` blocca l'avvio, vedi config/settings/prod.py),
-la scelta di chi incassa (Stripe Connect per ogni insegnante/studio, oppure un conto unico con
-obblighi fiscali e legali) e un campo su questi modelli per distinguere il fornitore.
+Dalla fase 9 il pagamento online va sul conto Stripe dello studio (`StudioPaymentAccount`,
+pagamento diretto, ADR-037): MusicStudio non riceve né tiene denaro. Il tutto è dietro
+l'interruttore `ONLINE_PAYMENTS_ENABLED`, spento di default. Una chiave `sk_live_` continua a
+bloccare l'avvio (config/settings/base.py): con soldi veri servono la decisione del titolare, un
+emendamento alla costituzione e i termini d'uso (specs/009, T057-T059).
+
+FUTURO (secondo fornitore, per esempio PayPal diretto): servirebbe un campo "fornitore" su
+CheckoutSession e un modulo gemello del gateway. Con Stripe, PayPal e le carte si abilitano dalla
+Dashboard dello studio, senza codice (se Stripe li rende disponibili per quel conto).
 """
 
 import uuid

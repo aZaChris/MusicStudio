@@ -215,3 +215,21 @@ def test_payment_account_read_holds_a_constant_query_count(settings):
     attention(24)
 
     assert one == _count(owner.user, "/api/v1/payment-account/") == 3
+
+
+def test_packages_list_with_can_pay_online_holds_a_constant_query_count(settings):
+    # Fase 9: `can_pay_online` è un'annotazione della stessa query (due EXISTS), non una query per
+    # pacchetto: il costo non cresce con il numero dei pacchetti.
+    from apps.common.factories import PackageFactory, StudioPaymentAccountFactory
+
+    settings.ONLINE_PAYMENTS_ENABLED = True
+    owner = make_studio_owner()
+    StudioPaymentAccountFactory(studio=owner.studio)
+    student = StudentFactory(teacher=owner)
+
+    PackageFactory(student=student)
+    one = _count(owner.user, "/api/v1/packages/")
+    for _ in range(29):
+        PackageFactory(student=student)
+
+    assert one == _count(owner.user, "/api/v1/packages/") == 3

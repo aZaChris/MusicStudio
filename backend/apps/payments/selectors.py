@@ -11,9 +11,11 @@ from typing import Any
 
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from django.db.models import (
+    BooleanField,
     Count,
     DecimalField,
     Exists,
+    ExpressionWrapper,
     F,
     OuterRef,
     Q,
@@ -330,3 +332,25 @@ def attention_items(account: StudioPaymentAccount, limit: int = 20) -> list[dict
             }
         )
     return items
+
+
+def with_can_pay_online(qs: QuerySet[Package]) -> QuerySet[Package]:
+    """Aggiunge `can_pay_online`: il conto dello studio è attivo e il pacchetto è ancora da pagare.
+
+    Sono due EXISTS nella stessa query dei pacchetti: nessuna query per riga. Con l'interruttore
+    dei pagamenti online spento è sempre falso (ADR-037).
+    """
+    from django.conf import settings
+    from django.db.models import Value
+
+    if not settings.ONLINE_PAYMENTS_ENABLED:
+        return qs.annotate(can_pay_online=Value(False, output_field=BooleanField()))
+    active_account = StudioPaymentAccount.objects.filter(
+        studio_id=OuterRef("student__studio_id"), state=StudioPaymentAccount.State.ACTIVE
+    )
+    paid = effective_paid(Payment.objects.filter(package=OuterRef("pk")))
+    return qs.annotate(
+        can_pay_online=ExpressionWrapper(
+            Q(Exists(active_account)) & ~Q(Exists(paid)), output_field=BooleanField()
+        )
+    )

@@ -125,6 +125,14 @@ class ParentAccountFactory(factory.django.DjangoModelFactory[ParentAccount]):
     user = factory.SubFactory(UserFactory, role=User.Role.PARENT)
 
 
+def connected_package(**overrides: object) -> Package:
+    # Un pacchetto il cui studio ha un conto Stripe attivo: il solo caso in cui si può pagare online
+    # (fase 9). Serve ai test del checkout e dei webhook.
+    package = PackageFactory(**overrides)
+    StudioPaymentAccountFactory(studio=package.student.studio)
+    return package
+
+
 def link_parent_to_student(parent: ParentAccount, student: Student) -> ParentStudentLink:
     return ParentStudentLink.objects.create(parent=parent, student=student)
 

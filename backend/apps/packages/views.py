@@ -10,6 +10,7 @@ from rest_framework.response import Response
 
 from apps.common.permissions import CanWriteTenantObject, IsTeacherOrStudioOwner
 from apps.common.tenancy import get_tenant
+from apps.payments.selectors import with_can_pay_online
 from apps.payments.serializers import CheckoutSerializer
 from apps.payments.services import start_checkout
 
@@ -30,7 +31,7 @@ class PackageViewSet(viewsets.ModelViewSet[Package]):
 
     def get_queryset(self) -> QuerySet[Package]:
         # Un id di un altro studio dà 404, non 403: non si rivela che esiste.
-        return packages_for(get_tenant(self.request))
+        return with_can_pay_online(packages_for(get_tenant(self.request)))
 
     def perform_create(self, serializer: PackageSerializer) -> None:  # type: ignore[override]
         # La creazione passa dal service, che imposta il saldo iniziale.
@@ -44,7 +45,8 @@ class PackageViewSet(viewsets.ModelViewSet[Package]):
     def checkout(self, request: Request, pk: str | None = None) -> Response:
         """Online payment link (Stripe Checkout, test mode) for this package.
 
-        Anyone who can see the package may ask — typically the parent who pays.
+        Anyone who can see the package may ask — typically the parent who pays. The payment goes
+        to the studio's own Stripe account; 409 when the studio has no active account.
         Repeated calls return the same open attempt.
         """
         checkout = start_checkout(self.get_object(), user=request.user)

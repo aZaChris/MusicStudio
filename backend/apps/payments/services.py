@@ -5,9 +5,9 @@ Qui vive la logica; le view e i task sono involucri sottili
 Per i pagamenti online leggere prima docs/learning/concetti/pagamenti-online-stripe.md,
 ADR-013 (Stripe Checkout) e ADR-014 (webhook salvati, poi elaborati).
 
-FUTURO (pagamenti dentro l'app): `start_checkout` è il punto da cui partirebbe un pagamento
-reale. Prima di attivarlo servono le decisioni elencate in testa a models.py (ADR da scrivere,
-prossimo numero libero: ADR-034).
+Dalla fase 9 `start_checkout` crea il pagamento sul conto Stripe dello studio e rifiuta (409) se
+lo studio non ha un conto attivo o se l'interruttore `ONLINE_PAYMENTS_ENABLED` è spento: vedi
+ADR-037 e specs/009-stripe-connect-payments.
 """
 
 import datetime
@@ -295,6 +295,8 @@ def _cents(amount: Decimal) -> int:
 def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
     """Restituisce un tentativo di checkout aperto per `package`, creandolo se serve.
 
+    Il pagamento va sul conto Stripe dello studio, non su quello della piattaforma (pagamento
+    diretto, ADR-037): senza un conto attivo (o con l'interruttore spento) si rifiuta con 409.
     La riga del pacchetto resta bloccata per tutta l'operazione, chiamata a Stripe compresa:
     un doppio clic aspetta la prima richiesta e poi riusa il suo tentativo, invece di aprire
     una seconda pagina di pagamento. La chiamata a Stripe porta una chiave di idempotenza,
@@ -306,11 +308,16 @@ def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
     with transaction.atomic():
         # Blocca e rilegge: il prezzo addebitato è quello nel database in questo momento.
         package = Package.objects.select_for_update().select_related("student").get(pk=package.pk)
-        # Un tentativo ancora valido (aperto, con almeno un minuto davanti) si riusa.
+        account = StudioPaymentAccount.objects.filter(studio_id=package.student.studio_id).first()
+        if not online_payments_enabled() or account is None or not account.can_accept_online:
+            raise OnlinePaymentsNotAvailable("This studio does not accept online payments.")
+        # Un tentativo ancora valido (aperto, con almeno un minuto davanti, sullo stesso conto) si
+        # riusa.
         reusable = (
             CheckoutSession.objects.filter(
                 package=package,
                 status=CheckoutSession.Status.OPEN,
+                stripe_account_id=account.stripe_account_id,
                 stripe_session_id__isnull=False,
                 expires_at__gt=timezone.now() + datetime.timedelta(minutes=1),
             )
@@ -323,6 +330,7 @@ def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
         checkout = CheckoutSession.objects.create(
             package=package,
             created_by=user if getattr(user, "is_authenticated", False) else None,
+            stripe_account_id=account.stripe_account_id,
             amount=package.price,
             currency=settings.STRIPE_CURRENCY,
         )
@@ -336,6 +344,7 @@ def start_checkout(package: Package, *, user: Any) -> CheckoutSession:
             customer_email=getattr(user, "email", None)
             if getattr(user, "role", "") == "parent"
             else None,
+            stripe_account=account.stripe_account_id,
         )
         checkout.stripe_session_id = info.id
         checkout.url = info.url
@@ -458,12 +467,29 @@ def process_webhook_event(event_pk: int) -> bool:
 @handles(*HANDLED_EVENTS)
 def _handle_checkout_event(event: WebhookEvent) -> str:
     session = gateway.SessionInfo.from_dict(event.payload["data"]["object"])
-    matched = _apply_to_checkout(session, failed=event.type.endswith("async_payment_failed"))
-    return WebhookEvent.Outcome.APPLIED if matched else WebhookEvent.Outcome.IGNORED
+    attention = _apply_to_checkout(
+        session,
+        failed=event.type.endswith("async_payment_failed"),
+        stripe_account_id=event.stripe_account_id,
+    )
+    if attention is None:
+        return WebhookEvent.Outcome.IGNORED
+    if attention:
+        # Registrato, ma c'è qualcosa che lo studio deve guardare (importo, doppio pagamento...).
+        event.attention_kind = attention
+        return WebhookEvent.Outcome.NEEDS_ATTENTION
+    return WebhookEvent.Outcome.APPLIED
 
 
-def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) -> bool:
-    # Ritrova il tentativo dalla sessione di Stripe e ne aggiorna lo stato. Falso se non c'è.
+def _apply_to_checkout(
+    session: gateway.SessionInfo, *, failed: bool = False, stripe_account_id: str = ""
+) -> str | None:
+    """Ritrova il tentativo dalla sessione di Stripe e ne aggiorna lo stato.
+
+    Ritorna None se non c'è un tentativo corrispondente (o se l'evento viene da un conto diverso
+    da quello del tentativo: mai attribuire un pagamento a uno studio per un evento di un altro),
+    altrimenti "" se tutto combacia o il tipo di anomalia da mostrare allo studio.
+    """
     checkout = (
         CheckoutSession.objects.select_for_update()
         .select_related("package__student")
@@ -473,41 +499,56 @@ def _apply_to_checkout(session: gateway.SessionInfo, *, failed: bool = False) ->
     if checkout is None:
         # Non è un errore: può essere un evento di un altro ambiente o di un test.
         logger.warning("Stripe session %s matches no checkout attempt; ignored", session.id)
-        return False
-    apply_session_state(checkout, session, failed=failed)
-    return True
+        return None
+    if checkout.stripe_account_id != stripe_account_id:
+        logger.warning("Stripe session %s came from an unexpected account; ignored", session.id)
+        return None
+    return apply_session_state(checkout, session, failed=failed)
 
 
 def apply_session_state(
     checkout: CheckoutSession, session: gateway.SessionInfo, *, failed: bool = False
-) -> None:
+) -> str:
     """Porta un tentativo (già bloccato) allo stato che Stripe riporta. Idempotente.
 
     Si completa solo quando i soldi ci sono: con metodi di pagamento differiti (per esempio
-    l'addebito SEPA) la sessione si chiude come `unpaid` e l'esito arriva più tardi.
+    l'addebito SEPA) la sessione si chiude come `unpaid` e l'esito arriva più tardi. Ritorna ""
+    se tutto combacia, altrimenti il tipo di anomalia (`amount_differs`, `duplicate_payment`,
+    `currency_differs`) che lo studio deve poter vedere.
     """
     if checkout.status != CheckoutSession.Status.OPEN:
-        return  # gli stati finali non cambiano più; le ripetizioni non fanno nulla
+        return ""  # gli stati finali non cambiano più; le ripetizioni non fanno nulla
     if session.status == "complete" and session.payment_status in ("paid", "no_payment_required"):
-        _fulfil(checkout, session)
-    elif failed:
+        return _fulfil(checkout, session)
+    if failed:
         checkout.status = CheckoutSession.Status.FAILED
         checkout.save(update_fields=["status", "updated_at"])
     elif session.status == "expired":
         checkout.status = CheckoutSession.Status.EXPIRED
         checkout.save(update_fields=["status", "updated_at"])
+    return ""
 
 
-def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> None:
+def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> str:
     # Crea il pagamento "paid" e chiude il tentativo; il tutto dentro la transazione del chiamante.
     package = checkout.package
-    if package_is_paid(package):
-        # Pagato a mano nel frattempo: i soldi sono stati comunque presi, quindi si registra
-        # e si avvisa nel log (rimborso da gestire a mano).
-        logger.warning("Package %s was already paid; recording online payment too", package.pk)
+    if session.currency and session.currency != checkout.currency.lower():
+        # Soldi presi in un'altra valuta: non si possono registrare in euro (solo euro, FR-029).
+        # Nessuna riga nel registro; lo studio lo risolve sulla sua pagina Stripe.
+        checkout.status = CheckoutSession.Status.FAILED
+        checkout.save(update_fields=["status", "updated_at"])
+        return "currency_differs"
     amount = (
         Decimal(session.amount_total) / 100 if session.amount_total is not None else checkout.amount
     )
+    attention = ""
+    if package_is_paid(package):
+        # Pagato a mano nel frattempo: i soldi sono stati comunque presi, quindi si registra e si
+        # avvisa lo studio (un rimborso da fare sulla sua pagina Stripe), mai contato due volte.
+        attention = "duplicate_payment"
+    elif amount != checkout.amount:
+        # Il pagante ha pagato un importo diverso da quello del pacchetto (il prezzo è cambiato).
+        attention = "amount_differs"
     payment = Payment.objects.create(
         student=package.student,
         package=package,
@@ -519,28 +560,37 @@ def _fulfil(checkout: CheckoutSession, session: gateway.SessionInfo) -> None:
     )
     _record_audit(payment, None)
     checkout.status = CheckoutSession.Status.COMPLETED
-    checkout.save(update_fields=["status", "updated_at"])
+    checkout.stripe_payment_intent_id = session.payment_intent
+    checkout.save(update_fields=["status", "stripe_payment_intent_id", "updated_at"])
+    return attention
 
 
 def reconcile_open_checkouts(limit: int = 100) -> int:
-    """Rete di sicurezza per i webhook persi: chiede a Stripe dei tentativi aperti e scaduti."""
+    """Rete di sicurezza per i webhook persi: chiede a Stripe dei tentativi aperti e scaduti.
+
+    Ogni tentativo si rilegge con il conto su cui è nato (fase 9); quelli della fase 3, senza
+    conto, si leggono come prima. Un'anomalia (importo diverso...) scoperta qui non ha un evento
+    da mostrare allo studio: resta solo nel log.
+    """
     stale = CheckoutSession.objects.filter(
         status=CheckoutSession.Status.OPEN,
         stripe_session_id__isnull=False,
         expires_at__lt=timezone.now(),
-    ).values_list("pk", "stripe_session_id")[:limit]
+    ).values_list("pk", "stripe_session_id", "stripe_account_id")[:limit]
     resolved = 0
-    for pk, session_id in stale:
+    for pk, session_id, account_id in stale:
         if session_id is None:  # escluso dal filtro; serve solo a mypy
             continue
-        session = gateway.retrieve_checkout_session(session_id)
+        session = gateway.retrieve_checkout_session(session_id, account_id or None)
         with transaction.atomic():
             checkout = (
                 CheckoutSession.objects.select_for_update()
                 .select_related("package__student")
                 .get(pk=pk)
             )
-            apply_session_state(checkout, session)
+            attention = apply_session_state(checkout, session)
+            if attention:
+                logger.warning("Checkout %s settled with a mismatch: %s", pk, attention)
             resolved += checkout.status != CheckoutSession.Status.OPEN
     return resolved
 

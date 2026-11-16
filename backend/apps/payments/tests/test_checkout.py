@@ -6,9 +6,9 @@ import pytest
 from django.utils import timezone
 
 from apps.common.factories import (
-    PackageFactory,
     ParentAccountFactory,
     StudentFactory,
+    connected_package,
     link_parent_to_student,
 )
 from apps.common.tests.helpers import client_for
@@ -22,7 +22,7 @@ def _checkout(user, package):
 
 
 def test_parent_gets_a_stripe_link_for_the_package_price(fake_stripe):
-    package = PackageFactory(price="120.00")
+    package = connected_package(price="120.00")
     parent = ParentAccountFactory()
     link_parent_to_student(parent, package.student)
 
@@ -39,7 +39,7 @@ def test_parent_gets_a_stripe_link_for_the_package_price(fake_stripe):
 
 
 def test_repeated_requests_reuse_the_open_attempt(fake_stripe):
-    package = PackageFactory()
+    package = connected_package()
     user = package.student.teacher.user
 
     first = _checkout(user, package)
@@ -51,7 +51,7 @@ def test_repeated_requests_reuse_the_open_attempt(fake_stripe):
 
 
 def test_expired_attempt_is_replaced(fake_stripe):
-    package = PackageFactory()
+    package = connected_package()
     user = package.student.teacher.user
     first = _checkout(user, package)
     CheckoutSession.objects.filter(pk=first.data["checkout_id"]).update(
@@ -65,7 +65,7 @@ def test_expired_attempt_is_replaced(fake_stripe):
 
 
 def test_paid_package_cannot_be_checked_out_again(fake_stripe):
-    package = PackageFactory()
+    package = connected_package()
     Payment.objects.create(
         student=package.student,
         package=package,
@@ -86,12 +86,13 @@ def test_package_of_another_family_is_not_found(fake_stripe):
     parent = ParentAccountFactory()
     link_parent_to_student(parent, StudentFactory())
 
-    assert _checkout(parent.user, PackageFactory()).status_code == 404
+    assert _checkout(parent.user, connected_package()).status_code == 404
 
 
 def test_without_stripe_configuration_checkout_is_unavailable(settings):
+    settings.ONLINE_PAYMENTS_ENABLED = True
     settings.STRIPE_API_KEY = ""
-    package = PackageFactory()
+    package = connected_package()
 
     res = _checkout(package.student.teacher.user, package)
 
@@ -102,7 +103,7 @@ def test_without_stripe_configuration_checkout_is_unavailable(settings):
 
 def test_stripe_failure_leaves_no_attempt_behind(fake_stripe):
     fake_stripe.fail_create = True
-    package = PackageFactory()
+    package = connected_package()
 
     res = _checkout(package.student.teacher.user, package)
 
