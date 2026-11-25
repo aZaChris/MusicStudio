@@ -165,3 +165,46 @@ the signals get a human side too:
   which GitHub renders (no image file to keep in sync).
 - **Alternatives**: a separate site (more to maintain, nothing to deploy); screenshots (the
   owner has no browser run of the portal on this machine; do not fake them).
+
+## Findings during implementation (2026-11-25)
+
+### T001 (closes R1 open point)
+
+- Error envelope (`apps/common/exceptions.py`): `{"detail": ..., "code": ...}` produced by
+  `DomainError` subclasses. The gone response is a new `EndpointGone(DomainError)` with status
+  410 and code `endpoint_gone`, so no new envelope is invented.
+- `Deprecation` header form: RFC 9745 (March 2025) standardised the header as a Structured
+  Field **Date**, `Deprecation: @<unix seconds>`, the moment the resource is (or was)
+  deprecated. The older draft value `true` is not in the RFC. Decision: use the RFC form with
+  the `since` date. `Sunset` stays an HTTP-date (RFC 8594). `Link` carries
+  `rel="successor-version"` when there is a successor and `rel="deprecation"` (RFC 9745) to the
+  policy document. The contract doc is updated accordingly.
+
+### T002 (closes R3 open point)
+
+- `User.role` is a required `CharField` without a default; accounts made with
+  `createsuperuser` have `role == ""`. **Operator = active, `is_staff`, `role == ""`.** Studio
+  roles never pass the gate even with `is_staff` forced.
+- `mfa.is_eligible` accepted only teachers and owners. It now also accepts operators, so an
+  operator enrols with the existing API endpoints (`/api/v1/auth/mfa/setup/` and `confirm/`)
+  and the admin login checks the code with the existing `check_second_factor`.
+- Recovery: the command `reset_mfa <email>` already exists (phase 7) and is audited
+  (`mfa.reset_by_operator`). No new command is written (T020 reuses it).
+- Lockout: `services.is_locked`, `register_login_failure`, `register_login_success` are reused
+  as they are; they already write `login.failure`/`login.locked` audit entries.
+
+### T003 and T015 (R2 proved locally)
+
+- `oasdiff` v1.40.0, linux amd64, downloaded from the GitHub release, checksum verified.
+- Real run, contract before phase 9 (`a2a60ec`) vs now, default rules: **13 errors**, all false
+  alarms for us: 4 x `response-property-enum-value-added` (new audit actions: the list is meant
+  to grow) and 9 x `request-property-all-of-added` (drf-spectacular moved the payment status
+  enum into an `allOf` reference, same accepted values).
+- Same run with `--flatten-allof` and a severity file that turns
+  `response-property-enum-value-added` into a warning: `4 changes: 0 error, 4 warning`, exit 0.
+  This is the configuration used in CI (`.github/oasdiff-levels.txt`). Trade-off, recorded in
+  ADR-040: a client that switches on an enum without a default branch is not protected by CI;
+  the policy tells client developers to always handle unknown values.
+- Opposite proof: scratch copy with `Lesson.start_time` renamed: `10 changes: 10 error`
+  (`response-required-property-removed` on dashboard, lessons list, create, upcoming...),
+  exit 1. The scratch file was never in the repository.
