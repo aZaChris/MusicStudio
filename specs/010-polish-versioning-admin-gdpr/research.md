@@ -208,3 +208,42 @@ the signals get a human side too:
 - Opposite proof: scratch copy with `Lesson.start_time` renamed: `10 changes: 10 error`
   (`response-required-property-removed` on dashboard, lessons list, create, upcoming...),
   exit 1. The scratch file was never in the repository.
+
+### T031 gap analysis of `build_export` (R7)
+
+Read on 2026-11-25 against every model of `apps.*`. "Gap" means personal data of the requester
+(or of their linked children) that we store and the export did not contain.
+
+- Exported already: `accounts.User` (account), `students.Student` and `ParentStudentLink`
+  (children), `ParentAccount` (it holds nothing beyond the user), `lessons.Lesson` (notes
+  decrypted: they are about the child), `packages.Package`, `payments.Payment`,
+  `privacy.ConsentRecord`, and for owners `studios.Studio`, `PaymentInstructions`,
+  `StudioPaymentAccount`.
+- **Gaps found and closed**:
+  - MFA: whether two-step verification is on (`account.mfa_enabled`), never the secret.
+  - Receipts: each payment now carries its receipt number (`AAAA-NNNN`), by reference, since
+    the PDF is generated on demand (ADR-035).
+  - Reversals: each payment carries `reversal_of`, so a refund row is linked to what it
+    reverses.
+  - Online checkouts created by the user (`online_checkouts`: amount, currency, status, date).
+  - Reminder emails sent to the parent (`reminders`: lesson id, status, sent date).
+  - Invitations addressed to the user's own email (`invitations`: studio, role, status, date).
+    Invitations an owner sent to others are *not* exported: they hold other people's emails.
+  - Audit entries where the user is the actor (`activity`: date, action, outcome), as part of
+    the right of access. Entries about other people are not included.
+- **Excluded on purpose** (reasons in `apps/privacy/inventory.py`): `MfaDevice` secret and
+  `RecoveryCode` hashes (credentials), `Teacher` (the teacher's data, not the family's; the
+  studio name is exported), `PaymentDispute` (already visible as reversal rows of the payment,
+  ADR-038), `WebhookEvent` (scrubbed technical events, ADR-039).
+
+### T035 export timing (R8)
+
+Measured on 2026-11-25 on the development machine (WSL2, PostgreSQL 16 local, test settings),
+with a throwaway test that was not committed: 1 parent, 3 children, 104 weekly lessons each
+(2 years), a package every 10 weeks, a payment with receipt every 4 weeks.
+
+`build_export` + `json.dumps`, 5 runs: **312 lessons, 78 payments, 85,622 bytes; best 47.0 ms,
+worst 166.6 ms**. The limit is 10 s, so the export stays synchronous (no background job, no new
+queue). A `FUTURO (export in background)` comment marks the upgrade path in
+`apps/privacy/selectors.py`. Query count is fixed per table: the budget test uses two children
+and stays under 15 queries for the whole request.

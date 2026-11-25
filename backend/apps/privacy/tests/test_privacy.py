@@ -57,7 +57,9 @@ def test_parent_export_has_all_own_data_and_nothing_of_another_family(
     world, django_assert_max_num_queries
 ):
     client = client_for(world.users["parent_a"])
-    with django_assert_max_num_queries(10):
+    # Fase 10: una query per tabella in più (promemoria, checkout, inviti, registro, MFA), mai
+    # una per figlio (test_export_completeness lo verifica con due figli).
+    with django_assert_max_num_queries(15):
         res = client.get("/api/v1/privacy/export/")
     assert res.status_code == 200
     assert "attachment" in res["Content-Disposition"]

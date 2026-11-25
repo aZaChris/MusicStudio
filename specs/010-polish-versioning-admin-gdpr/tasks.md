@@ -118,17 +118,17 @@ secret appears; adding a model without an inventory entry fails the check with i
 
 ### Tests for User Story 3
 
-- [ ] T029 [P] [US3] Write `backend/apps/privacy/tests/test_export_inventory.py`: enumerate `apps.get_models()` of the `apps.*` packages; fail naming each model missing from the inventory; `excluded` reasons at least ten characters; every `exported` key is a key of the `build_export` result
-- [ ] T030 [P] [US3] Write `backend/apps/privacy/tests/test_export_completeness.py`: build a parent with children, lessons, payments, receipts, consents, checkout sessions, reminders and audit entries with factories from `apps/common/factories.py`; each `exported` key present and non-empty; a second family and a second studio contribute nothing; no TOTP secret, token or other person's identifier in the serialised JSON; an anonymised (erased) user exports what is left without error; one `privacy.export` audit entry per request; query budget asserted
+- [X] T029 [P] [US3] Write `backend/apps/privacy/tests/test_export_inventory.py`: enumerate `apps.get_models()` of the `apps.*` packages; fail naming each model missing from the inventory; `excluded` reasons at least ten characters; every `exported` key is a key of the `build_export` result
+- [X] T030 [P] [US3] Write `backend/apps/privacy/tests/test_export_completeness.py`: build a parent with children, lessons, payments, receipts, consents, checkout sessions, reminders and audit entries with factories from `apps/common/factories.py`; each `exported` key present and non-empty; a second family and a second studio contribute nothing; no TOTP secret, token or other person's identifier in the serialised JSON; an anonymised (erased) user exports what is left without error; one `privacy.export` audit entry per request; query budget asserted
 
 ### Implementation for User Story 3
 
-- [ ] T031 [US3] Gap analysis (R7): compare `build_export` in `backend/apps/privacy/selectors.py` with every model; write each finding with its reason into `research.md` (R7)
-- [ ] T032 [US3] Create `backend/apps/privacy/inventory.py` (dict `app_label.Model` → `("exported", key)` or `("excluded", reason)`) from the T031 findings, Italian comments pointing to ADR-042
-- [ ] T033 [US3] Complete `build_export` in `backend/apps/privacy/selectors.py` only for the real gaps from T031 (new keys only, no renamed or removed key; receipts by reference; MFA as enabled yes/no), keeping one query per table
-- [ ] T034 [US3] Confirm the export request is audited in `backend/apps/privacy/views.py`/`services.py` (add it only if missing)
-- [ ] T035 [US3] Measure (R8): seed 1 parent, 3 children, 2 years of weekly lessons with payments and receipts in a test marked `slow` or a one-off script, time `build_export` plus serialisation, record the real number in `research.md` (R8); if under 10 s leave the export synchronous with a `FUTURO (export in background)` comment, otherwise implement the background export before continuing
-- [ ] T036 [US3] Regenerate `backend/openapi.yaml`; the diff may only add keys to the export schema (if it is typed at all); `contract-diff` must stay green
+- [X] T031 [US3] Gap analysis (R7): compare `build_export` in `backend/apps/privacy/selectors.py` with every model; write each finding with its reason into `research.md` (R7)
+- [X] T032 [US3] Create `backend/apps/privacy/inventory.py` (dict `app_label.Model` → `("exported", key)` or `("excluded", reason)`) from the T031 findings, Italian comments pointing to ADR-042
+- [X] T033 [US3] Complete `build_export` in `backend/apps/privacy/selectors.py` only for the real gaps from T031 (new keys only, no renamed or removed key; receipts by reference; MFA as enabled yes/no), keeping one query per table
+- [X] T034 [US3] Confirm the export request is audited in `backend/apps/privacy/views.py`/`services.py` (add it only if missing)
+- [X] T035 [US3] Measure (R8): seed 1 parent, 3 children, 2 years of weekly lessons with payments and receipts in a test marked `slow` or a one-off script, time `build_export` plus serialisation, record the real number in `research.md` (R8); if under 10 s leave the export synchronous with a `FUTURO (export in background)` comment, otherwise implement the background export before continuing
+- [X] T036 [US3] Regenerate `backend/openapi.yaml`; the diff may only add keys to the export schema (if it is typed at all); `contract-diff` must stay green
 
 **Checkpoint**: US3 tests green; coverage ≥ 90%.
 
