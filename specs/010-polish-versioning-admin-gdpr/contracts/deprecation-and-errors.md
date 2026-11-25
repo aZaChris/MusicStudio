@@ -6,9 +6,10 @@ breaking change is actually needed; the mechanism is proved on a test-only view.
 ## Response headers of a deprecated endpoint
 
 ```text
-Deprecation: true
+Deprecation: @1796083200          (RFC 9745: the deprecation date, Unix seconds)
 Sunset: Wed, 31 Mar 2027 00:00:00 GMT
-Link: </api/v2/lessons/>; rel="successor-version"     (only when a successor exists)
+Link: </api/v2/lessons/>; rel="successor-version", <policy URL>; rel="deprecation"
+      (successor-version only when a successor exists)
 ```
 
 The body and status code are exactly those of the endpoint before the deprecation.

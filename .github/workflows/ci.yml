@@ -99,6 +99,33 @@ jobs:
           uv run python manage.py spectacular --settings=config.settings.test --fail-on-warn --file /tmp/schema.yml
           diff -u openapi.yaml /tmp/schema.yml
 
+  contract-diff:
+    # Fails on a breaking change of the published contract against main (ADR-040). The
+    # backend job already proves openapi.yaml is regenerated; this one proves it is compatible.
+    # --flatten-allof and the levels file remove false alarms measured on our own contract
+    # (specs/010 research, T003); an accepted break needs a line in oasdiff-ignore.txt.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Install oasdiff (pinned, checksum verified)
+        run: |
+          curl -sSfL -o oasdiff.tar.gz \
+            https://github.com/oasdiff/oasdiff/releases/download/v1.40.0/oasdiff_1.40.0_linux_amd64.tar.gz
+          echo "2d04b8f41b145809dd554e9be9ca04d21d1b4eedad5af983ddea36832d3c5e0d  oasdiff.tar.gz" | sha256sum -c -
+          tar xzf oasdiff.tar.gz oasdiff
+
+      - name: No unregistered breaking change against main
+        run: |
+          git show origin/main:backend/openapi.yaml > "$RUNNER_TEMP/main-openapi.yaml"
+          ./oasdiff breaking "$RUNNER_TEMP/main-openapi.yaml" backend/openapi.yaml \
+            --fail-on ERR --flatten-allof \
+            --severity-levels .github/oasdiff-levels.txt \
+            --err-ignore .github/oasdiff-ignore.txt
+
   secrets:
     # Secret scanning over the whole history (constitution X): a key committed once stays in
     # git forever, so the build fails as soon as one appears. Pinned version and checksum:
