@@ -15,6 +15,9 @@ paths:
           type: string
           enum:
           - account.unlock_by_operator
+          - admin.change
+          - admin.delete
+          - admin.login
           - consent.give
           - consent.withdraw
           - email.confirm
@@ -3605,6 +3608,9 @@ components:
       - payment_account.state
       - payment.refund
       - payment.dispute
+      - admin.login
+      - admin.change
+      - admin.delete
       type: string
       description: |-
         * `registration` - Registration
@@ -3637,6 +3643,9 @@ components:
         * `payment_account.state` - Payment Account State
         * `payment.refund` - Payment Refund
         * `payment.dispute` - Payment Dispute
+        * `admin.login` - Admin Login
+        * `admin.change` - Admin Change
+        * `admin.delete` - Admin Delete
     AttentionItem:
       type: object
       properties:

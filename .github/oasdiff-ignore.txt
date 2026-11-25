@@ -1,0 +1,4 @@
+# Reviewed breaking changes of the API contract (ADR-040, docs/operations/api-versioning-policy.md).
+# One line per accepted change, copied from the oasdiff output: "METHOD /path <full message>".
+# Above each line write a comment with the reason and the link to the pull request.
+# An empty list means no breaking change has ever been accepted.

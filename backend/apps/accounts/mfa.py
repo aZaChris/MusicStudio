@@ -1,4 +1,4 @@
-"""Secondo fattore per titolari e insegnanti (ADR-029, research R5).
+"""Secondo fattore per titolari, insegnanti e operatori (ADR-029, research R5; ADR-041).
 
 L'accesso con MFA attiva è in due passi: la password dà un `mfa_token` firmato (5 minuti), poi
 il token più un codice TOTP o di recupero dà la coppia di JWT. Un codice sbagliato conta
@@ -26,7 +26,8 @@ ELIGIBLE_ROLES = (User.Role.TEACHER, User.Role.STUDIO_OWNER)
 
 
 def is_eligible(user: User) -> bool:
-    return user.role in ELIGIBLE_ROLES
+    # Gli operatori attivano il TOTP con gli stessi endpoint: in produzione l'admin lo chiede.
+    return user.role in ELIGIBLE_ROLES or user.is_operator
 
 
 def is_enabled(user: User) -> bool:

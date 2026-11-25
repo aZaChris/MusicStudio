@@ -37,7 +37,7 @@ La chiamano i **service**, nel punto in cui l'azione avviene. Non usiamo i segna
 
 **Cosa entra nei metadati.** Solo numeri, testo e booleani; ogni altro valore viene scartato in silenzio. Il bersaglio è un tipo e un id. Il test `test_audit.py` verifica che un dizionario annidato o un `None` non passino.
 
-**Non si riscrive.** Il modello rifiuta `save()` su una voce esistente e `delete()` su una singola voce, con un errore. L'unico percorso che cancella è il task di conservazione, in blocco, per le voci più vecchie di 12 mesi. Anche l'admin è in sola lettura.
+**Non si riscrive.** Il modello rifiuta `save()` su una voce esistente e `delete()` su una singola voce, con un errore. L'unico percorso che cancella è il task di conservazione, in blocco, per le voci più vecchie di 12 mesi. Anche l'admin è in sola lettura. Dalla fase 10 nel registro finiscono anche gli accessi all'admin e le modifiche fatte da lì (`admin.login`, `admin.change`, `admin.delete`), con i nomi dei campi ma mai i valori (ADR-041).
 
 **L'id della richiesta.** Ogni voce porta l'id della richiesta HTTP, lo stesso che compare nei log JSON. Da una voce si risale alle righe tecniche dello stesso momento.
 

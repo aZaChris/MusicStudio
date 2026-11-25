@@ -40,7 +40,7 @@ Prima il token di accesso durava 60 minuti e il refresh usato restava valido. Or
 - un token di un altro utente riceve lo stesso errore di un token malformato, così l'endpoint non rivela se il token di qualcun altro è valido;
 - un secondo logout dello stesso token risponde comunque 205, senza errore. Ripetere un logout non deve fare danni.
 
-**Revocare tutto.** Il service `revoke_all_sessions(user)` mette nella lista nera tutti i refresh token non scaduti di un account. Lo usano il comando `manage.py revoke_sessions <email>` e un'azione dell'admin. Non c'è un endpoint pubblico: è un'operazione da operatore.
+**Revocare tutto.** Il service `revoke_all_sessions(user)` mette nella lista nera tutti i refresh token non scaduti di un account. Lo usano il comando `manage.py revoke_sessions <email>` e un'azione dell'admin, che dalla fase 10 scrive una voce nel registro (ADR-041). Non c'è un endpoint pubblico: è un'operazione da operatore.
 
 **La pulizia.** Ogni login e ogni rinnovo aggiungono una riga. Un task Celery giornaliero cancella i token scaduti, quindi le tabelle restano piccole.
 

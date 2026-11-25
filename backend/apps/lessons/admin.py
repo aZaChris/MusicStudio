@@ -1,9 +1,19 @@
-"""Admin di Django per le lezioni."""
+"""Admin delle lezioni, in sola lettura (ADR-041).
+
+Una modifica dall'admin salterebbe i controlli di services.py (sovrapposizioni, saldo del
+pacchetto). Le note sono cifrate e non compaiono.
+"""
 
 from django.contrib import admin
 
+from apps.common.admin_mixins import ReadOnlyAdmin
+
 from .models import Lesson
 
-# Registrazione minima. FUTURO (rafforzamento dell'admin, fase 5 in CLAUDE.md): colonne e
-# filtri per stato e data, e nessuna modifica che salti i controlli di services.py.
-admin.site.register(Lesson)
+
+@admin.register(Lesson)
+class LessonAdmin(ReadOnlyAdmin):
+    list_display = ("id", "start_time", "status", "teacher", "student")
+    list_filter = ("status",)
+    date_hierarchy = "start_time"
+    exclude = ("notes",)

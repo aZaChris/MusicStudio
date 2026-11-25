@@ -9,6 +9,7 @@ from rest_framework.test import APIClient
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 
 from apps.accounts import services
+from apps.accounts.models import User
 from apps.common.factories import TeacherFactory
 
 pytestmark = pytest.mark.django_db
@@ -114,7 +115,10 @@ def test_revoke_sessions_unknown_email_fails():
 def test_admin_action_revokes_sessions(client):
     teacher = TeacherFactory(user__email="a@example.com")
     _, tokens = _login("a@example.com")
-    operator = TeacherFactory(user__is_staff=True, user__is_superuser=True).user
+    # Operatore vero (ADR-041): staff senza ruolo di studio. Un insegnante staff riceve 404.
+    operator = User.objects.create_user(
+        username="op", email="op@example.com", password="x", is_staff=True, is_superuser=True
+    )
     client.force_login(operator)
 
     res = client.post(

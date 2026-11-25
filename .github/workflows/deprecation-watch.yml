@@ -1,0 +1,37 @@
+# Weekly reminder of deprecated endpoints (ADR-040, research R1b). It turns red when a removal
+# date is 30 days away or past, and GitHub emails the failure to the owner. It never runs on
+# pull requests, so a calendar date cannot block unrelated work.
+name: deprecation-watch
+
+on:
+  schedule:
+    - cron: "17 7 * * 1" # Mondays 07:17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      # The report only reads code: no database connection is opened.
+      DATABASE_URL: postgres://unused@localhost:5432/unused
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.12.7"
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - name: Install dependencies (locked)
+        run: uv sync --frozen --python 3.12
+
+      - name: Deprecations and days left
+        run: uv run python manage.py deprecation_report --settings=config.settings.test

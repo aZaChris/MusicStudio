@@ -48,6 +48,7 @@ PHASES=(
   "Fase 7 - Sicurezza privacy e account|account-e-token-monouso mfa-totp cifratura-dei-campi gdpr-per-sviluppatori audit-log|27|32"
   "Fase 8 - Cassa e ricevute|registro-di-cassa ricevute-non-fiscali|34|36"
   "Fase 9 - Pagamenti allo studio|stripe-connect-pagamenti-diretti rimborsi-e-contestazioni|37|39"
+  "Fase 10 - Rifinitura|versionamento-e-deprecazione-api admin-blindato|40|42"
 )
 
 # Knowledge-base cases (real problems solved): cross-phase, refreshed every run

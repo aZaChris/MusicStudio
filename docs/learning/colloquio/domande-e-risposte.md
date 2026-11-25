@@ -324,6 +324,26 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Punto debole.** Un'anomalia scoperta dalla riconciliazione oraria resta solo nel log: non ha un evento da mostrare allo studio.
 
+## Versionamento, admin ed export (fase 10)
+
+### 51. Come cambi un'API senza rompere un'app che non puoi aggiornare tu?
+
+**Risposta modello.** Dentro `v1` faccio solo modifiche compatibili; quelle incompatibili le annuncio con almeno 90 giorni di preavviso. L'endpoint deprecato continua a funzionare uguale, ma ogni risposta porta `Deprecation`, `Sunset` e `Link` secondo gli RFC, il contratto lo segna come deprecato, e dopo la data risponde 410. Siccome le intestazioni le leggono solo le macchine, c'è anche un registro controllato da un test e un workflow settimanale che diventa rosso a 30 giorni dalla rimozione. In CI, oasdiff confronta il contratto con quello di `main` e blocca le rotture non dichiarate.
+
+**Punto debole.** Ho declassato ad avviso i valori nuovi negli enum di risposta, perché davano falsi allarmi sul nostro contratto. Un client che non gestisce i valori sconosciuti non è protetto dalla CI: lo copre solo la regola scritta nella policy.
+
+### 52. L'admin di Django vede i dati di tutti: come l'hai protetto?
+
+**Risposta modello.** Entra solo un operatore, cioè un account staff senza ruolo di studio, e in produzione con il TOTP che già usavamo per l'API. Gli errori contano per lo stesso blocco dell'accesso API, e chi non deve entrare riceve 404. I record contabili e i dati che cambiano solo dai service sono in sola lettura. L'unico modello modificabile scrive nel registro i nomi dei campi cambiati, senza i valori. Un test elenca tutto ciò che è registrato nell'admin e fallisce se un modello non ha una regola o mostra un campo cifrato: così ho scoperto che la libreria dei JWT esponeva i refresh token.
+
+**Punto debole.** Il TOTP obbligatorio va attivato prima del deploy, altrimenti l'operatore resta fuori. E non c'è ancora un modo per correggere a mano una lezione: se servirà, sarà un comando che passa dai service.
+
+### 53. Come fai a sapere che l'export GDPR contiene davvero tutto?
+
+**Risposta modello.** Non lo do per scontato: c'è un inventario di tutti i modelli del progetto, ognuno "esportato" oppure "escluso, con un motivo". Un test fallisce indicando per nome il modello nuovo che nessuno ha deciso, e un altro verifica che ogni chiave dichiarata esista davvero nell'export. L'analisi fatta sul codice ha trovato sette buchi lasciati dalle fasi precedenti, e li ho chiusi senza cambiare le chiavi esistenti. Prima di costruire un export in background ho misurato: il caso più grande realistico richiede meno di 200 ms.
+
+**Punto debole.** L'inventario dice dove stanno i dati, non quali campi di ogni modello escono: un campo personale nuovo su un modello già esportato va comunque aggiunto a mano.
+
 ## Domanda finale tipica
 
 ### 19. Cosa faresti diversamente o cosa miglioreresti per primo?

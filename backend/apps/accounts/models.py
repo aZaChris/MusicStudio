@@ -45,6 +45,13 @@ class User(AbstractUser):
     def __str__(self) -> str:
         return self.email
 
+    @property
+    def is_operator(self) -> bool:
+        # Operatore = chi gestisce la piattaforma, non uno studio: attivo, staff e senza ruolo
+        # di studio (gli account di `createsuperuser` hanno ruolo vuoto). Solo lui entra
+        # nell'admin (ADR-041); un ruolo di studio non passa nemmeno con is_staff forzato.
+        return self.is_active and self.is_staff and not self.role
+
 
 class Invitation(models.Model):
     """Un utente registrato invita qualcuno nel proprio studio (US3, research R2).

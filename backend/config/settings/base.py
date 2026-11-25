@@ -27,9 +27,15 @@ DEBUG: bool = env.bool("DJANGO_DEBUG", default=False)
 ALLOWED_HOSTS: list[str] = env.list("DJANGO_ALLOWED_HOSTS", default=["localhost", "127.0.0.1"])
 CSRF_TRUSTED_ORIGINS: list[str] = env.list("DJANGO_CSRF_TRUSTED_ORIGINS", default=[])
 ADMIN_URL: str = env("DJANGO_ADMIN_URL", default="admin/")
+# Admin solo per operatori (fase 10, ADR-041). In produzione serve anche il codice TOTP;
+# lista vuota di IP = nessuna restrizione per indirizzo.
+ADMIN_REQUIRE_TOTP: bool = env.bool("ADMIN_REQUIRE_TOTP", default=False)
+ADMIN_ALLOWED_IPS: list[str] = env.list("ADMIN_ALLOWED_IPS", default=[])
+# Preavviso minimo prima di rimuovere un endpoint deprecato (ADR-040, policy delle API).
+API_DEPRECATION_MIN_NOTICE_DAYS = 90
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "apps.common.admin_config.OperatorAdminConfig",  # admin solo per operatori (ADR-041)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",

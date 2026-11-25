@@ -20,6 +20,9 @@ DATABASES["default"]["CONN_MAX_AGE"] = env.int("DB_CONN_MAX_AGE", default=60)
 DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
+# In produzione l'admin chiede il codice TOTP all'operatore (ADR-041). Si spegne solo per
+# il tempo di attivare il TOTP del primo operatore, poi si toglie la variabile.
+ADMIN_REQUIRE_TOTP = env.bool("ADMIN_REQUIRE_TOTP", default=True)
 
 # Container healthchecks call the app on localhost, from inside the container.
 ALLOWED_HOSTS = [*ALLOWED_HOSTS, "localhost", "127.0.0.1"]
