@@ -996,9 +996,12 @@ export interface components {
          *     * `payment_account.state` - Payment Account State
          *     * `payment.refund` - Payment Refund
          *     * `payment.dispute` - Payment Dispute
+         *     * `admin.login` - Admin Login
+         *     * `admin.change` - Admin Change
+         *     * `admin.delete` - Admin Delete
          * @enum {string}
          */
-        ActionEnum: "registration" | "email.confirm" | "login.success" | "login.failure" | "login.locked" | "password.reset" | "password.change" | "mfa.enable" | "mfa.disable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "account.unlock_by_operator" | "invitation.send" | "invitation.accept" | "invitation.revoke" | "role.change" | "consent.give" | "consent.withdraw" | "privacy.export" | "privacy.erase" | "payment.record" | "payment.reverse" | "payment.delete" | "register.export" | "instructions.change" | "receipt.issue" | "payment_account.start" | "payment_account.state" | "payment.refund" | "payment.dispute";
+        ActionEnum: "registration" | "email.confirm" | "login.success" | "login.failure" | "login.locked" | "password.reset" | "password.change" | "mfa.enable" | "mfa.disable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "account.unlock_by_operator" | "invitation.send" | "invitation.accept" | "invitation.revoke" | "role.change" | "consent.give" | "consent.withdraw" | "privacy.export" | "privacy.erase" | "payment.record" | "payment.reverse" | "payment.delete" | "register.export" | "instructions.change" | "receipt.issue" | "payment_account.start" | "payment_account.state" | "payment.refund" | "payment.dispute" | "admin.login" | "admin.change" | "admin.delete";
         AttentionItem: {
             id: number;
             kind: string;
@@ -1785,7 +1788,7 @@ export interface operations {
     v1_audit_list: {
         parameters: {
             query?: {
-                action?: "account.unlock_by_operator" | "consent.give" | "consent.withdraw" | "email.confirm" | "instructions.change" | "invitation.accept" | "invitation.revoke" | "invitation.send" | "login.failure" | "login.locked" | "login.success" | "mfa.disable" | "mfa.enable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "password.change" | "password.reset" | "payment.delete" | "payment.dispute" | "payment.record" | "payment.refund" | "payment.reverse" | "payment_account.start" | "payment_account.state" | "privacy.erase" | "privacy.export" | "receipt.issue" | "register.export" | "registration" | "role.change";
+                action?: "account.unlock_by_operator" | "admin.change" | "admin.delete" | "admin.login" | "consent.give" | "consent.withdraw" | "email.confirm" | "instructions.change" | "invitation.accept" | "invitation.revoke" | "invitation.send" | "login.failure" | "login.locked" | "login.success" | "mfa.disable" | "mfa.enable" | "mfa.recovery_used" | "mfa.reset_by_operator" | "password.change" | "password.reset" | "payment.delete" | "payment.dispute" | "payment.record" | "payment.refund" | "payment.reverse" | "payment_account.start" | "payment_account.state" | "privacy.erase" | "privacy.export" | "receipt.issue" | "register.export" | "registration" | "role.change";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description ISO 8601 date-time */
