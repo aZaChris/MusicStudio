@@ -54,7 +54,7 @@ Il site fa tre cose:
 - **Messaggi diversi per "bloccato" e "password sbagliata".** Aiutano chi attacca a capire quali account esistono. Il messaggio deve essere lo stesso.
 - **Rendere tutto modificabile "per comodità".** L'admin salva direttamente il modello e salta `services.py`. Un pacchetto modificato a mano può avere un saldo impossibile.
 - **Scrivere i valori nell'audit.** Il registro diventerebbe una seconda copia dei dati personali, da esportare e cancellare.
-- **Il rischio al deploy.** Con il TOTP obbligatorio, un operatore che non l'ha ancora attivato resta fuori. Va attivato prima, oppure si spegne l'obbligo solo per il tempo dell'attivazione. È scritto nell'ADR-041.
+- **Il rischio al deploy.** Con il TOTP obbligatorio, un operatore che non l'ha ancora attivato resta fuori. Non si può attivarlo prima del deploy, perché è questa fase a rendere gli operatori idonei: si spegne l'obbligo per il primo deploy, si attiva il TOTP e poi si riaccende. È scritto nell'ADR-041.
 
 ## Come lo spiegheresti a un colloquio
 
