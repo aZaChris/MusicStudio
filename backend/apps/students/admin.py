@@ -1,13 +1,27 @@
-"""Registrazione minima di studenti e genitori nell'admin di Django.
+"""Admin di studenti e genitori, in sola lettura (ADR-041).
 
-FUTURO (rafforzamento dell'admin, fase 5 in CLAUDE.md): colonne e filtri per studio, e nessuna
-modifica che salti i controlli di services.py. Sono dati personali: l'accesso va tenuto stretto.
+Sono dati personali di minori: l'admin serve solo a guardare, per l'assistenza. Gli elenchi
+mostrano id e studio, i nomi solo nella pagina del singolo studente.
 """
 
 from django.contrib import admin
 
+from apps.common.admin_mixins import ReadOnlyAdmin
+
 from .models import ParentAccount, ParentStudentLink, Student
 
-admin.site.register(Student)
-admin.site.register(ParentAccount)
-admin.site.register(ParentStudentLink)
+
+@admin.register(Student)
+class StudentAdmin(ReadOnlyAdmin):
+    list_display = ("id", "studio", "teacher", "is_active", "is_adult", "anonymised_at")
+    list_filter = ("is_active", "is_adult")
+
+
+@admin.register(ParentAccount)
+class ParentAccountAdmin(ReadOnlyAdmin):
+    list_display = ("id", "user", "created_at")
+
+
+@admin.register(ParentStudentLink)
+class ParentStudentLinkAdmin(ReadOnlyAdmin):
+    list_display = ("id", "parent", "student", "created_at")

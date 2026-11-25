@@ -1,15 +1,14 @@
-"""Admin dei promemoria: serve a vedere cosa è stato inviato e cosa è rimasto in coda.
-
-FUTURO (rafforzamento dell'admin, fase 5 in CLAUDE.md): rendere i campi in sola lettura, così da
-non poter cambiare a mano lo stato di un invio.
-"""
+"""Admin dei promemoria: cosa è stato inviato e cosa è in coda, in sola lettura (ADR-041)."""
 
 from django.contrib import admin
+
+from apps.common.admin_mixins import ReadOnlyAdmin
 
 from .models import ReminderDelivery
 
 
 @admin.register(ReminderDelivery)
-class ReminderDeliveryAdmin(admin.ModelAdmin):
+class ReminderDeliveryAdmin(ReadOnlyAdmin):
+    # Lo stato di un invio lo cambia solo il task: a mano si perderebbe la traccia dei tentativi.
     list_display = ("lesson", "parent", "status", "attempts", "sent_at")
     list_filter = ("status",)

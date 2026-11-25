@@ -1,11 +1,12 @@
-"""Registrazione minima dei pacchetti nell'admin di Django.
-
-FUTURO (rafforzamento dell'admin, fase 5 in CLAUDE.md): colonne, filtri per studio e saldo
-in sola lettura, così da non poterlo modificare a mano saltando i service.
-"""
+"""Admin dei pacchetti, in sola lettura: il saldo cambia solo dai service (ADR-041)."""
 
 from django.contrib import admin
 
+from apps.common.admin_mixins import ReadOnlyAdmin
+
 from .models import Package
 
-admin.site.register(Package)
+
+@admin.register(Package)
+class PackageAdmin(ReadOnlyAdmin):
+    list_display = ("id", "student", "total_lessons", "lessons_remaining", "expiry_date")

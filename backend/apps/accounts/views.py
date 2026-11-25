@@ -205,7 +205,7 @@ class MfaVerifyView(AnonymousAccountView):
 
 
 class CanUseMfa(BasePermission):
-    """Titolari e insegnanti; genitori e studenti accedono con la sola password."""
+    """Titolari, insegnanti e operatori; genitori e studenti accedono con la sola password."""
 
     def has_permission(self, request: Request, view: Any) -> bool:
         user = request.user

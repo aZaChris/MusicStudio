@@ -35,7 +35,7 @@ ADMIN_ALLOWED_IPS: list[str] = env.list("ADMIN_ALLOWED_IPS", default=[])
 API_DEPRECATION_MIN_NOTICE_DAYS = 90
 
 INSTALLED_APPS = [
-    "django.contrib.admin",
+    "apps.common.admin_config.OperatorAdminConfig",  # admin solo per operatori (ADR-041)
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
