@@ -345,3 +345,21 @@ Ogni termine è in inglese, come lo troverai nel codice e nei colloqui, con una 
 **Scrubbing (ripulitura).** Salvare solo i campi che servono di un evento, togliendo nomi, email, indirizzi e dati di carta. Una lista bianca di campi permessi.
 
 **Thin event (evento sottile).** Un tipo di evento della nuova API di Stripe che porta poco più dell'id di ciò che è cambiato. Per lo stato dei conti nuovi non li usiamo: rileggiamo il conto.
+
+## Termini aggiunti nella fase 10
+
+**Breaking change (modifica incompatibile).** Una modifica dell'API che può far fallire un client scritto correttamente: togliere o rinominare un campo, renderne obbligatorio uno, cambiare un tipo. Dentro `v1` non si fa senza preavviso.
+
+**Deprecation (deprecazione).** L'annuncio che un endpoint verrà tolto. Funziona ancora uguale, ma ogni risposta porta l'intestazione `Deprecation` (RFC 9745) con la data dell'annuncio.
+
+**Sunset.** La data in cui un endpoint deprecato smette di funzionare (RFC 8594). Dopo, risponde 410 Gone con codice `endpoint_gone`.
+
+**410 Gone.** Lo stato HTTP che dice "qui c'era qualcosa ed è stato tolto apposta". È diverso da 404, che sembra un indirizzo sbagliato.
+
+**oasdiff.** Uno strumento che confronta due contratti OpenAPI e sa riconoscere le modifiche incompatibili. Gira in CI contro il contratto di `main`.
+
+**Operatore.** Chi gestisce la piattaforma, non uno studio: un account attivo, staff e senza ruolo di studio. È l'unico che entra nell'admin.
+
+**Allowlist IP (lista di indirizzi ammessi).** Un elenco di indirizzi da cui si può raggiungere qualcosa. Con `ADMIN_ALLOWED_IPS` impostato, l'admin risponde 404 a tutti gli altri.
+
+**Inventario dell'export.** L'elenco di tutti i modelli del progetto, ognuno segnato come "esportato" o "escluso, perché...". Un test fallisce se ne manca uno, così l'export GDPR non dimentica dati nuovi.

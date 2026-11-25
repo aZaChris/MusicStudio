@@ -83,7 +83,7 @@ La funzione `scope(queryset, ctx, paths)` applica la regola: il titolare vede il
 - **Colonna tenant opzionale.** Un `NULL` diventa un tenant fantasma che filtra "tutto ciò che non ha tenant".
 - **Filtro ripetuto a mano in ogni query.** Prima o poi qualcuno lo dimentica. Deve stare in un punto solo.
 - **Ricalcolare il contesto più volte.** Query sprecate e possibili incoerenze.
-- **Trade-off dichiarato:** la regola "lo studio dell'allievo è quello del suo insegnante" è garantita dai service, non dal database. Una scrittura diretta nell'admin potrebbe violarla.
+- **Trade-off dichiarato:** la regola "lo studio dell'allievo è quello del suo insegnante" è garantita dai service, non dal database. Una scrittura diretta nell'admin potrebbe violarla: per questo dalla fase 10 allievi e insegnanti sono in sola lettura nell'admin (ADR-041).
 - **I genitori non hanno uno studio.** Un genitore può avere figli in studi diversi, quindi per lui il "tenant" sono i collegamenti con i figli.
 
 ## Come lo spiegheresti a un colloquio

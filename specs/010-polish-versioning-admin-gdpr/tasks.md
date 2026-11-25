@@ -141,10 +141,10 @@ secret appears; adding a model without an inventory entry fails the check with i
 **Independent test**: someone who does not know the project reads only the README and answers
 the five questions of the spec.
 
-- [ ] T037 [US4] Run the numbers on the day: `rtk proxy uv run pytest` (test count, coverage) and read the latest load-test report under `docs/loadtest/`; keep the raw outputs in the scratchpad for the next two tasks
-- [ ] T038 [US4] Rewrite `README.md` (English, about one screen): problem, Mermaid architecture diagram, key decisions linked to their ADRs, numbers with date and command from T037, deliberate limits (online payments off, no `v2`, no AWS), how to run the tests
-- [ ] T039 [P] [US4] Write `docs/case-study.md` (English): three real problems from `docs/knowledge-base/` (for example the DST lesson end, the exclusion-constraint deadlock, the throttle that failed open), each with symptom, root cause, fix and lesson; no invented numbers
-- [ ] T040 [US4] Run every command the README shows from a clean clone in a scratch directory and fix what does not work as written
+- [X] T037 [US4] Run the numbers on the day: `rtk proxy uv run pytest` (test count, coverage) and read the latest load-test report under `docs/loadtest/`; keep the raw outputs in the scratchpad for the next two tasks
+- [X] T038 [US4] Rewrite `README.md` (English, about one screen): problem, Mermaid architecture diagram, key decisions linked to their ADRs, numbers with date and command from T037, deliberate limits (online payments off, no `v2`, no AWS), how to run the tests
+- [X] T039 [P] [US4] Write `docs/case-study.md` (English): three real problems from `docs/knowledge-base/` (for example the DST lesson end, the exclusion-constraint deadlock, the throttle that failed open), each with symptom, root cause, fix and lesson; no invented numbers
+- [X] T040 [US4] Run every command the README shows from a clean clone in a scratch directory and fix what does not work as written
 
 **Checkpoint**: README commands work from a clean clone.
 
@@ -152,16 +152,16 @@ the five questions of the spec.
 
 ## Phase 7: Polish & cross-cutting (study docs and end of phase)
 
-- [ ] T041 [P] Write `docs/learning/adr/ADR-040-versionamento-e-deprecazione-api.md` (policy, headers form chosen in T001, `410`, register, weekly reminder, oasdiff; alternatives from R1/R1b/R2)
-- [ ] T042 [P] Write `docs/learning/adr/ADR-041-admin-solo-operatori-con-totp.md` (R3–R5, the T002 and T023 choices)
-- [ ] T043 [P] Write `docs/learning/adr/ADR-042-inventario-dell-export-gdpr.md` (R6–R8 with the measured time)
-- [ ] T044 [P] Write concept doc `docs/learning/concetti/versionamento-e-deprecazione-api.md` (format of CLAUDE.md, 800–1500 words checked with `wc -w`)
-- [ ] T045 [P] Write concept doc `docs/learning/concetti/admin-blindato.md` (same format and word check)
-- [ ] T046 Update `docs/learning/concetti/sicurezza-api-owasp.md` (API9 deprecation policy and inventory, API8 admin hardening), `docs/learning/glossario.md`, `docs/learning/colloquio/domande-e-risposte.md`, `docs/learning/01-panoramica-architettura.md`, and every older doc that describes the admin or the export as current (search with `grep -rln "admin\|export" docs/learning/concetti`)
-- [ ] T047 Update `docs/learning/00-indice.md` (reading order, "Riepilogo della fase 10", open items) and the roadmap row in `CLAUDE.md`
-- [ ] T048 Mobile follow-up note `specs/010-polish-versioning-admin-gdpr/mobile-followup.md`: what the mobile branch should do with `Deprecation`/`Sunset` headers and the `X-Client` header (no mobile code changed here)
-- [ ] T049 Full quality gate (quickstart §1) green, `rtk proxy uv run pytest` with coverage ≥ 90%; every task above marked `[X]`
-- [ ] T050 Phase summary commit "Complete phase 10: ..."; add the phase to `PHASES` in `scripts/export-study-docs.sh` and run it; append the phase's decisions to `Decisioni MusicStudio.md` in the vault if the sync exists
+- [X] T041 [P] Write `docs/learning/adr/ADR-040-versionamento-e-deprecazione-api.md` (policy, headers form chosen in T001, `410`, register, weekly reminder, oasdiff; alternatives from R1/R1b/R2)
+- [X] T042 [P] Write `docs/learning/adr/ADR-041-admin-solo-operatori-con-totp.md` (R3–R5, the T002 and T023 choices)
+- [X] T043 [P] Write `docs/learning/adr/ADR-042-inventario-dell-export-gdpr.md` (R6–R8 with the measured time)
+- [X] T044 [P] Write concept doc `docs/learning/concetti/versionamento-e-deprecazione-api.md` (format of CLAUDE.md, 800–1500 words checked with `wc -w`)
+- [X] T045 [P] Write concept doc `docs/learning/concetti/admin-blindato.md` (same format and word check)
+- [X] T046 Update `docs/learning/concetti/sicurezza-api-owasp.md` (API9 deprecation policy and inventory, API8 admin hardening), `docs/learning/glossario.md`, `docs/learning/colloquio/domande-e-risposte.md`, `docs/learning/01-panoramica-architettura.md`, and every older doc that describes the admin or the export as current (search with `grep -rln "admin\|export" docs/learning/concetti`)
+- [X] T047 Update `docs/learning/00-indice.md` (reading order, "Riepilogo della fase 10", open items) and the roadmap row in `CLAUDE.md`
+- [X] T048 Mobile follow-up note `specs/010-polish-versioning-admin-gdpr/mobile-followup.md`: what the mobile branch should do with `Deprecation`/`Sunset` headers and the `X-Client` header (no mobile code changed here)
+- [X] T049 Full quality gate (quickstart §1) green, `rtk proxy uv run pytest` with coverage ≥ 90%; every task above marked `[X]`
+- [X] T050 Phase summary commit "Complete phase 10: ..."; add the phase to `PHASES` in `scripts/export-study-docs.sh` and run it; append the phase's decisions to `Decisioni MusicStudio.md` in the vault if the sync exists
 - [ ] T051 Owner: push and open the PR, review, merge with green CI; deploy only when the owner asks (out of scope here)
 
 ---

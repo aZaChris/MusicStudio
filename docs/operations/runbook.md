@@ -106,6 +106,21 @@ Due comandi per l'operatore, dal terminale del `backend`. Entrambi scrivono nell
 - **Telefono e codici di recupero persi**: `python manage.py reset_mfa email@esempio.it`. Dopo il comando basta la password per entrare, quindi **verifica prima chi sei davvero** (per esempio una chiamata o un messaggio da un canale che già conosci). Poi chiedi alla persona di riattivare la verifica in due passaggi.
 - Chi dimentica la password non ha bisogno di questi comandi: il reset via email toglie anche il blocco.
 
+## Admin solo per operatori (fase 10)
+
+Dalla fase 10 l'admin (`DJANGO_ADMIN_URL`) lo apre solo un **operatore**: un account attivo, staff e senza ruolo di studio, come quelli creati con `createsuperuser`. Tutti gli altri ricevono 404. In produzione il login chiede anche il **codice TOTP** (`ADMIN_REQUIRE_TOTP`, vero per default). Dettagli in ADR-041.
+
+**Prima del deploy della fase 10**, l'operatore attiva il TOTP, altrimenti resta fuori dall'admin:
+
+1. Un account creato con `createsuperuser` ha l'email **non confermata**, e l'API rifiuta il login finché non lo è. Chiedi il link con `POST /api/v1/auth/confirm-email/resend/` (`{"email": "..."}`) e aprilo dalla posta.
+2. Accedi all'API con l'account operatore (`POST /api/v1/auth/token/`, email e password) e prendi il token di accesso.
+3. `POST /api/v1/auth/mfa/setup/` restituisce l'URI `otpauth://`: aprilo con l'app di autenticazione (o trasformalo in QR).
+4. `POST /api/v1/auth/mfa/confirm/` con il primo codice. La risposta contiene **dieci codici di recupero**: conservali fuori dal server.
+
+Se il deploy è già avvenuto senza TOTP attivo: imposta `ADMIN_REQUIRE_TOTP=false` nelle variabili di Coolify, rideploya, attiva il TOTP come sopra, poi **togli la variabile** e rideploya. Per limitare l'admin a certi indirizzi, metti `ADMIN_ALLOWED_IPS` (lista separata da virgole); vuota vuol dire nessun limite.
+
+Nell'admin i pagamenti, le ricevute, i consensi, il registro, le lezioni, i pacchetti e gli studenti sono in sola lettura. Si modificano solo gli utenti, e ogni modifica finisce nel registro (`admin.change`). Un operatore che perde telefono e codici: `python manage.py reset_mfa email@esempio.it` (vedi sopra).
+
 ## Sentry
 
 1. Crea un account gratuito su sentry.io e un progetto di tipo **Django**.

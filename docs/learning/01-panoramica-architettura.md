@@ -98,6 +98,10 @@ A ogni push GitHub Actions esegue lint, formattazione, tipi, controllo delle mig
 
 Il pagamento online non va più sul conto della piattaforma: ogni studio ha un **conto Stripe collegato** (tabella `StudioPaymentAccount`, solo id e stato) e il genitore paga direttamente lì. Le chiamate a Stripe restano tutte in `apps/payments/gateway.py`. Un secondo webhook riceve gli eventi dei conti collegati. Rimborsi e contestazioni diventano righe di storno del registro, anche parziali. Gli eventi si salvano ripuliti dei dati personali. Tutto è dietro l'interruttore `ONLINE_PAYMENTS_ENABLED`, **spento di default**, e in modalità test. Dettagli: `concetti/stripe-connect-pagamenti-diretti.md` e `concetti/rimborsi-e-contestazioni.md`.
 
+## Fase 10: versionamento, admin ed export completo
+
+Nessuna funzione nuova per gli utenti: la fase chiude i punti che un revisore guarda per primi. L'API ha una **policy di versionamento** con 90 giorni di preavviso. Un endpoint deprecato porta `Deprecation`, `Sunset` e `Link` in ogni risposta e dopo la data risponde 410. Un registro controllato da un test, un workflow settimanale e il job di CI `contract-diff` (oasdiff contro `main`) impediscono che una rottura passi inosservata (`apps/common/deprecation.py`). L'**admin** è solo per operatori: staff senza ruolo di studio, TOTP in produzione, gli stessi blocchi dell'API, 404 per tutti gli altri. I record definitivi e i dati dei service sono in sola lettura, e ogni modifica finisce nel registro (`apps/common/admin_site.py`, `admin_mixins.py`). L'**export GDPR** ha un inventario di tutti i modelli (`apps/privacy/inventory.py`) e ha recuperato sette tipi di dati che le fasi 8 e 9 avevano aggiunto. Dettagli: `concetti/versionamento-e-deprecazione-api.md`, `concetti/admin-blindato.md`, ADR-040, ADR-041 e ADR-042.
+
 ## Dove andare dopo
 
 - Per capire da dove siamo partiti: `docs/learning/audit-iniziale.md`.

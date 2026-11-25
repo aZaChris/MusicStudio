@@ -9,8 +9,10 @@ import pytest
 from django.conf import settings
 from django.test import Client
 from django.utils import timezone
+from rest_framework.test import APIClient
 
-from apps.accounts import mfa, totp
+from apps.accounts import mfa, tokens, totp
+from apps.accounts import services as account_services
 from apps.accounts.models import User
 from apps.audit.models import AuditEntry
 
@@ -131,3 +133,21 @@ def test_clients_outside_the_allowlist_see_nothing(settings):
     inside = Client(REMOTE_ADDR="10.0.0.1")
     inside.force_login(operator)
     assert inside.get(ADMIN).status_code == 200
+
+
+def test_a_new_operator_can_enrol_totp_through_the_api_then_sign_in(settings):
+    # Il percorso del runbook (fase 10): conferma email, login API, attivazione, admin.
+    settings.ADMIN_REQUIRE_TOTP = True
+    operator = make_operator()
+    api = APIClient()
+    refused = api.post("/api/v1/auth/token/", {"email": operator.email, "password": PW})
+    assert refused.status_code != 200  # email non confermata, come dopo createsuperuser
+    account_services.confirm_email(tokens.encode_uid(operator), tokens.make_confirm_token(operator))
+    token = api.post("/api/v1/auth/token/", {"email": operator.email, "password": PW})
+    api.credentials(HTTP_AUTHORIZATION=f"Bearer {token.data['access']}")
+    secret = api.post("/api/v1/auth/mfa/setup/").data["secret"]
+    confirmed = api.post(
+        "/api/v1/auth/mfa/confirm/", {"code": totp.code_at(secret, totp.current_step())}
+    )
+    assert confirmed.status_code == 200
+    assert logged_in(sign_in(confirmed.data["recovery_codes"][0]))

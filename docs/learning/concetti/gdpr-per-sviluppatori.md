@@ -28,7 +28,7 @@ Pensa a una biblioteca che ha le schede dei lettori.
 
 **Minorenni.** Un minorenne non ha un account: arriva ai suoi dati il genitore. Solo gli allievi segnati come adulti (`Student.is_adult`, un sì/no scelto dall'insegnante) possono essere invitati. Non salviamo la data di nascita, che cambia valore ogni giorno e non ci serve.
 
-**Esportazione.** `GET /api/v1/privacy/export/` restituisce un file JSON con l'account, i figli, le loro lezioni (le note decifrate), i pacchetti, i pagamenti e i consensi. Cosa contiene lo decide il **ruolo** di chi chiede, non un id nella richiesta: un genitore riceve solo i figli collegati a lui.
+**Esportazione.** `GET /api/v1/privacy/export/` restituisce un file JSON con l'account, i figli, le loro lezioni (le note decifrate), i pacchetti, i pagamenti e i consensi. Dalla fase 10 contiene anche lo stato della MFA (sì/no), il numero di ricevuta e il collegamento degli storni su ogni pagamento, i checkout online, i promemoria ricevuti, gli inviti rivolti alla persona e le voci del registro di cui è autrice. Un inventario di tutti i modelli (`apps/privacy/inventory.py`) e un test impediscono che un modello nuovo resti fuori senza una decisione scritta (ADR-042). Cosa contiene lo decide il **ruolo** di chi chiede, non un id nella richiesta: un genitore riceve solo i figli collegati a lui.
 
 ```python
 def students_of(user: User) -> QuerySet[Student]:
@@ -56,7 +56,7 @@ Un test cerca, colonna per colonna in tutto il database, il nome e l'email della
 
 - **`DELETE` a cascata**: cancella lo storico dei pagamenti e rompe i totali.
 - **Soft delete con un flag**: i dati personali restano nel database. Non è cancellazione.
-- **Export asincrono via email**: a questa scala, centinaia di righe per famiglia, una risposta sincrona basta.
+- **Export asincrono via email**: a questa scala, centinaia di righe per famiglia, una risposta sincrona basta. Misurato nella fase 10: 312 lezioni e 78 pagamenti in 47-167 ms (ADR-042).
 
 ## Errori comuni e trade-off
 

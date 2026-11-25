@@ -53,7 +53,7 @@ Ogni modello espone `tenant_keys()`, cioè la coppia (studio, insegnante respons
 
 I test in `backend/apps/students/tests/test_reassign.py` coprono tutti i casi: titolare nello stesso studio (200), verso un altro studio (400), allievo di un altro studio (404), insegnante e genitore (403).
 
-**Il limite di dieci insegnanti.** In `backend/apps/studios/services.py`, `add_teacher_to_studio` blocca la riga dello studio con `select_for_update` e poi conta. Senza il blocco, due aggiunte contemporanee potrebbero leggere "nove" entrambe e arrivare a undici. `Teacher.clean()` usa la stessa regola, così anche l'admin di Django la rispetta.
+**Il limite di dieci insegnanti.** In `backend/apps/studios/services.py`, `add_teacher_to_studio` blocca la riga dello studio con `select_for_update` e poi conta. Senza il blocco, due aggiunte contemporanee potrebbero leggere "nove" entrambe e arrivare a undici. `Teacher.clean()` usa la stessa regola, così anche l'admin di Django la rispetta. Dalla fase 10 gli insegnanti nell'admin sono comunque in sola lettura (ADR-041).
 
 **Il prima e dopo.** Prima: scrivere era permesso a chiunque avesse un ruolo da insegnante e vedesse l'oggetto. Lo spostamento di un allievo non esisteva. Il limite di insegnanti non era controllato. Dopo: una regola di scrittura esplicita per oggetto, un'azione riservata al titolare con test per ogni ruolo, e un limite protetto anche dalla concorrenza.
 

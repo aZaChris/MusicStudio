@@ -39,10 +39,14 @@ Stato: **fase 9 costruita e spenta** (pagamenti online sul conto dello studio), 
 31. `concetti/ricevute-non-fiscali.md` — numeri senza buchi con un lock, PDF generato al volo (fase 8).
 32. `concetti/stripe-connect-pagamenti-diretti.md` — il pagamento va sul conto dello studio, mai sul nostro (fase 9).
 33. `concetti/rimborsi-e-contestazioni.md` — rimborsi e contestazioni come righe di storno, anche parziali (fase 9).
-34. Gli ADR, in ordine di numero.
-35. `../operations/runbook.md` — deploy, rollback, segreti, ripristino.
-36. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
-37. `glossario.md` — da consultare quando serve.
+34. `concetti/versionamento-e-deprecazione-api.md` — cambiare l'API senza rompere le app installate (fase 10).
+35. `concetti/admin-blindato.md` — l'admin solo per operatori, con TOTP, sola lettura e audit (fase 10).
+36. Gli ADR, in ordine di numero.
+37. `../operations/runbook.md` — deploy, rollback, segreti, ripristino.
+38. `../operations/api-versioning-policy.md` — la policy delle API per chi sviluppa i client (in inglese).
+39. `colloquio/domande-e-risposte.md` — per ripassare prima di un colloquio.
+40. `glossario.md` — da consultare quando serve.
+41. `../case-study.md` — tre bug veri raccontati per chi valuta il progetto (in inglese).
 
 Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA, quello sull'ExclusionConstraint e le domande da colloquio.
 
@@ -94,6 +98,9 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `adr/ADR-037-conto-collegato-e-pagamenti-diretti.md` — il pagamento online va sul conto Stripe dello studio, funzione spenta di default.
 - `adr/ADR-038-storni-multipli-e-rimborsi-parziali.md` — un pagamento può avere più storni, la somma non supera mai l'importo.
 - `adr/ADR-039-endpoint-dei-conti-collegati-ed-eventi-ripuliti.md` — un secondo webhook per i conti collegati, eventi salvati senza dati personali.
+- `adr/ADR-040-versionamento-e-deprecazione-api.md` — policy con 90 giorni di preavviso, intestazioni RFC, 410 dopo la data, oasdiff in CI.
+- `adr/ADR-041-admin-solo-operatori-con-totp.md` — admin solo per operatori, TOTP in produzione, sola lettura, audit, 404 per gli altri.
+- `adr/ADR-042-inventario-dell-export-gdpr.md` — ogni modello esportato o escluso con un motivo, controllato da un test.
 
 ### Concetti (fase 1)
 
@@ -157,6 +164,11 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `concetti/stripe-connect-pagamenti-diretti.md` — conto collegato, pagamento diretto senza commissioni, interruttore spento.
 - `concetti/rimborsi-e-contestazioni.md` — storni multipli, regola della somma, eventi di Stripe attribuiti allo studio giusto.
 
+### Concetti (fase 10)
+
+- `concetti/versionamento-e-deprecazione-api.md` — compatibile o incompatibile, Deprecation e Sunset, 410, registro e promemoria, oasdiff.
+- `concetti/admin-blindato.md` — chi è un operatore, 404, TOTP nel login dell'admin, sola lettura, audit senza valori.
+
 ### Bozze legali (da validare)
 
 - `../privacy/registro-trattamenti.md`, `../privacy/informativa-famiglie.md`, `../privacy/informativa-insegnanti.md`.
@@ -167,11 +179,12 @@ Se hai poco tempo, leggi per primi: la panoramica, l'audit, il documento su BOLA
 - `../operations/runbook.md` — primo deploy, verifiche, rollback, rotazione dei segreti, Sentry, backup off-site, ripristino.
 - `../operations/restore-drill.md` — registro delle prove di ripristino.
 - `../loadtest/2026-11-09/README.md` — il primo baseline del load test.
+- `../operations/api-versioning-policy.md`, `../operations/deprecations.md`, `../operations/migrations/TEMPLATE.md` — policy delle API, registro delle deprecazioni, modello del rapporto di migrazione (fase 10).
 
 ### Ripasso
 
 - `glossario.md` — ogni termine tecnico in italiano semplice.
-- `colloquio/domande-e-risposte.md` — 50 domande con risposta modello e punto debole.
+- `colloquio/domande-e-risposte.md` — 53 domande con risposta modello e punto debole.
 
 ## Formato dei documenti di concetto
 
@@ -179,7 +192,7 @@ Ogni documento in `concetti/` ha da 800 a 1500 parole e sempre le stesse sezioni
 
 ## Prossime fasi (concetti previsti)
 
-- **Fase 5, rifinitura**: versioning e deprecazione delle API, rafforzamento dell'admin, presentazione del progetto per il portfolio. L'export dei dati (GDPR) è stato anticipato nella fase 7.
+- La rifinitura prevista come "fase 5" è stata fatta nella fase 10 (versionamento, admin, export completo, presentazione). Restano aperti i punti elencati nel riepilogo della fase 10.
 
 Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap".
 
@@ -256,3 +269,14 @@ Il dettaglio è in `specs/002-production-foundations/plan.md`, sezione "Roadmap"
 - **Misure vere** (portatile, PostgreSQL 18, senza rete): riepilogo di un mese con 2.000 voci 22 ms; CSV di un anno con 5.000 righe 629 ms; venti ricevute una dopo l'altra 809 ms. Non dicono nulla su un server sotto carico.
 - **Qualità:** 999 test del backend (da 750), copertura 96,1%; 122 test del portale; ruff, mypy, migrazioni e contratto OpenAPI verdi. Il percorso completo del quickstart è stato eseguito via HTTP su un database usa-e-getta: 35 controlli su 35. Non c'era un browser, quindi l'interfaccia del portale è provata con i test e non a occhio.
 - **Aperto (serve il proprietario):** far controllare da un professionista la frase "non è un documento fiscale" e i termini d'uso; la regola "definitivo" sta nei service e un aggiornamento di massa la aggirerebbe (un test sorveglia); l'app mobile va controllata (conta gli storni come da incassare); il PDF e il CSV non sono stati provati con un Excel italiano vero; prova di carico su un server vero.
+
+## Riepilogo della fase 10 (versionamento, admin, export completo, presentazione)
+
+- **Versionamento:** una policy scritta per chi sviluppa i client (90 giorni di preavviso). Il decoratore `@deprecated` aggiunge `Deprecation` (RFC 9745), `Sunset` e `Link`, segna l'operazione nel contratto, scrive una riga di log per ogni chiamata e dopo la data risponde 410 `endpoint_gone`. Un preavviso troppo corto fa fallire l'import.
+- **Nessuna data dimenticata:** un registro umano controllato da un test, un modello di rapporto di migrazione e un workflow settimanale che diventa rosso a 30 giorni dalla rimozione, senza bloccare le pull request.
+- **Contratto protetto in CI:** oasdiff contro `main`. Con le regole predefinite dava 13 falsi allarmi sul nostro contratto; tarato su quella prova vera dà 0 errori, mentre un campo rinominato ne dà 10.
+- **Admin blindato:** solo operatori (staff senza ruolo di studio), TOTP in produzione con il servizio MFA esistente, stessi blocchi dell'API, 404 per gli altri ruoli e per gli IP non ammessi. Record definitivi e dati dei service in sola lettura, nessun campo cifrato a schermo, ogni accesso e modifica nel registro (nomi dei campi, mai i valori). Il test d'inventario ha trovato le tabelle dei token di simplejwt esposte con i refresh token interi: tolte.
+- **Export GDPR completo:** un inventario di tutti i modelli e due test. L'analisi ha trovato sette tipi di dati mancanti (MFA, ricevute, storni, checkout online, promemoria, inviti, registro), aggiunti come chiavi nuove. La famiglia più grande realistica si esporta in 47-167 ms, quindi niente export in background.
+- **Presentazione:** README aggiornato con numeri datati e limiti dichiarati, case study in inglese con tre bug veri della knowledge base.
+- **Qualità:** 1.242 test del backend, copertura 96,45%; ruff, mypy, migrazioni e contratto verdi. I comandi del README sono stati provati da un clone pulito per il percorso senza Docker (Docker non è attivo in questa WSL; il frontend non è stato riprovato perché questa fase non lo tocca).
+- **Aperto:** attivare il TOTP dell'operatore **prima** del deploy (oppure `ADMIN_REQUIRE_TOTP=false` solo per il tempo dell'attivazione); il conteggio delle chiamate agli endpoint deprecati è "unknown" finché i log non stanno in un archivio interrogabile; i valori nuovi negli enum di risposta passano come avvisi, e la policy chiede ai client di gestirli; l'app mobile ha una nota di lavoro in `specs/010-polish-versioning-admin-gdpr/mobile-followup.md`.

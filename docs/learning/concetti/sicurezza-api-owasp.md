@@ -46,7 +46,7 @@ Il test `test_forged_forwarded_for_cannot_reset_the_login_throttle` manda sei te
 
 **API8 — Security Misconfiguration.** *Coperto.* `manage.py check --deploy` gira ora in CI con i settings di produzione: una configurazione insicura blocca la build. Sentry è attivo solo con un DSN e toglie token, cookie, firme ed email prima di inviare. L'header `X-Request-ID` del client viene accettato solo se fatto di lettere, numeri e trattini, così nessuno può iniettare righe false nei log. La readiness non mostra mai il testo delle eccezioni. Una sola eccezione voluta: il preload HSTS è disattivato, perché impegna tutto il dominio ed è una decisione del proprietario.
 
-**API9 — Improper Inventory Management.** *Parziale.* API versionata (`/api/v1/`), contratto OpenAPI nel repository e controllato dalla CI, ambienti descritti nel runbook. Manca una politica di deprecazione: fase 5.
+**API9 — Improper Inventory Management.** *Parziale (alla fase 4; coperto dalla fase 10, vedi sotto).* API versionata (`/api/v1/`), contratto OpenAPI nel repository e controllato dalla CI, ambienti descritti nel runbook. Mancava una politica di deprecazione.
 
 **API10 — Unsafe Consumption of APIs.** *Coperto.* I webhook di Stripe passano due controlli: l'indirizzo deve essere nella lista pubblicata da Stripe, e la firma deve essere valida. L'indirizzo è quello vero, calcolato contando i proxy fidati da destra di `X-Forwarded-For` (ADR-021). Un test prova che un'origine falsificata a sinistra viene rifiutata.
 
@@ -112,6 +112,20 @@ La fase 9 ha aggiunto il conto Stripe dello studio, un secondo webhook e rimbors
 
 **Ancora aperto.** Il pagamento diretto, un rimborso e una contestazione non sono stati provati su Stripe vero: servono un conto di prova attivato e la verifica della forma degli eventi. PayPal non è verificato. Che i parametri dell'API nuova corrispondano al modello "Stripe fattura le commissioni" va confermato nella Dashboard. I termini d'uso e la frase delle ricevute restano da far validare. Per andare con soldi veri servono un emendamento alla costituzione e una decisione del titolare.
 
+## Aggiornamento della fase 10: versionamento, admin ed export
+
+La fase 10 non aggiunge funzioni per gli utenti: chiude il rischio rimasto parziale e la porta più grande del sistema, l'admin. Lo stato del giro.
+
+**API9 — Gestione dell'inventario. Ora coperto.** C'è una politica scritta di versionamento e deprecazione (`docs/operations/api-versioning-policy.md`, 90 giorni di preavviso). Un endpoint deprecato porta `Deprecation`, `Sunset` e `Link` in ogni risposta, è segnato nel contratto e dopo la data risponde 410. Un registro controllato da un test e un workflow settimanale che diventa rosso a 30 giorni dalla rimozione tengono d'occhio le date. In CI, `oasdiff` confronta il contratto con quello di `main` e blocca le modifiche incompatibili non dichiarate: rinominare un campo di `Lesson` in una copia di prova dà 10 errori. Il limite: i valori nuovi negli enum di risposta passano come avvisi, e la policy chiede ai client di gestire i valori sconosciuti (ADR-040).
+
+**API8 — Configurazione. Coperto, con un buco chiuso.** L'admin era quello predefinito di Django: bastava `is_staff`. Ora entra solo un operatore (staff senza ruolo di studio), con il TOTP in produzione e gli stessi blocchi dell'accesso API. Chi non è operatore riceve 404. Si può limitare per indirizzo IP, e ogni accesso è nel registro. Il test d'inventario dell'admin ha trovato le tabelle dei token di simplejwt, registrate in automatico e con i refresh token interi: tolte (ADR-041).
+
+**API5 — Funzioni. Coperto.** Dall'admin non si scrivono più pagamenti, ricevute, consensi, registro, lezioni, pacchetti o studenti. L'unico modello modificabile, l'utente, registra chi ha cambiato quali campi, senza i valori. Un test per ogni ruolo di studio prova il 404, anche con `is_staff` forzato.
+
+**Dati sensibili. Coperto.** Nessuna schermata dell'admin mostra un campo cifrato (note, motivo di uno storno, IBAN, segreti MFA): un test lo controlla su ogni modello registrato. L'export GDPR ha ora un inventario di tutti i modelli, e un test fallisce su un modello che nessuno ha deciso se esportare. L'analisi ha trovato sette buchi, tutti chiusi (ADR-042).
+
+**Ancora aperto.** Il conteggio delle chiamate agli endpoint deprecati è "unknown" finché i log non stanno in un archivio interrogabile. Il TOTP obbligatorio nell'admin va attivato dall'operatore **prima** del deploy, altrimenti resta fuori.
+
 ## Alternative considerate
 
 **django-axes** per il login: blocca l'account dopo N errori. Ma chiunque conosca un'email potrebbe bloccare quell'account. Il limite per client non ha questo effetto.
@@ -146,5 +160,5 @@ Alla fine di ogni fase verifico l'API contro la OWASP API Security Top 10 e regi
 4. **Cosa controlla `check --deploy` in CI?**
    Le impostazioni di sicurezza di Django in produzione: `DEBUG`, HSTS, cookie sicuri, redirect HTTPS, chiave segreta. Un problema fa fallire la build.
 
-5. **Qual è l'unico rischio ancora parziale, e perché?**
-   API9: manca una politica di deprecazione delle versioni dell'API. È prevista nella fase 5.
+5. **Qual era l'ultimo rischio rimasto parziale, e come si è chiuso?**
+   API9: mancava una politica di deprecazione delle versioni dell'API. La fase 10 l'ha aggiunta, con segnali in ogni risposta, un registro con promemoria e un controllo del contratto in CI (ADR-040).
