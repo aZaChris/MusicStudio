@@ -233,6 +233,12 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_ACKS_LATE = True
 CELERY_TASK_REJECT_ON_WORKER_LOST = True
 CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+# I processi figli del worker (prefork) crescono di memoria e non la restituiscono mai:
+# dopo N task, o oltre la soglia in KB, il figlio finisce il task in corso e viene
+# sostituito. Con 2 figli da 180 MB più il processo principale restiamo sotto i 512 MB
+# del container worker (docker-compose.coolify.yml, WORKER_MEM_LIMIT).
+CELERY_WORKER_MAX_TASKS_PER_CHILD = env.int("CELERY_WORKER_MAX_TASKS_PER_CHILD", default=100)
+CELERY_WORKER_MAX_MEMORY_PER_CHILD = env.int("CELERY_WORKER_MAX_MEMORY_PER_CHILD", default=180_000)
 CELERY_TASK_SOFT_TIME_LIMIT = env.int("CELERY_TASK_SOFT_TIME_LIMIT", default=60)
 CELERY_TASK_TIME_LIMIT = env.int("CELERY_TASK_TIME_LIMIT", default=90)
 CELERY_TASK_SERIALIZER = "json"

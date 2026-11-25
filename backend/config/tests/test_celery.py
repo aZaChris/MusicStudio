@@ -11,6 +11,12 @@ def test_tasks_are_acknowledged_late_and_redelivered_on_worker_loss():
     assert settings.CELERY_WORKER_PREFETCH_MULTIPLIER == 1
 
 
+def test_worker_children_are_recycled_before_the_container_limit():
+    # 2 figli x soglia, in KB, devono stare sotto i 512 MB del container worker.
+    assert settings.CELERY_WORKER_MAX_TASKS_PER_CHILD > 0
+    assert 0 < settings.CELERY_WORKER_MAX_MEMORY_PER_CHILD * 2 < 512 * 1024
+
+
 def test_every_task_has_a_time_limit_and_json_only():
     assert 0 < settings.CELERY_TASK_SOFT_TIME_LIMIT < settings.CELERY_TASK_TIME_LIMIT
     assert settings.CELERY_ACCEPT_CONTENT == ["json"]
