@@ -49,6 +49,10 @@ class AuditEntry(models.Model):
         PAYMENT_ACCOUNT_STATE = "payment_account.state"
         PAYMENT_REFUND = "payment.refund"
         PAYMENT_DISPUTE = "payment.dispute"
+        # Fase 10 (admin solo per operatori): accessi, modifiche e cancellazioni dall'admin.
+        ADMIN_LOGIN = "admin.login"
+        ADMIN_CHANGE = "admin.change"
+        ADMIN_DELETE = "admin.delete"
 
     class Outcome(models.TextChoices):
         # success = riuscita; failure = tentata e fallita; denied = negata dai permessi.

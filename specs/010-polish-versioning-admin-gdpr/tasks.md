@@ -26,9 +26,9 @@ All paths are relative to the repository root. Run commands from `backend/`.
 
 **Purpose**: read the code the plan names and settle the two open points before writing code.
 
-- [ ] T001 Read `backend/apps/common/exceptions.py` and record in `specs/010-polish-versioning-admin-gdpr/research.md` (R1) the exact error envelope keys the `410 endpoint_gone` response must use, and the chosen form of the `Deprecation` header (`true` vs HTTP date) after checking the current RFC 9745 text
-- [ ] T002 [P] Read `backend/apps/accounts/mfa.py` (`is_eligible`, `is_enabled`, `check_second_factor`) and `backend/apps/accounts/services.py` (lockout); record in `research.md` (R3) how an operator account becomes TOTP-eligible (closing the R3 open point)
-- [ ] T003 [P] Try to install the pinned `oasdiff` release locally (scratchpad, not the repo); record in `research.md` (R2) whether it ran, and if not, say the local proof is skipped
+- [X] T001 Read `backend/apps/common/exceptions.py` and record in `specs/010-polish-versioning-admin-gdpr/research.md` (R1) the exact error envelope keys the `410 endpoint_gone` response must use, and the chosen form of the `Deprecation` header (`true` vs HTTP date) after checking the current RFC 9745 text
+- [X] T002 [P] Read `backend/apps/accounts/mfa.py` (`is_eligible`, `is_enabled`, `check_second_factor`) and `backend/apps/accounts/services.py` (lockout); record in `research.md` (R3) how an operator account becomes TOTP-eligible (closing the R3 open point)
+- [X] T003 [P] Try to install the pinned `oasdiff` release locally (scratchpad, not the repo); record in `research.md` (R2) whether it ran, and if not, say the local proof is skipped
 
 ---
 
@@ -36,8 +36,8 @@ All paths are relative to the repository root. Run commands from `backend/`.
 
 **Purpose**: the one migration and the settings that several stories read.
 
-- [ ] T004 Add `ADMIN_LOGIN = "admin.login"`, `ADMIN_CHANGE = "admin.change"`, `ADMIN_DELETE = "admin.delete"` to `AuditEntry.Action` in `backend/apps/audit/models.py` and create the migration with `uv run python manage.py makemigrations audit --settings=config.settings.test --noinput` (choices only, no data change)
-- [ ] T005 [P] Add settings `ADMIN_REQUIRE_TOTP` (env bool, default false), `ADMIN_ALLOWED_IPS` (env list, default empty) and `API_DEPRECATION_MIN_NOTICE_DAYS` (default 90) to `backend/config/settings/base.py`; set `ADMIN_REQUIRE_TOTP` default true in `backend/config/settings/prod.py`; document both admin variables in `.env.example`
+- [X] T004 Add `ADMIN_LOGIN = "admin.login"`, `ADMIN_CHANGE = "admin.change"`, `ADMIN_DELETE = "admin.delete"` to `AuditEntry.Action` in `backend/apps/audit/models.py` and create the migration with `uv run python manage.py makemigrations audit --settings=config.settings.test --noinput` (choices only, no data change)
+- [X] T005 [P] Add settings `ADMIN_REQUIRE_TOTP` (env bool, default false), `ADMIN_ALLOWED_IPS` (env list, default empty) and `API_DEPRECATION_MIN_NOTICE_DAYS` (default 90) to `backend/config/settings/base.py`; set `ADMIN_REQUIRE_TOTP` default true in `backend/config/settings/prod.py`; document both admin variables in `.env.example`
 
 **Checkpoint**: `makemigrations --check` clean, quality gate green; stories can start.
 

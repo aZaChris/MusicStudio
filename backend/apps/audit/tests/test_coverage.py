@@ -47,6 +47,10 @@ COVERED_ELSEWHERE = {
     "payment_account.state",  # US1 (T014, T015): apps/payments/tests/test_account_events.py
     "payment.refund",  # US3 (T008, T038): apps/payments/tests/test_refunds.py
     "payment.dispute",  # US3 (T035, T039): apps/payments/tests/test_disputes.py
+    # Fase 10: admin solo per operatori (specs/010, US2).
+    "admin.login",  # apps/common/tests/test_admin_gate.py
+    "admin.change",  # apps/common/tests/test_admin_audit.py
+    "admin.delete",  # apps/common/tests/test_admin_audit.py
 }
 
 
