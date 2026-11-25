@@ -336,7 +336,7 @@ Domande realistiche su ciò che è stato costruito, con una risposta modello e i
 
 **Risposta modello.** Entra solo un operatore, cioè un account staff senza ruolo di studio, e in produzione con il TOTP che già usavamo per l'API. Gli errori contano per lo stesso blocco dell'accesso API, e chi non deve entrare riceve 404. I record contabili e i dati che cambiano solo dai service sono in sola lettura. L'unico modello modificabile scrive nel registro i nomi dei campi cambiati, senza i valori. Un test elenca tutto ciò che è registrato nell'admin e fallisce se un modello non ha una regola o mostra un campo cifrato: così ho scoperto che la libreria dei JWT esponeva i refresh token.
 
-**Punto debole.** Il TOTP obbligatorio va attivato prima del deploy, altrimenti l'operatore resta fuori. E non c'è ancora un modo per correggere a mano una lezione: se servirà, sarà un comando che passa dai service.
+**Punto debole.** Il primo deploy va fatto con il TOTP dell'admin spento, perché l'operatore può attivarlo solo con il codice nuovo; poi si riaccende l'obbligo. E non c'è ancora un modo per correggere a mano una lezione: se servirà, sarà un comando che passa dai service.
 
 ### 53. Come fai a sapere che l'export GDPR contiene davvero tutto?
 

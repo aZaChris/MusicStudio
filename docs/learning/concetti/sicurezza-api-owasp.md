@@ -124,7 +124,7 @@ La fase 10 non aggiunge funzioni per gli utenti: chiude il rischio rimasto parzi
 
 **Dati sensibili. Coperto.** Nessuna schermata dell'admin mostra un campo cifrato (note, motivo di uno storno, IBAN, segreti MFA): un test lo controlla su ogni modello registrato. L'export GDPR ha ora un inventario di tutti i modelli, e un test fallisce su un modello che nessuno ha deciso se esportare. L'analisi ha trovato sette buchi, tutti chiusi (ADR-042).
 
-**Ancora aperto.** Il conteggio delle chiamate agli endpoint deprecati è "unknown" finché i log non stanno in un archivio interrogabile. Il TOTP obbligatorio nell'admin va attivato dall'operatore **prima** del deploy, altrimenti resta fuori.
+**Ancora aperto.** Il conteggio delle chiamate agli endpoint deprecati è "unknown" finché i log non stanno in un archivio interrogabile. Il primo deploy si fa con il TOTP dell'admin spento, si attiva quello dell'operatore e poi si riaccende l'obbligo: altrimenti l'operatore resta fuori.
 
 ## Alternative considerate
 
