@@ -30,7 +30,7 @@ documentation is a deliverable, and the owner studies everything that is built h
 | 7 Security, privacy & accounts (sign-up, invitations, reset, lockout, TOTP, consent, GDPR export/erasure/retention, audit log, encrypted notes, IDOR suite, secret scan) | `specs/007-security-privacy-accounts` | done (T058 SMTP check done on staging, 2026-11-13) |
 | 8 Cash register, payment instructions & receipts (reversal entries instead of edits, period totals, CSV/PDF export, instructions for parents, non-fiscal receipts) | `specs/008-cash-register-receipts` | done (implemented and walked over HTTP 2026-11-15, 35/35 checks; owner: legal wording of the receipt and terms T063, PR and deploy T064) |
 | 9 Online payments to the studio's own Stripe account (connected account per studio, direct charges with no fee, refunds and disputes as reversal rows, scrubbed events; Connect webhook) | `specs/009-stripe-connect-payments` | built and switched OFF (`ONLINE_PAYMENTS_ENABLED=false`), test mode only (2026-11-16); NOT yet proved with a real sandbox payment, refund or dispute (T049: owner finishes the test account's onboarding on Stripe's page, SMS code `000-000`); owner tasks: register the Connect webhook (T060), terms of use (T057), going live needs a constitution amendment (T059) |
-| 10 Polish (API versioning/deprecation policy and contract diff, operator-only admin with TOTP, complete GDPR export with an inventory, portfolio write-up) | `specs/010-polish-versioning-admin-gdpr` | done (2026-11-25; merged as #62; owner: first deploy with `ADMIN_REQUIRE_TOTP=false`, enrol the operator's TOTP, then remove the variable and redeploy (runbook); release tag) |
+| 10 Polish (API versioning/deprecation policy and contract diff, operator-only admin with TOTP, complete GDPR export with an inventory, portfolio write-up) | `specs/010-polish-versioning-admin-gdpr` | done and deployed to production 2026-11-26 (merged as #62, release v0.9.0). Production had no operator account: a separate `+ops` operator was created with `createsuperuser`, its TOTP enrolled, and `ADMIN_REQUIRE_TOTP` is back to required. The owner's studio account is not an operator, by design (ADR-041; `docs/knowledge-base/admin-rifiuta-nessun-operatore.md`) |
 
 The mobile app is on branch `mobile` (own CLAUDE.md and constitution); it reads the backend
 contract from `main`.
@@ -139,5 +139,10 @@ whenever serializers/views change.
   over TCP and asks for a password; a URL-encoded socket path is read as a hostname.
 - drf-spectacular copies the docstrings of views and serializers into `openapi.yaml`: an Italian
   docstring there changes the contract and breaks `contract:check` on the mobile branch.
+- The API (with the admin and Swagger) and the portal live on different domains: in production
+  the API is `musicstudiobe.christianseminerio.dev`, the portal `musicstudio.christianseminerio.dev`. The
+  portal answers every unknown path with its own blank page, so a health check there "shows nothing".
+- Only an operator (staff, empty role) enters the admin; the owner's studio account never does.
+  Check that one exists before debugging a refused admin login (runbook, "Admin solo per operatori").
 - Never print or read credential files (`.env*` except `.env.example`, `.pgpass`); they are
   git-ignored.
