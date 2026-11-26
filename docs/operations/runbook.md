@@ -110,6 +110,16 @@ Due comandi per l'operatore, dal terminale del `backend`. Entrambi scrivono nell
 
 Dalla fase 10 l'admin (`DJANGO_ADMIN_URL`) lo apre solo un **operatore**: un account attivo, staff e senza ruolo di studio, come quelli creati con `createsuperuser`. Tutti gli altri ricevono 404. In produzione il login chiede anche il **codice TOTP** (`ADMIN_REQUIRE_TOTP`, vero per default). Dettagli in ADR-041.
 
+**Prima di tutto: esiste un operatore?** L'account con cui gestisci uno studio nel portale **non è** un operatore, nemmeno se è il tuo: ha un ruolo di studio, e l'admin lo rifiuta con il messaggio generico. Per controllare, dal Terminal di Coolify sul container `backend` (l'output maschera le email):
+
+```bash
+python manage.py shell -c "from apps.accounts.models import User
+for u in User.objects.filter(is_staff=True) | User.objects.filter(is_superuser=True):
+    e=u.email; print(u.pk, e[:3]+'***'+e[e.find('@'):], 'ruolo:', repr(u.role), 'staff:', u.is_staff, 'superuser:', u.is_superuser, 'attivo:', u.is_active, 'bloccato fino:', u.locked_until)"
+```
+
+Serve almeno una riga con `ruolo: ''`, `staff: True` e `attivo: True`. La riga `28 objects imported automatically` è solo un avviso della shell, non un risultato. Se non c'è nessuna riga, crea l'operatore con `python manage.py createsuperuser`, con un'email **diversa** da quella del tuo account di studio. Un alias va bene, per esempio `nome+ops@gmail.com`: la posta arriva nella stessa casella. In produzione è stato fatto così il 2026-11-26.
+
 **Primo deploy della fase 10, in quest'ordine.** Il TOTP dell'operatore non si può attivare prima: è proprio la fase 10 che rende gli operatori idonei alla MFA, e il codice precedente la consente solo a titolari e insegnanti.
 
 1. Nelle variabili di Coolify imposta `ADMIN_REQUIRE_TOTP=false`, poi fai il deploy (le migrazioni partono da sole).
@@ -118,12 +128,14 @@ Dalla fase 10 l'admin (`DJANGO_ADMIN_URL`) lo apre solo un **operatore**: un acc
 
 Attivare il TOTP dell'operatore:
 
+Si fa da Swagger, `https://<dominio-api>/api/docs/`. Attenzione al dominio: è quello dell'**API** (in produzione `musicstudiobe.christianseminerio.dev`), non quello del portale, che a ogni indirizzo sconosciuto risponde con la sua pagina bianca. Prima di cominciare premi **Logout** nel riquadro Authorize, così non resta attivo il token di un altro account. Segreto, token e codici di recupero non vanno mai incollati in chat né mandati in uno screenshot.
+
 1. Un account creato con `createsuperuser` ha l'email **non confermata**, e l'API rifiuta il login finché non lo è. Chiedi il link con `POST /api/v1/auth/confirm-email/resend/` (`{"email": "..."}`) e aprilo dalla posta.
 2. Accedi all'API con l'account operatore (`POST /api/v1/auth/token/`, email e password) e prendi il token di accesso.
 3. `POST /api/v1/auth/mfa/setup/` restituisce l'URI `otpauth://`: aprilo con l'app di autenticazione (o trasformalo in QR).
 4. `POST /api/v1/auth/mfa/confirm/` con il primo codice. La risposta contiene **dieci codici di recupero**: conservali fuori dal server.
 
-Se il deploy è avvenuto senza `ADMIN_REQUIRE_TOTP=false` e l'admin ti rifiuta: è normale, imposta la variabile, rideploya e riparti dal passo 2. Per limitare l'admin a certi indirizzi, metti `ADMIN_ALLOWED_IPS` (lista separata da virgole); vuota vuol dire nessun limite.
+Se il deploy è avvenuto senza `ADMIN_REQUIRE_TOTP=false` e l'admin ti rifiuta: è normale, imposta la variabile, rideploya e riparti dal passo 2. Per limitare l'admin a certi indirizzi, metti `ADMIN_ALLOWED_IPS` (lista separata da virgole); vuota vuol dire nessun limite. Coolify mostra da solo `ADMIN_ALLOWED_IPS` vuota tra le variabili, perché la legge dal file di deploy: è normale. Ricorda che una variabile cambiata in Coolify arriva al container solo con un nuovo deploy.
 
 Nell'admin i pagamenti, le ricevute, i consensi, il registro, le lezioni, i pacchetti e gli studenti sono in sola lettura. Si modificano solo gli utenti, e ogni modifica finisce nel registro (`admin.change`). Un operatore che perde telefono e codici: `python manage.py reset_mfa email@esempio.it` (vedi sopra).
 
